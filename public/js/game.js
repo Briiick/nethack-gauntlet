@@ -1,0 +1,246 @@
+// The window port: turns NetHack's window calls into map/status state and UI requests.
+import { readGlyphInfo, readExtCommands, writeMenuSelection, persistSaves } from './engine.js';
+
+export const COLNO = 80, ROWNO = 21;
+const NHW = { MESSAGE: 1, STATUS: 2, MAP: 3, MENU: 4, TEXT: 5 };
+const PICK = { NONE: 0, ONE: 1, ANY: 2 };
+export const MG = { HERO: 0x1, CORPSE: 0x2, INVIS: 0x4, DETECT: 0x8, PET: 0x10, RIDDEN: 0x20, STATUE: 0x40, OBJPILE: 0x80, FEMALE: 0x2000 };
+export const BL = {
+  TITLE: 0, STR: 1, DX: 2, CO: 3, IN: 4, WI: 5, CH: 6, ALIGN: 7, SCORE: 8, CAP: 9, GOLD: 10, ENE: 11, ENEMAX: 12,
+  XP: 13, AC: 14, HD: 15, TIME: 16, HUNGER: 17, HP: 18, HPMAX: 19, LEVELDESC: 20, EXP: 21, CONDITION: 22,
+  WEAPON: 23, ARMOR: 24, TERRAIN: 25, VERS: 26, FLUSH: -1, RESET: -2,
+};
+export const CONDITIONS = [
+  [0x1, 'Bare-handed'], [0x2, 'Blind'], [0x4, 'Busy'], [0x8, 'Confused'], [0x10, 'Deaf'], [0x20, 'Iron'],
+  [0x40, 'Flying'], [0x80, 'Food poisoned'], [0x100, 'Glowing hands'], [0x200, 'Grabbed'], [0x400, 'Hallucinating'],
+  [0x800, 'Held'], [0x1000, 'Icy'], [0x2000, 'In lava'], [0x4000, 'Levitating'], [0x8000, 'Paralyzed'],
+  [0x10000, 'Riding'], [0x20000, 'Asleep'], [0x40000, 'Slimed'], [0x80000, 'Slippery'], [0x100000, 'Stoning'],
+  [0x200000, 'Strangled'], [0x400000, 'Stunned'], [0x800000, 'Submerged'], [0x1000000, 'Terminally ill'],
+  [0x2000000, 'Tethered'], [0x4000000, 'Trapped'], [0x8000000, 'Unconscious'], [0x10000000, 'Wounded legs'],
+  [0x20000000, 'Holding'],
+];
+const BAD_CONDITIONS = 0x1000000 | 0x100000 | 0x40000 | 0x200000 | 0x2000 | 0x8000 | 0x80;
+
+export class Game {
+  constructor({ ui, renderer, tiles }) {
+    this.ui = ui; this.renderer = renderer; this.tiles = tiles;
+    this.mod = null;
+    this.windows = new Map();
+    this.nextWin = 1;
+    this.mapWin = -1; this.msgWin = -1; this.statusWin = -1;
+    this.status = {}; this.conditions = 0;
+    this.hero = { x: 0, y: 0 };
+    this.messagesSinceInput = 0;
+    this.lastLevel = null;
+    this.over = false;
+  }
+
+  // ---------------------------------------------------------------- lifecycle
+  shim_init_nhwindows() {}
+  shim_player_selection_or_tty() { return true; }   // NetHack's own role/race menus, via our menu UI
+  shim_askname() {}
+  shim_get_nh_event() {}
+  shim_suspend_nhwindows() {}
+  shim_resume_nhwindows() {}
+  shim_mark_synch() { this.renderer.commit(); }
+  shim_wait_synch() { this.renderer.commit(); }
+  shim_number_pad() {}
+  shim_preference_update() {}
+  shim_update_positionbar() {}
+  shim_change_color() {}
+  shim_status_init() {}
+  shim_status_enablefield() {}
+  shim_getmsghistory() { return ''; }
+  shim_putmsghistory(msg) { if (msg) this.ui.message(msg, 0, { history: true }); }
+  shim_nhbell() { this.ui.bell(); }
+  shim_cliparound(x, y) { this.hero.x = x; this.hero.y = y; this.renderer.setHero(x, y); }
+  shim_curs() {}
+
+  async shim_exit_nhwindows(str) {
+    this.over = true;
+    await persistSaves(this.mod);
+    this.ui.gameOver(str || 'Be seeing you…');
+  }
+
+  async shim_delay_output() {
+    // NetHack paces thrown objects, zaps and explosions with this
+    this.renderer.commit();
+    await new Promise((r) => setTimeout(r, this.ui.settings.fastMissiles ? 18 : 40));
+  }
+
+  // ---------------------------------------------------------------- windows
+  shim_create_nhwindow(type) {
+    const id = this.nextWin++;
+    this.windows.set(id, { type, lines: [], menu: null });
+    if (type === NHW.MAP) this.mapWin = id;
+    if (type === NHW.MESSAGE) this.msgWin = id;
+    if (type === NHW.STATUS) this.statusWin = id;
+    return id;
+  }
+
+  shim_clear_nhwindow(win) {
+    const w = this.windows.get(win);
+    if (!w) return;
+    if (win === this.mapWin) this.renderer.clearMap();
+    else if (win !== this.msgWin) { w.lines = []; }
+  }
+
+  async shim_display_nhwindow(win, blocking) {
+    const w = this.windows.get(win);
+    if (!w) return;
+    if (win === this.mapWin) { this.renderer.commit(); return; }
+    if (win === this.msgWin) {
+      if (blocking && this.messagesSinceInput > 0) {
+        this.renderer.commit();
+        await this.ui.more();
+        this.messagesSinceInput = 0;
+      }
+      return;
+    }
+    if ((w.type === NHW.TEXT || w.type === NHW.MENU) && w.lines.length) {
+      this.renderer.commit();
+      await this.ui.textWindow(w.lines, { blocking: !!blocking || w.type === NHW.TEXT });
+      w.lines = [];
+    }
+  }
+
+  shim_destroy_nhwindow(win) {
+    this.windows.delete(win);
+  }
+
+  shim_putstr(win, attr, str) {
+    const w = this.windows.get(win);
+    if (win === this.msgWin || !w) {
+      this.messagesSinceInput++;
+      this.ui.message(str, attr);
+      this.renderer.onMessage(str);
+      return;
+    }
+    if (w.type === NHW.STATUS) return;      // status arrives via status_update
+    w.lines.push({ text: str, attr });
+  }
+
+  shim_raw_print(str) { if (str) { this.ui.message(str, 0); } }
+  shim_raw_print_bold(str) { if (str) { this.ui.message(str, 1); } }
+
+  async shim_display_file(name) {
+    await this.ui.textWindow([{ text: `(${name} is not shown in this interface yet.)`, attr: 0 }], { blocking: true });
+  }
+
+  // ---------------------------------------------------------------- map
+  shim_print_glyph(win, x, y, giPtr, bkPtr) {
+    if (win !== this.mapWin) return;
+    const gi = readGlyphInfo(this.mod, giPtr);
+    const bk = readGlyphInfo(this.mod, bkPtr);
+    if (!gi) return;
+    if (gi.flags & MG.HERO) { this.hero.x = x; this.hero.y = y; this.renderer.setHero(x, y); }
+    this.renderer.setCell(x, y, gi, bk);
+  }
+
+  // ---------------------------------------------------------------- menus
+  shim_start_menu(win) {
+    const w = this.windows.get(win);
+    if (w) w.menu = { items: [], prompt: '' };
+  }
+
+  shim_add_menu(win, giPtr, ident, ch, gch, attr, clr, str, itemflags) {
+    const w = this.windows.get(win);
+    if (!w || !w.menu) return;
+    const gi = readGlyphInfo(this.mod, giPtr);
+    w.menu.items.push({
+      ident, ch: ch & 0xff, gch: gch & 0xff, attr, clr, text: str || '',
+      glyph: gi && gi.glyph >= 0 && gi.glyph < this.tiles.glyphs ? gi.glyph : -1,
+      selected: !!(itemflags & 1), header: ident === 0,
+    });
+  }
+
+  shim_end_menu(win, prompt) {
+    const w = this.windows.get(win);
+    if (w && w.menu) w.menu.prompt = prompt || '';
+  }
+
+  async shim_select_menu(win, how, listPtr) {
+    const w = this.windows.get(win);
+    this.renderer.commit();
+    if (!w || !w.menu) { this.mod.setValue(listPtr, 0, '*'); return how === PICK.NONE ? 0 : -1; }
+    const result = await this.ui.menu(w.menu, how);
+    this.messagesSinceInput = 0;
+    if (result === null) { this.mod.setValue(listPtr, 0, '*'); return -1; }
+    return writeMenuSelection(this.mod, listPtr, result);
+  }
+
+  async shim_message_menu(let_, how, mesg) {
+    this.ui.message(mesg, 0);
+    const k = await this.ui.yn(mesg, null, let_ & 0xff);
+    return k;
+  }
+
+  // ---------------------------------------------------------------- prompts
+  async shim_yn_function(query, resp, def) {
+    this.renderer.commit();
+    const k = await this.ui.yn(query || '', resp || null, def & 0xff);
+    this.messagesSinceInput = 0;
+    return k;
+  }
+
+  async shim_getlin(query, bufPtr) {
+    this.renderer.commit();
+    const s = await this.ui.getline(query || '');
+    this.messagesSinceInput = 0;
+    this.mod.stringToUTF8(s === null ? '\x1b' : s.slice(0, 250), bufPtr, 256);
+  }
+
+  async shim_get_ext_cmd() {
+    if (!this.extcmds) this.extcmds = readExtCommands(this.mod);
+    const idx = await this.ui.extCommand(this.extcmds);
+    this.messagesSinceInput = 0;
+    return idx;
+  }
+
+  async shim_doprev_message() { await this.ui.history(); return 0; }
+
+  // ---------------------------------------------------------------- input
+  async shim_nhgetch() {
+    this.renderer.commit();
+    const ev = await this.ui.waitInput({ allowClick: false });
+    this.messagesSinceInput = 0;
+    return ev.key;
+  }
+
+  async shim_nh_poskey(xp, yp, modp) {
+    this.renderer.commit();
+    const ev = await this.ui.waitInput({ allowClick: true });
+    this.messagesSinceInput = 0;
+    if (ev.click) {
+      this.mod.setValue(xp, ev.click.x, 'i16');
+      this.mod.setValue(yp, ev.click.y, 'i16');
+      this.mod.setValue(modp, ev.click.button, 'i32');
+      return 0;
+    }
+    return ev.key;
+  }
+
+  // ---------------------------------------------------------------- status
+  shim_status_update(fld, ptr, chg, percent, color) {
+    if (fld === BL.FLUSH) { this.ui.status(this.status, this.conditions); return; }
+    if (fld === BL.RESET) { this.ui.status(this.status, this.conditions); return; }
+    if (fld === BL.CONDITION) {
+      this.conditions = ptr ? (this.mod.HEAP32[ptr >> 2] >>> 0) : 0;
+      return;
+    }
+    if (fld < 0 || fld > BL.VERS) return;
+    const val = ptr ? this.mod.UTF8ToString(ptr) : '';
+    this.status[fld] = { val: val.trim(), percent, color };
+    if (fld === BL.LEVELDESC && val !== this.lastLevel) {
+      if (this.lastLevel !== null) this.renderer.newLevel(val.trim());
+      this.lastLevel = val;
+    }
+    if (fld === BL.HP && this.lastHp !== undefined) {
+      const hp = parseInt(val, 10);
+      if (hp < this.lastHp) this.renderer.heroHurt(this.lastHp - hp);
+      this.lastHp = hp;
+    } else if (fld === BL.HP) this.lastHp = parseInt(val, 10);
+  }
+}
+
+export function badConditions(mask) { return (mask & BAD_CONDITIONS) !== 0; }

@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>NetHack Gauntlet</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700;900&family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Mono:wght@400;600&family=EB+Garamond:ital,wght@0,500;0,600;1,500&family=Pirata+One&display=swap">
+<link rel="stylesheet" href="css/app.css">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' fill='%2306060a'/%3E%3Cpath d='M5 3h6v2H5zM4 5h8v5H4zM6 10h4v3H6z' fill='%23c8a050'/%3E%3C/svg%3E">
+</head>
+<body>
+<div id="stage">
+  <canvas id="view" aria-label="Dungeon map"></canvas>
+  <div class="vig" aria-hidden="true"></div>
+
+  <header class="banner"><span id="branch">Dungeons of Doom</span><small id="level"></small></header>
+
+  <div class="tools">
+    <button type="button" id="help-btn" aria-label="Help (?)">?</button>
+    <button type="button" id="settings-btn" aria-label="Settings (F1)">
+      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
+    </button>
+  </div>
+
+  <section id="plate" aria-label="Character status">
+    <div class="port"><canvas id="portrait" width="28" height="28"></canvas></div>
+    <div class="info">
+      <div class="name"><span id="hero-name">…</span> <span id="hero-title"></span></div>
+      <div class="sub"><span id="xl"></span><span id="align"></span></div>
+      <div class="bar hp"><i id="hpbar"></i><em id="hptext"></em></div>
+      <div class="bar pw"><i id="pwbar"></i><em id="pwtext"></em></div>
+      <div class="counts"><span class="g" id="gold"></span><span id="ac"></span><span id="turn"></span></div>
+      <div class="stats" id="stats"></div>
+      <div class="chips" id="chips"></div>
+    </div>
+  </section>
+
+  <div id="feed" aria-live="polite"></div>
+  <div id="more" hidden>▼ <span>more</span></div>
+  <div id="prompt" hidden></div>
+  <div id="compass" hidden>
+    <button type="button" data-k="y" aria-label="north-west">↖</button><button type="button" data-k="k" aria-label="north">↑</button><button type="button" data-k="u" aria-label="north-east">↗</button>
+    <button type="button" data-k="h" aria-label="west">←</button><button type="button" data-k="." aria-label="here">·</button><button type="button" data-k="l" aria-label="east">→</button>
+    <button type="button" data-k="b" aria-label="south-west">↙</button><button type="button" data-k="j" aria-label="south">↓</button><button type="button" data-k="n" aria-label="south-east">↘</button>
+    <button type="button" data-k="<" aria-label="up">&lt; up</button><button type="button" data-k="&gt;" aria-label="down">down &gt;</button>
+  </div>
+
+  <div id="modal" hidden></div>
+
+  <div id="gameover" hidden>
+    <h1>Farewell</h1>
+    <p></p>
+    <button type="button" class="primary" onclick="location.reload()">Return to the entrance</button>
+  </div>
+
+  <div id="start">
+    <form class="panel start" id="start-form">
+      <h1>NetHack <span>Gauntlet</span></h1>
+      <p class="lede">NetHack 5.0, the real game, drawn torchlit.</p>
+      <div id="saves"></div>
+      <div class="grid">
+        <label for="start-name">Name</label>
+        <input id="start-name" maxlength="30" autocomplete="off" spellcheck="false" required>
+        <label for="start-role">Role</label>
+        <select id="start-role">
+          <option value="Valkyrie" selected>Valkyrie</option><option value="Archeologist">Archeologist</option>
+          <option value="Barbarian">Barbarian</option><option value="Caveman">Caveman</option><option value="Healer">Healer</option>
+          <option value="Knight">Knight</option><option value="Monk">Monk</option><option value="Priest">Priest</option>
+          <option value="Ranger">Ranger</option><option value="Rogue">Rogue</option><option value="Samurai">Samurai</option>
+          <option value="Tourist">Tourist</option><option value="Wizard">Wizard</option><option value="random">Random</option>
+          <option value="ask">Choose in-game (race, gender, alignment)</option>
+        </select>
+        <span></span><label class="check"><input type="checkbox" id="start-tutorial"> Offer NetHack's tutorial</label>
+        <label for="start-pickup">Autopickup</label>
+        <select id="start-pickup"><option value="$">Gold only</option><option value="$?!/=&quot;+">Gold, scrolls, potions, wands, rings, amulets, books</option><option value="">Off</option></select>
+      </div>
+      <button type="submit" class="primary" id="start-go" disabled>Loading the dungeon…</button>
+      <p class="fine">Saves stay in this browser. Save with <kbd>S</kbd>; a saved game resumes when you start again with the same name.</p>
+    </form>
+  </div>
+</div>
+<script type="module" src="js/main.js"></script>
+</body>
+</html>

@@ -1,0 +1,483 @@
+[
+{"i":0,"name":"strange object","descr":"","cls":1,"color":0,"mat":0}
+,{"i":1,"name":"generic strange","descr":"strange","cls":1,"color":7,"mat":0}
+,{"i":2,"name":"generic weapon","descr":"weapon","cls":2,"color":7,"mat":0}
+,{"i":3,"name":"generic armor","descr":"armor","cls":3,"color":7,"mat":0}
+,{"i":4,"name":"generic ring","descr":"ring","cls":4,"color":7,"mat":0}
+,{"i":5,"name":"generic amulet","descr":"amulet","cls":5,"color":7,"mat":0}
+,{"i":6,"name":"generic tool","descr":"tool","cls":6,"color":7,"mat":0}
+,{"i":7,"name":"generic food","descr":"food","cls":7,"color":7,"mat":0}
+,{"i":8,"name":"generic potion","descr":"potion","cls":8,"color":7,"mat":0}
+,{"i":9,"name":"generic scroll","descr":"scroll","cls":9,"color":7,"mat":0}
+,{"i":10,"name":"generic spellbook","descr":"spellbook","cls":10,"color":7,"mat":0}
+,{"i":11,"name":"generic wand","descr":"wand","cls":11,"color":7,"mat":0}
+,{"i":12,"name":"generic coin","descr":"coin","cls":12,"color":7,"mat":0}
+,{"i":13,"name":"generic gem","descr":"gem","cls":13,"color":7,"mat":0}
+,{"i":14,"name":"generic large rock","descr":"large rock","cls":14,"color":7,"mat":0}
+,{"i":15,"name":"generic iron ball","descr":"iron ball","cls":15,"color":7,"mat":0}
+,{"i":16,"name":"generic iron chain","descr":"iron chain","cls":16,"color":7,"mat":0}
+,{"i":17,"name":"generic venom","descr":"venom","cls":17,"color":7,"mat":0}
+,{"i":18,"name":"arrow","descr":"","cls":2,"color":6,"mat":11}
+,{"i":19,"name":"elven arrow","descr":"runed arrow","cls":2,"color":3,"mat":8}
+,{"i":20,"name":"orcish arrow","descr":"crude arrow","cls":2,"color":0,"mat":11}
+,{"i":21,"name":"silver arrow","descr":"","cls":2,"color":7,"mat":14}
+,{"i":22,"name":"ya","descr":"bamboo arrow","cls":2,"color":6,"mat":12}
+,{"i":23,"name":"crossbow bolt","descr":"","cls":2,"color":6,"mat":11}
+,{"i":24,"name":"dart","descr":"","cls":2,"color":6,"mat":11}
+,{"i":25,"name":"shuriken","descr":"throwing star","cls":2,"color":6,"mat":11}
+,{"i":26,"name":"boomerang","descr":"","cls":2,"color":3,"mat":8}
+,{"i":27,"name":"spear","descr":"","cls":2,"color":6,"mat":11}
+,{"i":28,"name":"elven spear","descr":"runed spear","cls":2,"color":3,"mat":8}
+,{"i":29,"name":"orcish spear","descr":"crude spear","cls":2,"color":0,"mat":11}
+,{"i":30,"name":"dwarvish spear","descr":"stout spear","cls":2,"color":6,"mat":11}
+,{"i":31,"name":"silver spear","descr":"","cls":2,"color":7,"mat":14}
+,{"i":32,"name":"javelin","descr":"throwing spear","cls":2,"color":6,"mat":11}
+,{"i":33,"name":"trident","descr":"","cls":2,"color":6,"mat":11}
+,{"i":34,"name":"dagger","descr":"","cls":2,"color":6,"mat":11}
+,{"i":35,"name":"elven dagger","descr":"runed dagger","cls":2,"color":3,"mat":8}
+,{"i":36,"name":"orcish dagger","descr":"crude dagger","cls":2,"color":0,"mat":11}
+,{"i":37,"name":"silver dagger","descr":"","cls":2,"color":7,"mat":14}
+,{"i":38,"name":"athame","descr":"","cls":2,"color":6,"mat":11}
+,{"i":39,"name":"scalpel","descr":"","cls":2,"color":6,"mat":12}
+,{"i":40,"name":"knife","descr":"","cls":2,"color":6,"mat":11}
+,{"i":41,"name":"stiletto","descr":"","cls":2,"color":6,"mat":11}
+,{"i":42,"name":"worm tooth","descr":"","cls":2,"color":15,"mat":9}
+,{"i":43,"name":"crysknife","descr":"","cls":2,"color":15,"mat":9}
+,{"i":44,"name":"axe","descr":"","cls":2,"color":6,"mat":11}
+,{"i":45,"name":"battle-axe","descr":"double-headed axe","cls":2,"color":6,"mat":11}
+,{"i":46,"name":"short sword","descr":"","cls":2,"color":6,"mat":11}
+,{"i":47,"name":"elven short sword","descr":"runed short sword","cls":2,"color":3,"mat":8}
+,{"i":48,"name":"orcish short sword","descr":"crude short sword","cls":2,"color":0,"mat":11}
+,{"i":49,"name":"dwarvish short sword","descr":"broad short sword","cls":2,"color":6,"mat":11}
+,{"i":50,"name":"scimitar","descr":"curved sword","cls":2,"color":6,"mat":11}
+,{"i":51,"name":"silver saber","descr":"","cls":2,"color":7,"mat":14}
+,{"i":52,"name":"broadsword","descr":"","cls":2,"color":6,"mat":11}
+,{"i":53,"name":"elven broadsword","descr":"runed broadsword","cls":2,"color":3,"mat":8}
+,{"i":54,"name":"long sword","descr":"","cls":2,"color":6,"mat":11}
+,{"i":55,"name":"two-handed sword","descr":"","cls":2,"color":6,"mat":11}
+,{"i":56,"name":"katana","descr":"samurai sword","cls":2,"color":6,"mat":11}
+,{"i":57,"name":"tsurugi","descr":"long samurai sword","cls":2,"color":6,"mat":12}
+,{"i":58,"name":"runesword","descr":"runed broadsword","cls":2,"color":0,"mat":11}
+,{"i":59,"name":"partisan","descr":"vulgar polearm","cls":2,"color":6,"mat":11}
+,{"i":60,"name":"ranseur","descr":"hilted polearm","cls":2,"color":6,"mat":11}
+,{"i":61,"name":"spetum","descr":"forked polearm","cls":2,"color":6,"mat":11}
+,{"i":62,"name":"glaive","descr":"single-edged polearm","cls":2,"color":6,"mat":11}
+,{"i":63,"name":"halberd","descr":"angled poleaxe","cls":2,"color":6,"mat":11}
+,{"i":64,"name":"bardiche","descr":"long poleaxe","cls":2,"color":6,"mat":11}
+,{"i":65,"name":"voulge","descr":"pole cleaver","cls":2,"color":6,"mat":11}
+,{"i":66,"name":"fauchard","descr":"pole sickle","cls":2,"color":6,"mat":11}
+,{"i":67,"name":"guisarme","descr":"pruning hook","cls":2,"color":6,"mat":11}
+,{"i":68,"name":"bill-guisarme","descr":"hooked polearm","cls":2,"color":6,"mat":11}
+,{"i":69,"name":"lucern hammer","descr":"pronged polearm","cls":2,"color":6,"mat":11}
+,{"i":70,"name":"bec de corbin","descr":"beaked polearm","cls":2,"color":6,"mat":11}
+,{"i":71,"name":"dwarvish mattock","descr":"broad pick","cls":2,"color":6,"mat":11}
+,{"i":72,"name":"lance","descr":"","cls":2,"color":6,"mat":11}
+,{"i":73,"name":"mace","descr":"","cls":2,"color":6,"mat":11}
+,{"i":74,"name":"silver mace","descr":"","cls":2,"color":7,"mat":14}
+,{"i":75,"name":"morning star","descr":"","cls":2,"color":6,"mat":11}
+,{"i":76,"name":"war hammer","descr":"","cls":2,"color":6,"mat":11}
+,{"i":77,"name":"club","descr":"","cls":2,"color":3,"mat":8}
+,{"i":78,"name":"rubber hose","descr":"","cls":2,"color":3,"mat":18}
+,{"i":79,"name":"quarterstaff","descr":"staff","cls":2,"color":3,"mat":8}
+,{"i":80,"name":"aklys","descr":"thonged club","cls":2,"color":6,"mat":11}
+,{"i":81,"name":"flail","descr":"","cls":2,"color":6,"mat":11}
+,{"i":82,"name":"bullwhip","descr":"","cls":2,"color":3,"mat":7}
+,{"i":83,"name":"bow","descr":"","cls":2,"color":3,"mat":8}
+,{"i":84,"name":"elven bow","descr":"runed bow","cls":2,"color":3,"mat":8}
+,{"i":85,"name":"orcish bow","descr":"crude bow","cls":2,"color":0,"mat":8}
+,{"i":86,"name":"yumi","descr":"long bow","cls":2,"color":3,"mat":8}
+,{"i":87,"name":"sling","descr":"","cls":2,"color":3,"mat":7}
+,{"i":88,"name":"crossbow","descr":"","cls":2,"color":3,"mat":8}
+,{"i":89,"name":"elven leather helm","descr":"leather hat","cls":3,"color":3,"mat":7}
+,{"i":90,"name":"orcish helm","descr":"iron skull cap","cls":3,"color":0,"mat":11}
+,{"i":91,"name":"dwarvish iron helm","descr":"hard hat","cls":3,"color":6,"mat":11}
+,{"i":92,"name":"fedora","descr":"","cls":3,"color":3,"mat":6}
+,{"i":93,"name":"cornuthaum","descr":"conical hat","cls":3,"color":4,"mat":6}
+,{"i":94,"name":"dunce cap","descr":"conical hat","cls":3,"color":4,"mat":6}
+,{"i":95,"name":"dented pot","descr":"","cls":3,"color":0,"mat":11}
+,{"i":96,"name":"helm of brilliance","descr":"crystal helmet","cls":3,"color":15,"mat":19}
+,{"i":97,"name":"helmet","descr":"plumed helmet","cls":3,"color":6,"mat":11}
+,{"i":98,"name":"helm of caution","descr":"etched helmet","cls":3,"color":2,"mat":11}
+,{"i":99,"name":"helm of opposite alignment","descr":"crested helmet","cls":3,"color":6,"mat":11}
+,{"i":100,"name":"helm of telepathy","descr":"visored helmet","cls":3,"color":6,"mat":11}
+,{"i":101,"name":"gray dragon scale mail","descr":"","cls":3,"color":7,"mat":10}
+,{"i":102,"name":"gold dragon scale mail","descr":"","cls":3,"color":11,"mat":10}
+,{"i":103,"name":"silver dragon scale mail","descr":"","cls":3,"color":14,"mat":10}
+,{"i":104,"name":"red dragon scale mail","descr":"","cls":3,"color":1,"mat":10}
+,{"i":105,"name":"white dragon scale mail","descr":"","cls":3,"color":15,"mat":10}
+,{"i":106,"name":"orange dragon scale mail","descr":"","cls":3,"color":9,"mat":10}
+,{"i":107,"name":"black dragon scale mail","descr":"","cls":3,"color":0,"mat":10}
+,{"i":108,"name":"blue dragon scale mail","descr":"","cls":3,"color":4,"mat":10}
+,{"i":109,"name":"green dragon scale mail","descr":"","cls":3,"color":2,"mat":10}
+,{"i":110,"name":"yellow dragon scale mail","descr":"","cls":3,"color":11,"mat":10}
+,{"i":111,"name":"gray dragon scales","descr":"","cls":3,"color":7,"mat":10}
+,{"i":112,"name":"gold dragon scales","descr":"","cls":3,"color":11,"mat":10}
+,{"i":113,"name":"silver dragon scales","descr":"","cls":3,"color":14,"mat":10}
+,{"i":114,"name":"red dragon scales","descr":"","cls":3,"color":1,"mat":10}
+,{"i":115,"name":"white dragon scales","descr":"","cls":3,"color":15,"mat":10}
+,{"i":116,"name":"orange dragon scales","descr":"","cls":3,"color":9,"mat":10}
+,{"i":117,"name":"black dragon scales","descr":"","cls":3,"color":0,"mat":10}
+,{"i":118,"name":"blue dragon scales","descr":"","cls":3,"color":4,"mat":10}
+,{"i":119,"name":"green dragon scales","descr":"","cls":3,"color":2,"mat":10}
+,{"i":120,"name":"yellow dragon scales","descr":"","cls":3,"color":11,"mat":10}
+,{"i":121,"name":"plate mail","descr":"","cls":3,"color":6,"mat":11}
+,{"i":122,"name":"crystal plate mail","descr":"","cls":3,"color":15,"mat":19}
+,{"i":123,"name":"bronze plate mail","descr":"","cls":3,"color":11,"mat":13}
+,{"i":124,"name":"splint mail","descr":"","cls":3,"color":6,"mat":11}
+,{"i":125,"name":"banded mail","descr":"","cls":3,"color":6,"mat":11}
+,{"i":126,"name":"dwarvish mithril-coat","descr":"","cls":3,"color":7,"mat":17}
+,{"i":127,"name":"elven mithril-coat","descr":"","cls":3,"color":7,"mat":17}
+,{"i":128,"name":"chain mail","descr":"","cls":3,"color":6,"mat":11}
+,{"i":129,"name":"orcish chain mail","descr":"crude chain mail","cls":3,"color":0,"mat":11}
+,{"i":130,"name":"scale mail","descr":"","cls":3,"color":6,"mat":11}
+,{"i":131,"name":"studded leather armor","descr":"","cls":3,"color":3,"mat":7}
+,{"i":132,"name":"ring mail","descr":"","cls":3,"color":6,"mat":11}
+,{"i":133,"name":"orcish ring mail","descr":"crude ring mail","cls":3,"color":0,"mat":11}
+,{"i":134,"name":"leather armor","descr":"","cls":3,"color":3,"mat":7}
+,{"i":135,"name":"leather jacket","descr":"","cls":3,"color":0,"mat":7}
+,{"i":136,"name":"Hawaiian shirt","descr":"","cls":3,"color":5,"mat":6}
+,{"i":137,"name":"T-shirt","descr":"","cls":3,"color":15,"mat":6}
+,{"i":138,"name":"mummy wrapping","descr":"","cls":3,"color":7,"mat":6}
+,{"i":139,"name":"elven cloak","descr":"faded pall","cls":3,"color":0,"mat":6}
+,{"i":140,"name":"orcish cloak","descr":"coarse mantelet","cls":3,"color":0,"mat":6}
+,{"i":141,"name":"dwarvish cloak","descr":"hooded cloak","cls":3,"color":3,"mat":6}
+,{"i":142,"name":"oilskin cloak","descr":"slippery cloak","cls":3,"color":3,"mat":6}
+,{"i":143,"name":"robe","descr":"","cls":3,"color":1,"mat":6}
+,{"i":144,"name":"alchemy smock","descr":"apron","cls":3,"color":15,"mat":6}
+,{"i":145,"name":"leather cloak","descr":"","cls":3,"color":3,"mat":7}
+,{"i":146,"name":"cloak of protection","descr":"tattered cape","cls":3,"color":3,"mat":6}
+,{"i":147,"name":"cloak of invisibility","descr":"opera cloak","cls":3,"color":13,"mat":6}
+,{"i":148,"name":"cloak of magic resistance","descr":"ornamental cope","cls":3,"color":15,"mat":6}
+,{"i":149,"name":"cloak of displacement","descr":"piece of cloth","cls":3,"color":3,"mat":6}
+,{"i":150,"name":"small shield","descr":"wooden shield","cls":3,"color":3,"mat":8}
+,{"i":151,"name":"shield of drain resistance","descr":"wooden shield","cls":3,"color":3,"mat":8}
+,{"i":152,"name":"shield of shock resistance","descr":"wooden shield","cls":3,"color":3,"mat":8}
+,{"i":153,"name":"elven shield","descr":"blue and green shield","cls":3,"color":2,"mat":8}
+,{"i":154,"name":"Uruk-hai shield","descr":"white-handed shield","cls":3,"color":6,"mat":11}
+,{"i":155,"name":"orcish shield","descr":"red-eyed shield","cls":3,"color":1,"mat":11}
+,{"i":156,"name":"large shield","descr":"","cls":3,"color":6,"mat":11}
+,{"i":157,"name":"dwarvish roundshield","descr":"large round shield","cls":3,"color":6,"mat":11}
+,{"i":158,"name":"shield of reflection","descr":"polished silver shield","cls":3,"color":7,"mat":14}
+,{"i":159,"name":"leather gloves","descr":"old gloves","cls":3,"color":3,"mat":7}
+,{"i":160,"name":"gauntlets of fumbling","descr":"padded gloves","cls":3,"color":3,"mat":7}
+,{"i":161,"name":"gauntlets of power","descr":"riding gloves","cls":3,"color":3,"mat":11}
+,{"i":162,"name":"gauntlets of dexterity","descr":"fencing gloves","cls":3,"color":3,"mat":7}
+,{"i":163,"name":"low boots","descr":"walking shoes","cls":3,"color":3,"mat":7}
+,{"i":164,"name":"iron shoes","descr":"hard shoes","cls":3,"color":6,"mat":11}
+,{"i":165,"name":"high boots","descr":"jackboots","cls":3,"color":3,"mat":7}
+,{"i":166,"name":"speed boots","descr":"combat boots","cls":3,"color":3,"mat":7}
+,{"i":167,"name":"water walking boots","descr":"jungle boots","cls":3,"color":3,"mat":7}
+,{"i":168,"name":"jumping boots","descr":"hiking boots","cls":3,"color":3,"mat":7}
+,{"i":169,"name":"elven boots","descr":"mud boots","cls":3,"color":3,"mat":7}
+,{"i":170,"name":"kicking boots","descr":"buckled boots","cls":3,"color":3,"mat":11}
+,{"i":171,"name":"fumble boots","descr":"riding boots","cls":3,"color":3,"mat":7}
+,{"i":172,"name":"levitation boots","descr":"snow boots","cls":3,"color":3,"mat":7}
+,{"i":173,"name":"adornment","descr":"wooden","cls":4,"color":3,"mat":8}
+,{"i":174,"name":"gain strength","descr":"granite","cls":4,"color":7,"mat":21}
+,{"i":175,"name":"gain constitution","descr":"opal","cls":4,"color":7,"mat":21}
+,{"i":176,"name":"increase accuracy","descr":"clay","cls":4,"color":1,"mat":21}
+,{"i":177,"name":"increase damage","descr":"coral","cls":4,"color":9,"mat":21}
+,{"i":178,"name":"protection","descr":"black onyx","cls":4,"color":0,"mat":21}
+,{"i":179,"name":"regeneration","descr":"moonstone","cls":4,"color":7,"mat":21}
+,{"i":180,"name":"searching","descr":"tiger eye","cls":4,"color":3,"mat":20}
+,{"i":181,"name":"stealth","descr":"jade","cls":4,"color":2,"mat":20}
+,{"i":182,"name":"sustain ability","descr":"bronze","cls":4,"color":11,"mat":13}
+,{"i":183,"name":"levitation","descr":"agate","cls":4,"color":1,"mat":20}
+,{"i":184,"name":"hunger","descr":"topaz","cls":4,"color":6,"mat":20}
+,{"i":185,"name":"aggravate monster","descr":"sapphire","cls":4,"color":4,"mat":20}
+,{"i":186,"name":"conflict","descr":"ruby","cls":4,"color":1,"mat":20}
+,{"i":187,"name":"warning","descr":"diamond","cls":4,"color":15,"mat":20}
+,{"i":188,"name":"poison resistance","descr":"pearl","cls":4,"color":15,"mat":9}
+,{"i":189,"name":"fire resistance","descr":"iron","cls":4,"color":6,"mat":11}
+,{"i":190,"name":"cold resistance","descr":"brass","cls":4,"color":11,"mat":13}
+,{"i":191,"name":"shock resistance","descr":"copper","cls":4,"color":11,"mat":13}
+,{"i":192,"name":"free action","descr":"twisted","cls":4,"color":6,"mat":11}
+,{"i":193,"name":"slow digestion","descr":"steel","cls":4,"color":6,"mat":11}
+,{"i":194,"name":"teleportation","descr":"silver","cls":4,"color":7,"mat":14}
+,{"i":195,"name":"teleport control","descr":"gold","cls":4,"color":11,"mat":15}
+,{"i":196,"name":"polymorph","descr":"ivory","cls":4,"color":15,"mat":9}
+,{"i":197,"name":"polymorph control","descr":"emerald","cls":4,"color":10,"mat":20}
+,{"i":198,"name":"invisibility","descr":"wire","cls":4,"color":6,"mat":11}
+,{"i":199,"name":"see invisible","descr":"engagement","cls":4,"color":6,"mat":11}
+,{"i":200,"name":"protection from shape changers","descr":"shiny","cls":4,"color":14,"mat":11}
+,{"i":201,"name":"amulet of ESP","descr":"circular","cls":5,"color":6,"mat":11}
+,{"i":202,"name":"amulet of life saving","descr":"spherical","cls":5,"color":6,"mat":11}
+,{"i":203,"name":"amulet of strangulation","descr":"oval","cls":5,"color":6,"mat":11}
+,{"i":204,"name":"amulet of restful sleep","descr":"triangular","cls":5,"color":6,"mat":11}
+,{"i":205,"name":"amulet versus poison","descr":"pyramidal","cls":5,"color":6,"mat":11}
+,{"i":206,"name":"amulet of change","descr":"square","cls":5,"color":6,"mat":11}
+,{"i":207,"name":"amulet of unchanging","descr":"concave","cls":5,"color":6,"mat":11}
+,{"i":208,"name":"amulet of reflection","descr":"hexagonal","cls":5,"color":6,"mat":11}
+,{"i":209,"name":"amulet of magical breathing","descr":"octagonal","cls":5,"color":6,"mat":11}
+,{"i":210,"name":"amulet of guarding","descr":"perforated","cls":5,"color":6,"mat":11}
+,{"i":211,"name":"amulet of flying","descr":"cubical","cls":5,"color":6,"mat":11}
+,{"i":212,"name":"cheap plastic imitation of the Amulet of Yendor","descr":"Amulet of Yendor","cls":5,"color":6,"mat":18}
+,{"i":213,"name":"Amulet of Yendor","descr":"Amulet of Yendor","cls":5,"color":6,"mat":17}
+,{"i":214,"name":"large box","descr":"","cls":6,"color":3,"mat":8}
+,{"i":215,"name":"chest","descr":"","cls":6,"color":3,"mat":8}
+,{"i":216,"name":"ice box","descr":"","cls":6,"color":15,"mat":18}
+,{"i":217,"name":"sack","descr":"bag","cls":6,"color":3,"mat":6}
+,{"i":218,"name":"oilskin sack","descr":"bag","cls":6,"color":3,"mat":6}
+,{"i":219,"name":"bag of holding","descr":"bag","cls":6,"color":3,"mat":6}
+,{"i":220,"name":"bag of tricks","descr":"bag","cls":6,"color":3,"mat":6}
+,{"i":221,"name":"skeleton key","descr":"key","cls":6,"color":6,"mat":11}
+,{"i":222,"name":"lock pick","descr":"","cls":6,"color":6,"mat":11}
+,{"i":223,"name":"credit card","descr":"","cls":6,"color":15,"mat":18}
+,{"i":224,"name":"tallow candle","descr":"candle","cls":6,"color":15,"mat":2}
+,{"i":225,"name":"wax candle","descr":"candle","cls":6,"color":15,"mat":2}
+,{"i":226,"name":"brass lantern","descr":"","cls":6,"color":11,"mat":13}
+,{"i":227,"name":"oil lamp","descr":"lamp","cls":6,"color":11,"mat":13}
+,{"i":228,"name":"magic lamp","descr":"lamp","cls":6,"color":11,"mat":13}
+,{"i":229,"name":"expensive camera","descr":"","cls":6,"color":0,"mat":18}
+,{"i":230,"name":"mirror","descr":"looking glass","cls":6,"color":7,"mat":19}
+,{"i":231,"name":"crystal ball","descr":"glass orb","cls":6,"color":14,"mat":19}
+,{"i":232,"name":"lenses","descr":"","cls":6,"color":14,"mat":19}
+,{"i":233,"name":"blindfold","descr":"","cls":6,"color":0,"mat":6}
+,{"i":234,"name":"towel","descr":"","cls":6,"color":5,"mat":6}
+,{"i":235,"name":"saddle","descr":"","cls":6,"color":3,"mat":7}
+,{"i":236,"name":"leash","descr":"","cls":6,"color":3,"mat":7}
+,{"i":237,"name":"stethoscope","descr":"","cls":6,"color":6,"mat":11}
+,{"i":238,"name":"tinning kit","descr":"","cls":6,"color":6,"mat":11}
+,{"i":239,"name":"tin opener","descr":"","cls":6,"color":6,"mat":11}
+,{"i":240,"name":"can of grease","descr":"","cls":6,"color":6,"mat":11}
+,{"i":241,"name":"figurine","descr":"","cls":6,"color":7,"mat":21}
+,{"i":242,"name":"magic marker","descr":"","cls":6,"color":1,"mat":18}
+,{"i":243,"name":"land mine","descr":"","cls":6,"color":1,"mat":11}
+,{"i":244,"name":"beartrap","descr":"","cls":6,"color":6,"mat":11}
+,{"i":245,"name":"tin whistle","descr":"whistle","cls":6,"color":6,"mat":12}
+,{"i":246,"name":"magic whistle","descr":"whistle","cls":6,"color":6,"mat":12}
+,{"i":247,"name":"wooden flute","descr":"flute","cls":6,"color":3,"mat":8}
+,{"i":248,"name":"magic flute","descr":"flute","cls":6,"color":3,"mat":8}
+,{"i":249,"name":"tooled horn","descr":"horn","cls":6,"color":15,"mat":9}
+,{"i":250,"name":"frost horn","descr":"horn","cls":6,"color":15,"mat":9}
+,{"i":251,"name":"fire horn","descr":"horn","cls":6,"color":15,"mat":9}
+,{"i":252,"name":"horn of plenty","descr":"horn","cls":6,"color":15,"mat":9}
+,{"i":253,"name":"wooden harp","descr":"harp","cls":6,"color":3,"mat":8}
+,{"i":254,"name":"magic harp","descr":"harp","cls":6,"color":3,"mat":8}
+,{"i":255,"name":"bell","descr":"","cls":6,"color":11,"mat":13}
+,{"i":256,"name":"bugle","descr":"","cls":6,"color":11,"mat":13}
+,{"i":257,"name":"leather drum","descr":"drum","cls":6,"color":3,"mat":7}
+,{"i":258,"name":"drum of earthquake","descr":"drum","cls":6,"color":3,"mat":7}
+,{"i":259,"name":"pick-axe","descr":"","cls":6,"color":6,"mat":11}
+,{"i":260,"name":"grappling hook","descr":"","cls":6,"color":6,"mat":11}
+,{"i":261,"name":"unicorn horn","descr":"","cls":6,"color":15,"mat":9}
+,{"i":262,"name":"Candelabrum of Invocation","descr":"candelabrum","cls":6,"color":11,"mat":15}
+,{"i":263,"name":"Bell of Opening","descr":"silver bell","cls":6,"color":7,"mat":14}
+,{"i":264,"name":"tripe ration","descr":"","cls":7,"color":3,"mat":4}
+,{"i":265,"name":"corpse","descr":"","cls":7,"color":3,"mat":4}
+,{"i":266,"name":"egg","descr":"","cls":7,"color":15,"mat":4}
+,{"i":267,"name":"meatball","descr":"","cls":7,"color":3,"mat":4}
+,{"i":268,"name":"meat stick","descr":"","cls":7,"color":3,"mat":4}
+,{"i":269,"name":"enormous meatball","descr":"","cls":7,"color":3,"mat":4}
+,{"i":270,"name":"meat ring","descr":"","cls":7,"color":3,"mat":4}
+,{"i":271,"name":"glob of gray ooze","descr":"","cls":7,"color":7,"mat":4}
+,{"i":272,"name":"glob of brown pudding","descr":"","cls":7,"color":3,"mat":4}
+,{"i":273,"name":"glob of green slime","descr":"","cls":7,"color":2,"mat":4}
+,{"i":274,"name":"glob of black pudding","descr":"","cls":7,"color":0,"mat":4}
+,{"i":275,"name":"kelp frond","descr":"","cls":7,"color":2,"mat":3}
+,{"i":276,"name":"eucalyptus leaf","descr":"","cls":7,"color":2,"mat":3}
+,{"i":277,"name":"apple","descr":"","cls":7,"color":1,"mat":3}
+,{"i":278,"name":"orange","descr":"","cls":7,"color":9,"mat":3}
+,{"i":279,"name":"pear","descr":"","cls":7,"color":10,"mat":3}
+,{"i":280,"name":"melon","descr":"","cls":7,"color":10,"mat":3}
+,{"i":281,"name":"banana","descr":"","cls":7,"color":11,"mat":3}
+,{"i":282,"name":"carrot","descr":"","cls":7,"color":9,"mat":3}
+,{"i":283,"name":"sprig of wolfsbane","descr":"","cls":7,"color":2,"mat":3}
+,{"i":284,"name":"clove of garlic","descr":"","cls":7,"color":15,"mat":3}
+,{"i":285,"name":"slime mold","descr":"","cls":7,"color":3,"mat":3}
+,{"i":286,"name":"lump of royal jelly","descr":"","cls":7,"color":11,"mat":3}
+,{"i":287,"name":"cream pie","descr":"","cls":7,"color":15,"mat":3}
+,{"i":288,"name":"candy bar","descr":"","cls":7,"color":12,"mat":3}
+,{"i":289,"name":"fortune cookie","descr":"","cls":7,"color":11,"mat":3}
+,{"i":290,"name":"pancake","descr":"","cls":7,"color":11,"mat":3}
+,{"i":291,"name":"lembas wafer","descr":"","cls":7,"color":15,"mat":3}
+,{"i":292,"name":"cram ration","descr":"","cls":7,"color":3,"mat":3}
+,{"i":293,"name":"food ration","descr":"","cls":7,"color":3,"mat":3}
+,{"i":294,"name":"K-ration","descr":"","cls":7,"color":3,"mat":3}
+,{"i":295,"name":"C-ration","descr":"","cls":7,"color":3,"mat":3}
+,{"i":296,"name":"tin","descr":"","cls":7,"color":6,"mat":12}
+,{"i":297,"name":"gain ability","descr":"ruby","cls":8,"color":1,"mat":19}
+,{"i":298,"name":"restore ability","descr":"pink","cls":8,"color":13,"mat":19}
+,{"i":299,"name":"confusion","descr":"orange","cls":8,"color":9,"mat":19}
+,{"i":300,"name":"blindness","descr":"yellow","cls":8,"color":11,"mat":19}
+,{"i":301,"name":"paralysis","descr":"emerald","cls":8,"color":10,"mat":19}
+,{"i":302,"name":"speed","descr":"dark green","cls":8,"color":2,"mat":19}
+,{"i":303,"name":"levitation","descr":"cyan","cls":8,"color":6,"mat":19}
+,{"i":304,"name":"hallucination","descr":"sky blue","cls":8,"color":6,"mat":19}
+,{"i":305,"name":"invisibility","descr":"brilliant blue","cls":8,"color":12,"mat":19}
+,{"i":306,"name":"see invisible","descr":"magenta","cls":8,"color":5,"mat":19}
+,{"i":307,"name":"healing","descr":"purple-red","cls":8,"color":5,"mat":19}
+,{"i":308,"name":"extra healing","descr":"puce","cls":8,"color":1,"mat":19}
+,{"i":309,"name":"gain level","descr":"milky","cls":8,"color":15,"mat":19}
+,{"i":310,"name":"enlightenment","descr":"swirly","cls":8,"color":3,"mat":19}
+,{"i":311,"name":"monster detection","descr":"bubbly","cls":8,"color":15,"mat":19}
+,{"i":312,"name":"object detection","descr":"smoky","cls":8,"color":7,"mat":19}
+,{"i":313,"name":"gain energy","descr":"cloudy","cls":8,"color":15,"mat":19}
+,{"i":314,"name":"sleeping","descr":"effervescent","cls":8,"color":7,"mat":19}
+,{"i":315,"name":"full healing","descr":"black","cls":8,"color":0,"mat":19}
+,{"i":316,"name":"polymorph","descr":"golden","cls":8,"color":11,"mat":19}
+,{"i":317,"name":"booze","descr":"brown","cls":8,"color":3,"mat":19}
+,{"i":318,"name":"sickness","descr":"fizzy","cls":8,"color":6,"mat":19}
+,{"i":319,"name":"fruit juice","descr":"dark","cls":8,"color":0,"mat":19}
+,{"i":320,"name":"acid","descr":"white","cls":8,"color":15,"mat":19}
+,{"i":321,"name":"oil","descr":"murky","cls":8,"color":3,"mat":19}
+,{"i":322,"name":"water","descr":"clear","cls":8,"color":6,"mat":19}
+,{"i":323,"name":"enchant armor","descr":"ZELGO MER","cls":9,"color":15,"mat":5}
+,{"i":324,"name":"destroy armor","descr":"JUYED AWK YACC","cls":9,"color":15,"mat":5}
+,{"i":325,"name":"confuse monster","descr":"NR 9","cls":9,"color":15,"mat":5}
+,{"i":326,"name":"scare monster","descr":"XIXAXA XOXAXA XUXAXA","cls":9,"color":15,"mat":5}
+,{"i":327,"name":"remove curse","descr":"PRATYAVAYAH","cls":9,"color":15,"mat":5}
+,{"i":328,"name":"enchant weapon","descr":"DAIYEN FOOELS","cls":9,"color":15,"mat":5}
+,{"i":329,"name":"create monster","descr":"LEP GEX VEN ZEA","cls":9,"color":15,"mat":5}
+,{"i":330,"name":"taming","descr":"PRIRUTSENIE","cls":9,"color":15,"mat":5}
+,{"i":331,"name":"genocide","descr":"ELBIB YLOH","cls":9,"color":15,"mat":5}
+,{"i":332,"name":"light","descr":"VERR YED HORRE","cls":9,"color":15,"mat":5}
+,{"i":333,"name":"teleportation","descr":"VENZAR BORGAVVE","cls":9,"color":15,"mat":5}
+,{"i":334,"name":"gold detection","descr":"THARR","cls":9,"color":15,"mat":5}
+,{"i":335,"name":"food detection","descr":"YUM YUM","cls":9,"color":15,"mat":5}
+,{"i":336,"name":"identify","descr":"KERNOD WEL","cls":9,"color":15,"mat":5}
+,{"i":337,"name":"magic mapping","descr":"ELAM EBOW","cls":9,"color":15,"mat":5}
+,{"i":338,"name":"amnesia","descr":"DUAM XNAHT","cls":9,"color":15,"mat":5}
+,{"i":339,"name":"fire","descr":"ANDOVA BEGARIN","cls":9,"color":15,"mat":5}
+,{"i":340,"name":"earth","descr":"KIRJE","cls":9,"color":15,"mat":5}
+,{"i":341,"name":"punishment","descr":"VE FORBRYDERNE","cls":9,"color":15,"mat":5}
+,{"i":342,"name":"charging","descr":"HACKEM MUCHE","cls":9,"color":15,"mat":5}
+,{"i":343,"name":"stinking cloud","descr":"VELOX NEB","cls":9,"color":15,"mat":5}
+,{"i":344,"name":"","descr":"FOOBIE BLETCH","cls":9,"color":15,"mat":5}
+,{"i":345,"name":"","descr":"TEMOV","cls":9,"color":15,"mat":5}
+,{"i":346,"name":"","descr":"GARVEN DEH","cls":9,"color":15,"mat":5}
+,{"i":347,"name":"","descr":"READ ME","cls":9,"color":15,"mat":5}
+,{"i":348,"name":"","descr":"ETAOIN SHRDLU","cls":9,"color":15,"mat":5}
+,{"i":349,"name":"","descr":"LOREM IPSUM","cls":9,"color":15,"mat":5}
+,{"i":350,"name":"","descr":"FNORD","cls":9,"color":15,"mat":5}
+,{"i":351,"name":"","descr":"KO BATE","cls":9,"color":15,"mat":5}
+,{"i":352,"name":"","descr":"ABRA KA DABRA","cls":9,"color":15,"mat":5}
+,{"i":353,"name":"","descr":"ASHPD SODALG","cls":9,"color":15,"mat":5}
+,{"i":354,"name":"","descr":"ZLORFIK","cls":9,"color":15,"mat":5}
+,{"i":355,"name":"","descr":"GNIK SISI VLE","cls":9,"color":15,"mat":5}
+,{"i":356,"name":"","descr":"HAPAX LEGOMENON","cls":9,"color":15,"mat":5}
+,{"i":357,"name":"","descr":"EIRIS SAZUN IDISI","cls":9,"color":15,"mat":5}
+,{"i":358,"name":"","descr":"PHOL ENDE WODAN","cls":9,"color":15,"mat":5}
+,{"i":359,"name":"","descr":"GHOTI","cls":9,"color":15,"mat":5}
+,{"i":360,"name":"","descr":"MAPIRO MAHAMA DIROMAT","cls":9,"color":15,"mat":5}
+,{"i":361,"name":"","descr":"VAS CORP BET MANI","cls":9,"color":15,"mat":5}
+,{"i":362,"name":"","descr":"XOR OTA","cls":9,"color":15,"mat":5}
+,{"i":363,"name":"","descr":"STRC PRST SKRZ KRK","cls":9,"color":15,"mat":5}
+,{"i":364,"name":"mail","descr":"stamped","cls":9,"color":15,"mat":5}
+,{"i":365,"name":"blank paper","descr":"unlabeled","cls":9,"color":15,"mat":5}
+,{"i":366,"name":"dig","descr":"parchment","cls":10,"color":3,"mat":7}
+,{"i":367,"name":"magic missile","descr":"vellum","cls":10,"color":3,"mat":7}
+,{"i":368,"name":"fireball","descr":"ragged","cls":10,"color":15,"mat":5}
+,{"i":369,"name":"cone of cold","descr":"dog eared","cls":10,"color":15,"mat":5}
+,{"i":370,"name":"sleep","descr":"mottled","cls":10,"color":15,"mat":5}
+,{"i":371,"name":"finger of death","descr":"stained","cls":10,"color":15,"mat":5}
+,{"i":372,"name":"light","descr":"cloth","cls":10,"color":3,"mat":5}
+,{"i":373,"name":"detect monsters","descr":"leathery","cls":10,"color":3,"mat":5}
+,{"i":374,"name":"healing","descr":"white","cls":10,"color":15,"mat":5}
+,{"i":375,"name":"knock","descr":"pink","cls":10,"color":13,"mat":5}
+,{"i":376,"name":"force bolt","descr":"red","cls":10,"color":1,"mat":5}
+,{"i":377,"name":"confuse monster","descr":"orange","cls":10,"color":9,"mat":5}
+,{"i":378,"name":"cure blindness","descr":"yellow","cls":10,"color":11,"mat":5}
+,{"i":379,"name":"drain life","descr":"velvet","cls":10,"color":5,"mat":5}
+,{"i":380,"name":"slow monster","descr":"light green","cls":10,"color":10,"mat":5}
+,{"i":381,"name":"wizard lock","descr":"dark green","cls":10,"color":2,"mat":5}
+,{"i":382,"name":"create monster","descr":"turquoise","cls":10,"color":14,"mat":5}
+,{"i":383,"name":"detect food","descr":"cyan","cls":10,"color":6,"mat":5}
+,{"i":384,"name":"cause fear","descr":"light blue","cls":10,"color":12,"mat":5}
+,{"i":385,"name":"clairvoyance","descr":"dark blue","cls":10,"color":4,"mat":5}
+,{"i":386,"name":"cure sickness","descr":"indigo","cls":10,"color":4,"mat":5}
+,{"i":387,"name":"charm monster","descr":"magenta","cls":10,"color":5,"mat":5}
+,{"i":388,"name":"haste self","descr":"purple","cls":10,"color":5,"mat":5}
+,{"i":389,"name":"detect unseen","descr":"violet","cls":10,"color":5,"mat":5}
+,{"i":390,"name":"levitation","descr":"tan","cls":10,"color":3,"mat":5}
+,{"i":391,"name":"extra healing","descr":"plaid","cls":10,"color":2,"mat":5}
+,{"i":392,"name":"restore ability","descr":"light brown","cls":10,"color":3,"mat":5}
+,{"i":393,"name":"invisibility","descr":"dark brown","cls":10,"color":3,"mat":5}
+,{"i":394,"name":"detect treasure","descr":"gray","cls":10,"color":7,"mat":5}
+,{"i":395,"name":"remove curse","descr":"wrinkled","cls":10,"color":15,"mat":5}
+,{"i":396,"name":"magic mapping","descr":"dusty","cls":10,"color":15,"mat":5}
+,{"i":397,"name":"identify","descr":"bronze","cls":10,"color":11,"mat":5}
+,{"i":398,"name":"turn undead","descr":"copper","cls":10,"color":11,"mat":5}
+,{"i":399,"name":"polymorph","descr":"silver","cls":10,"color":7,"mat":5}
+,{"i":400,"name":"teleport away","descr":"gold","cls":10,"color":11,"mat":5}
+,{"i":401,"name":"create familiar","descr":"glittering","cls":10,"color":15,"mat":5}
+,{"i":402,"name":"cancellation","descr":"shining","cls":10,"color":15,"mat":5}
+,{"i":403,"name":"protection","descr":"dull","cls":10,"color":15,"mat":5}
+,{"i":404,"name":"jumping","descr":"thin","cls":10,"color":15,"mat":5}
+,{"i":405,"name":"stone to flesh","descr":"thick","cls":10,"color":15,"mat":5}
+,{"i":406,"name":"chain lightning","descr":"checkered","cls":10,"color":7,"mat":5}
+,{"i":407,"name":"blank paper","descr":"plain","cls":10,"color":15,"mat":5}
+,{"i":408,"name":"novel","descr":"paperback","cls":10,"color":12,"mat":5}
+,{"i":409,"name":"Book of the Dead","descr":"papyrus","cls":10,"color":15,"mat":5}
+,{"i":410,"name":"light","descr":"glass","cls":11,"color":14,"mat":19}
+,{"i":411,"name":"secret door detection","descr":"balsa","cls":11,"color":3,"mat":8}
+,{"i":412,"name":"enlightenment","descr":"crystal","cls":11,"color":14,"mat":19}
+,{"i":413,"name":"create monster","descr":"maple","cls":11,"color":3,"mat":8}
+,{"i":414,"name":"wishing","descr":"pine","cls":11,"color":3,"mat":8}
+,{"i":415,"name":"stasis","descr":"redwood","cls":11,"color":1,"mat":8}
+,{"i":416,"name":"nothing","descr":"oak","cls":11,"color":3,"mat":8}
+,{"i":417,"name":"striking","descr":"ebony","cls":11,"color":3,"mat":8}
+,{"i":418,"name":"make invisible","descr":"marble","cls":11,"color":7,"mat":21}
+,{"i":419,"name":"slow monster","descr":"tin","cls":11,"color":6,"mat":12}
+,{"i":420,"name":"speed monster","descr":"brass","cls":11,"color":11,"mat":13}
+,{"i":421,"name":"undead turning","descr":"copper","cls":11,"color":11,"mat":13}
+,{"i":422,"name":"polymorph","descr":"silver","cls":11,"color":7,"mat":14}
+,{"i":423,"name":"cancellation","descr":"platinum","cls":11,"color":15,"mat":16}
+,{"i":424,"name":"teleportation","descr":"iridium","cls":11,"color":14,"mat":12}
+,{"i":425,"name":"opening","descr":"zinc","cls":11,"color":6,"mat":12}
+,{"i":426,"name":"locking","descr":"aluminum","cls":11,"color":6,"mat":12}
+,{"i":427,"name":"probing","descr":"uranium","cls":11,"color":6,"mat":12}
+,{"i":428,"name":"digging","descr":"iron","cls":11,"color":6,"mat":11}
+,{"i":429,"name":"magic missile","descr":"steel","cls":11,"color":6,"mat":11}
+,{"i":430,"name":"fire","descr":"hexagonal","cls":11,"color":6,"mat":11}
+,{"i":431,"name":"cold","descr":"short","cls":11,"color":6,"mat":11}
+,{"i":432,"name":"sleep","descr":"runed","cls":11,"color":6,"mat":11}
+,{"i":433,"name":"death","descr":"long","cls":11,"color":6,"mat":11}
+,{"i":434,"name":"lightning","descr":"curved","cls":11,"color":6,"mat":11}
+,{"i":435,"name":"","descr":"forked","cls":11,"color":3,"mat":8}
+,{"i":436,"name":"","descr":"spiked","cls":11,"color":6,"mat":11}
+,{"i":437,"name":"","descr":"jeweled","cls":11,"color":7,"mat":11}
+,{"i":438,"name":"gold piece","descr":"","cls":12,"color":11,"mat":15}
+,{"i":439,"name":"dilithium crystal","descr":"white","cls":13,"color":15,"mat":20}
+,{"i":440,"name":"diamond","descr":"white","cls":13,"color":15,"mat":20}
+,{"i":441,"name":"ruby","descr":"red","cls":13,"color":1,"mat":20}
+,{"i":442,"name":"jacinth","descr":"orange","cls":13,"color":9,"mat":20}
+,{"i":443,"name":"sapphire","descr":"blue","cls":13,"color":4,"mat":20}
+,{"i":444,"name":"black opal","descr":"black","cls":13,"color":0,"mat":20}
+,{"i":445,"name":"emerald","descr":"green","cls":13,"color":2,"mat":20}
+,{"i":446,"name":"turquoise","descr":"green","cls":13,"color":2,"mat":20}
+,{"i":447,"name":"citrine","descr":"yellow","cls":13,"color":11,"mat":20}
+,{"i":448,"name":"aquamarine","descr":"green","cls":13,"color":2,"mat":20}
+,{"i":449,"name":"amber","descr":"yellowish brown","cls":13,"color":3,"mat":20}
+,{"i":450,"name":"topaz","descr":"yellowish brown","cls":13,"color":3,"mat":20}
+,{"i":451,"name":"jet","descr":"black","cls":13,"color":0,"mat":20}
+,{"i":452,"name":"opal","descr":"white","cls":13,"color":15,"mat":20}
+,{"i":453,"name":"chrysoberyl","descr":"yellow","cls":13,"color":11,"mat":20}
+,{"i":454,"name":"garnet","descr":"red","cls":13,"color":1,"mat":20}
+,{"i":455,"name":"amethyst","descr":"violet","cls":13,"color":5,"mat":20}
+,{"i":456,"name":"jasper","descr":"red","cls":13,"color":1,"mat":20}
+,{"i":457,"name":"fluorite","descr":"violet","cls":13,"color":5,"mat":20}
+,{"i":458,"name":"obsidian","descr":"black","cls":13,"color":0,"mat":20}
+,{"i":459,"name":"agate","descr":"orange","cls":13,"color":9,"mat":20}
+,{"i":460,"name":"jade","descr":"green","cls":13,"color":2,"mat":20}
+,{"i":461,"name":"worthless piece of white glass","descr":"white","cls":13,"color":15,"mat":19}
+,{"i":462,"name":"worthless piece of blue glass","descr":"blue","cls":13,"color":4,"mat":19}
+,{"i":463,"name":"worthless piece of red glass","descr":"red","cls":13,"color":1,"mat":19}
+,{"i":464,"name":"worthless piece of yellowish brown glass","descr":"yellowish brown","cls":13,"color":3,"mat":19}
+,{"i":465,"name":"worthless piece of orange glass","descr":"orange","cls":13,"color":9,"mat":19}
+,{"i":466,"name":"worthless piece of yellow glass","descr":"yellow","cls":13,"color":11,"mat":19}
+,{"i":467,"name":"worthless piece of black glass","descr":"black","cls":13,"color":0,"mat":19}
+,{"i":468,"name":"worthless piece of green glass","descr":"green","cls":13,"color":2,"mat":19}
+,{"i":469,"name":"worthless piece of violet glass","descr":"violet","cls":13,"color":5,"mat":19}
+,{"i":470,"name":"luckstone","descr":"gray","cls":13,"color":7,"mat":21}
+,{"i":471,"name":"loadstone","descr":"gray","cls":13,"color":7,"mat":21}
+,{"i":472,"name":"touchstone","descr":"gray","cls":13,"color":7,"mat":21}
+,{"i":473,"name":"flint","descr":"gray","cls":13,"color":7,"mat":21}
+,{"i":474,"name":"rock","descr":"","cls":13,"color":7,"mat":21}
+,{"i":475,"name":"boulder","descr":"","cls":14,"color":7,"mat":21}
+,{"i":476,"name":"statue","descr":"","cls":14,"color":15,"mat":21}
+,{"i":477,"name":"heavy iron ball","descr":"","cls":15,"color":6,"mat":11}
+,{"i":478,"name":"iron chain","descr":"","cls":16,"color":6,"mat":11}
+,{"i":479,"name":"splash of blinding venom","descr":"splash of venom","cls":17,"color":3,"mat":1}
+,{"i":480,"name":"splash of acid venom","descr":"splash of venom","cls":17,"color":3,"mat":1}
+]

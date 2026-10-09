@@ -1,0 +1,8 @@
+{
+  "name": "nethack-gauntlet-tests",
+  "private": true,
+  "type": "module",
+  "devDependencies": {
+    "playwright-core": "1.56.1"
+  }
+}

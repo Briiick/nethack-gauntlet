@@ -1,0 +1,91 @@
+// Boot: load assets and the engine, show the start screen, then hand control to NetHack.
+import { loadEngine, runGame, listSaves, deleteSave } from './engine.js';
+import { Game } from './game.js';
+import { Renderer } from './render.js';
+import { UI } from './ui.js';
+
+const DEFAULTS = { zoom: 'auto', animSpeed: 'smooth', shake: 'subtle', fastMissiles: false, reduceMotion: false };
+function loadSettings() {
+  let s = {};
+  try { s = JSON.parse(localStorage.getItem('nhg-settings') || '{}'); } catch (e) { /* private mode */ }
+  const out = { ...DEFAULTS, ...s };
+  if (matchMedia('(prefers-reduced-motion: reduce)').matches) { out.reduceMotion = true; out.shake = 'off'; }
+  return out;
+}
+const settings = loadSettings();
+const saveSettings = () => { try { localStorage.setItem('nhg-settings', JSON.stringify(settings)); } catch (e) { /* ignore */ } };
+
+const NAMES = ['Brunhilde', 'Sigrid', 'Astrid', 'Freydis', 'Gudrun', 'Ingrid', 'Thyra', 'Ragna', 'Hervor', 'Eir'];
+
+async function boot() {
+  const img = (src) => new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = rej; i.src = src; });
+  const [tiles, atlas, actors, items] = await Promise.all([
+    fetch('assets/tiles.json').then((r) => r.json()),
+    new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = rej; i.src = 'assets/atlas.png'; }),
+    fetch('assets/actors/manifest.json').then((r) => (r.ok ? r.json() : {})).catch(() => ({})),
+    Promise.all([fetch('assets/items/items.json').then((r) => r.json()), img('assets/items/items18.png')])
+      .then(([meta, img18]) => ({ ...meta, img18 })).catch(() => null),
+  ]);
+  [32, 48].forEach((n) => img(`assets/items/items${n}.png`).catch(() => {}));   // warm the cache for the inventory
+  const renderer = new Renderer(document.getElementById('view'), tiles, atlas, actors, settings, items);
+  const ui = new UI({ tiles, atlas, renderer, settings, saveSettings });
+  ui.startPortraitLoop();
+  const game = new Game({ ui, renderer, tiles });
+  ui.game = game;
+  const mod = await loadEngine(game);
+  renderer.objDescr = (o) => mod._nhg_obj_descr(o);
+  window.__nhg = { game, renderer, ui, mod };   // handy for debugging in the console
+
+  const nameInput = document.getElementById('start-name');
+  let last = '';
+  try { last = localStorage.getItem('nhg-last-name') || ''; } catch (e) { /* ignore */ }
+  nameInput.value = last || NAMES[Math.floor(Math.random() * NAMES.length)];
+
+  const saves = listSaves(mod).map((f) => ({ file: f, name: f.replace(/^\d+/, '') }));
+  const savesEl = document.getElementById('saves');
+  if (saves.length) {
+    savesEl.innerHTML = '<h2>Continue</h2>' + saves.map((s) => `<div class="save"><button type="button" class="resume" data-name="${s.name}">${s.name}</button><button type="button" class="del" data-file="${s.file}" aria-label="Delete the save for ${s.name}">Delete</button></div>`).join('');
+    savesEl.addEventListener('click', async (e) => {
+      const r = e.target.closest('.resume'), d = e.target.closest('.del');
+      if (r) { nameInput.value = r.dataset.name; start(); }
+      if (d) {
+        if (d.dataset.confirm) { await deleteSave(mod, d.dataset.file); d.closest('.save').remove(); }
+        else { d.dataset.confirm = '1'; d.textContent = 'Really delete?'; }
+      }
+    });
+  }
+
+  const go = document.getElementById('start-go');
+  go.disabled = false; go.textContent = 'Enter the dungeon';
+  const form = document.getElementById('start-form');
+  form.addEventListener('submit', (e) => { e.preventDefault(); start(); });
+  setTimeout(() => nameInput.focus(), 50);
+
+  function start() {
+    const name = nameInput.value.trim().replace(/[^A-Za-z0-9 _-]/g, '').slice(0, 30) || 'Adventurer';
+    try { localStorage.setItem('nhg-last-name', name); } catch (e) { /* ignore */ }
+    const role = document.getElementById('start-role').value;
+    const pickup = document.getElementById('start-pickup').value;
+    const opts = [`name:${name}`, 'number_pad:0', 'time', 'showexp', 'color', 'hilite_pet', 'lit_corridor', 'dark_room', '!rest_on_space', 'pile_limit:3'];
+    if (role !== 'ask') {
+      opts.push(`role:${role}`);
+      if (role === 'Valkyrie') opts.push('gender:female', 'race:human', 'align:lawful');
+      else opts.push('race:random', 'gender:random', 'align:random');
+    }
+    if (pickup) opts.push('autopickup', `pickup_types:${pickup}`); else opts.push('!autopickup');
+    if (!document.getElementById('start-tutorial').checked) opts.push('!tutorial');
+    if (location.hash === '#wizard') {   // developer mode: NetHack's debug ("wizard") mode
+      opts.push('playmode:debug');
+      const sc = new TextDecoder().decode(mod.FS.readFile('/sysconf')).replace(/^WIZARDS=.*$/m, 'WIZARDS=*');
+      mod.FS.writeFile('/sysconf', sc);
+    }
+    document.getElementById('start').hidden = true;
+    runGame(mod, `OPTIONS=${opts.join(',')}\n`);
+  }
+}
+
+boot().catch((err) => {
+  console.error(err);
+  const go = document.getElementById('start-go');
+  go.textContent = 'Could not load NetHack. Is the page served over http? (see README)';
+});

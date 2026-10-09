@@ -1,0 +1,79 @@
+diff --git a/sys/libnh/libnhmain.c b/sys/libnh/libnhmain.c
+index f974bc4..24db435 100644
+--- a/sys/libnh/libnhmain.c
++++ b/sys/libnh/libnhmain.c
+@@ -769,6 +769,7 @@ sys_random_seed(void)
+     return seed;
+ }
+ 
++#if 0 /* superseded by earlyarg.c in 5.0 (duplicate symbol) */
+ /* for command-line options that perform some immediate action and then
+    terminate the program without starting play, like 'nethack --version'
+    or 'nethack -s Zelda'; do some cleanup before that termination */
+@@ -795,6 +796,35 @@ after_opt_showpaths(const char *dir)
+     /*NOTREACHED*/
+ }
+ 
++#endif
++
++/* NetHack 5.0 calls these from allmain.c / save.c; the libnh port lacked them */
++void
++get_nhuuid(void)
++{
++    /* no platform UUID source in the browser build */
++}
++
++void
++free_nhuuid(void)
++{
++    int i;
++
++    for (i = 0; i < SIZE(svn.nhuuid); i++)
++        svn.nhuuid[i] = 0;
++}
++
++#ifdef __EMSCRIPTEN__
++/* NetHack Gauntlet: which appearance an object type has in this game
++   (appearances of potions, scrolls, wands... are shuffled per game) */
++EMSCRIPTEN_KEEPALIVE int nhg_obj_descr(int otyp);
++int
++nhg_obj_descr(int otyp)
++{
++    return (otyp >= 0 && otyp < NUM_OBJECTS) ? objects[otyp].oc_descr_idx : otyp;
++}
++#endif
++
+ #ifdef __EMSCRIPTEN__
+ /***
+  * Helpers
+diff --git a/sys/unix/hints/include/cross-pre2.500 b/sys/unix/hints/include/cross-pre2.500
+index ddc3ba7..92ccafb 100644
+--- a/sys/unix/hints/include/cross-pre2.500
++++ b/sys/unix/hints/include/cross-pre2.500
+@@ -275,14 +275,14 @@ EMCC_LFLAGS =
+ #EMCC_LFLAGS += -s SINGLE_FILE=1
+ EMCC_LFLAGS += -DHACKDIR=\"$(HACKDIR)\"
+ EMCC_LFLAGS += -s WASM=1
+-EMCC_LFLAGS += -s ALLOW_TABLE_GROWTH
++EMCC_LFLAGS += -s ALLOW_TABLE_GROWTH -s ALLOW_MEMORY_GROWTH=1 -s INVOKE_RUN=0 -s STACK_SIZE=1048576 -s ASYNCIFY_STACK_SIZE=262144
+ EMCC_LFLAGS += -s ASYNCIFY -s ASYNCIFY_IMPORTS='["local_callback"]'
+ EMCC_LFLAGS += -O3
+ EMCC_LFLAGS += -s MODULARIZE
+-EMCC_LFLAGS += -s EXPORTED_FUNCTIONS='["_main", "_shim_graphics_set_callback", "_repopulate_perminvent", "_malloc"]'
++EMCC_LFLAGS += -s EXPORTED_FUNCTIONS='["_main", "_shim_graphics_set_callback", "_repopulate_perminvent", "_malloc", "_free", "_nhg_obj_descr"]'
+ EMCC_LFLAGS += -s EXPORTED_RUNTIME_METHODS='["cwrap", "ccall", "addFunction", \
+ 			"removeFunction", "UTF8ToString", "stringToUTF8", "getValue", \
+-			"setValue", "ENV", "FS", "IDBFS"]'
++			"setValue", "ENV", "FS", "IDBFS", "callMain", "HEAPU8", "HEAP16", "HEAP32"]'
+ EMCC_LFLAGS += -s ERROR_ON_UNDEFINED_SYMBOLS=0
+ EMCC_LFLAGS += -s EXPORT_ES6=1
+ EMCC_LFLAGS += -lidbfs.js
+@@ -295,7 +295,7 @@ EMCC_LFLAGS += --embed-file $(WASM_DATA_DIR)@/
+ # WASM C flags
+ EMCC_CFLAGS =
+ EMCC_CFLAGS += -Wall
+-EMCC_CFLAGS += -Werror
++EMCC_CFLAGS += -Wno-error
+ EMCC_CFLAGS += -DNO_SIGNAL
+ #EMCC_CFLAGS += -s DISABLE_EXCEPTION_CATCHING=0
+ EMCC_DEBUG_LFLAGS += -s ASSERTIONS=1

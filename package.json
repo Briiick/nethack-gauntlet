@@ -1,0 +1,14 @@
+{
+  "name": "nethack-gauntlet",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Play NetHack 5.0 locally with a Gauntlet-style animated pixel-art interface.",
+  "type": "module",
+  "scripts": {
+    "start": "node server.mjs",
+    "build:engine": "bash engine/build-engine.sh",
+    "build:art": "bash tools/build-art.sh",
+    "test": "node test/smoke.mjs"
+  },
+  "license": "NGPL"
+}
