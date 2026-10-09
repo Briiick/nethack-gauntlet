@@ -233,6 +233,7 @@ const over = await state();
 if (over.over || over.gameover) {
   await wait(800); await shot('gameover');
   report.outcome = 'died: ' + (await page.evaluate(() => document.querySelector('#gameover')?.innerText || '')).replace(/\s+/g, ' ').slice(0, 200);
+  report.endText = await page.evaluate(() => window.__nhg.game.recentText?.slice(-40));
 } else {
   report.outcome = 'alive';
   await shot('end');

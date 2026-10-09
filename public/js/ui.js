@@ -2,6 +2,7 @@
 import { BL, CONDITIONS, badConditions } from './game.js';
 import { isInventoryMenu, inventoryMenu } from './inventory.js';
 import { openSettings } from './settings.js';
+import { spriteBounds } from './render.js';
 
 const ESC = 27;
 const $ = (sel) => document.querySelector(sel);
@@ -144,25 +145,37 @@ export class UI {
     $('#chips').innerHTML = chips.map(([t, k]) => `<span class="chip ${k}">${esc(t)}</span>`).join('');
     const ld = v(BL.LEVELDESC);
     $('#level').textContent = ld.replace(/^Dlvl:(\d+)/, 'Level $1');
-    $('#branch').textContent = /Home|Gehennom|Sokoban|Mines|Quest|Ludios|Plane|Astral|Vlad|Wizard/.test(ld) ? '' : 'Dungeons of Doom';
+    this.levelDesc = ld;
+    this.updateBranch();
     $('#plate').classList.toggle('low', hp <= hpmax / 4);
     this.drawPortrait();
   }
 
-  startPortraitLoop() { setInterval(() => this.drawPortrait(), 400); }
+  startPortraitLoop() { setInterval(() => { this.drawPortrait(); this.updateBranch(); }, 400); }
+  // NetHack's status only says "Dlvl:4"; the level's wall style tells us which branch we are in
+  updateBranch() {
+    const ld = this.levelDesc || '';
+    const named = /Home|Gehennom|Sokoban|Mines|Quest|Ludios|Plane|Astral|Vlad|Wizard|Tutorial/.test(ld);
+    const branch = { mines: 'Gnomish Mines', sokoban: 'Sokoban', gehennom: 'Gehennom', knox: 'Fort Ludios' }[this.renderer.levelTheme] || 'Dungeons of Doom';
+    const text = named ? '' : branch;
+    if ($('#branch').textContent !== text) $('#branch').textContent = text;
+  }
 
   drawPortrait() {
     const hero = this.renderer.heroActor();
+    if (!hero) return;   // the hero's actor is briefly rebuilt during combat: keep the last portrait
     const c = $('#portrait'), ctx = c.getContext('2d');
-    ctx.clearRect(0, 0, c.width, c.height);
-    if (!hero) return;
-    ctx.imageSmoothingEnabled = false;
     const e = this.renderer.sheets.get(this.tiles.gmon[hero.g]);
+    const key = hero.g + (e ? ':s' : ':t');
+    if (key === this.portraitKey) return;
+    this.portraitKey = key;
+    ctx.clearRect(0, 0, c.width, c.height);
+    ctx.imageSmoothingEnabled = false;
     if (e) {
-      // head and shoulders from the south-facing idle frame
-      const { size, feet } = e.meta;
-      const top = Math.max(0, feet[1] - 40);
-      ctx.drawImage(e.img, size / 2 - 14, top, 28, 28, 0, 0, c.width, c.height);
+      // head and shoulders, cropped to the sprite's real bounds
+      const [bx, by, bw] = spriteBounds(e);
+      const w = Math.max(16, Math.round(bw * 0.86));
+      ctx.drawImage(e.img, Math.round(bx + bw / 2 - w / 2), Math.max(0, by - 1), w, w, 0, 0, c.width, c.height);
     } else {
       const t = this.tiles.g2t[hero.g], cell = this.tiles.cell, cols = this.tiles.cols;
       ctx.drawImage(this.atlas, (t % cols) * cell, Math.floor(t / cols) * cell, cell, cell, 5, 5, cell, cell);
