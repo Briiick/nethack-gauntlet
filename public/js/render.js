@@ -818,6 +818,7 @@ export class Renderer {
     const cx = x + T / 2, ground = y + T - 3;
     if (a.hero && this.settings.markers !== false) sctx.drawImage(this.rings.hero, cx - 15, ground - 7);
     else if ((a.f & MG.PET) && this.settings.markers !== false) sctx.drawImage(this.rings.pet, cx - 15, ground - 7);
+    if (this.tiles.gname[a.g] === 'invisible mon') { this.drawUnseen(cx, ground, t + a.phase); sctx.globalAlpha = prevAlpha; return; }
     const e = this.sheets.get(this.mnumOf(a.g));
     if (e) {
       const { size, feet } = e.meta;
@@ -835,6 +836,22 @@ export class Renderer {
       sctx.filter = 'none';
     }
     sctx.globalAlpha = prevAlpha;
+  }
+
+  // "remembered, unseen monster": a smudge of shadow with two dim eyes
+  drawUnseen(cx, ground, t) {
+    const { sctx } = this;
+    const k = 0.5 + 0.5 * Math.sin(t / 420);
+    sctx.save();
+    for (let i = 0; i < 18; i++) {
+      const a = i * 2.39996 + t / 900, r = 2 + (i % 6) * 1.3;
+      const x = Math.round(cx + Math.cos(a) * r * 1.2), y = Math.round(ground - 9 + Math.sin(a) * r * 0.9 - (i % 3));
+      sctx.fillStyle = `rgba(${20 + (i % 3) * 10},${14 + (i % 2) * 8},${34 + (i % 4) * 8},${0.22 + 0.25 * k})`;
+      sctx.fillRect(x - 1, y - 1, 3, 3);
+    }
+    sctx.fillStyle = `rgba(190,120,255,${0.35 + 0.45 * k})`;
+    sctx.fillRect(Math.round(cx) - 3, Math.round(ground) - 12, 2, 1); sctx.fillRect(Math.round(cx) + 2, Math.round(ground) - 12, 2, 1);
+    sctx.restore();
   }
 
   drawFx(t) {
