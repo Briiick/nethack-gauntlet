@@ -35,7 +35,7 @@ for (const [k, dx, dy] of tests) {
     if (dx !== 'wait' && !/floor|corr|door/.test(await terrain(tx, ty))) { await page.keyboard.press(OPP[k]); await H.settle({ maxSteps: 10 }); continue; }
     await page.keyboard.press(k); await H.settle({ maxSteps: 20 });
     const b = await where();
-    if (dx === 'run') ok = Math.abs(b.x - a.x) >= 1;
+    if (dx === 'run') ok = Math.abs(b.x - a.x) >= 1 || b.t > a.t;   // running stops at once if a hostile is in view
     else if (dx === 'wait') {
       // NetHack 5 refuses to idle next to a monster ("Are you waiting to get hit?"): the key still arrived
       const said = await page.evaluate(() => window.__nhg.ui.historyLog.slice(-1)[0] || '');
