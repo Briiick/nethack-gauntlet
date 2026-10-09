@@ -1,8 +1,8 @@
 # NetHack Gauntlet
 
 Real NetHack 5.0, unmodified rules, with an overhead, torchlit pixel-art interface in the spirit of
-newer *Gauntlet* games and *Nuclear Throne*. Everything runs locally in your browser. Nothing is
-sent anywhere.
+newer *Gauntlet* games and *Nuclear Throne*. Everything runs locally in your browser and works
+fully offline: the engine, art and fonts are all in this folder, and nothing is sent anywhere.
 
 - **The real game.** NetHack 5.0.0 compiled to WebAssembly, driven through its own window-port API.
   Saves persist in your browser (IndexedDB).
@@ -29,7 +29,9 @@ npm start            # serves on http://127.0.0.1:8080 and opens your browser
 
 `npm start -- 9000` (or `PORT=9000 npm start`) picks another port, and `NO_OPEN=1` skips opening
 the browser. The page must be served over http: opening `index.html` as a file won't load the
-WebAssembly.
+WebAssembly. Without Node, any static server works, e.g. `python3 -m http.server -d public 8080`.
+
+No internet connection is needed at any point, including the first launch.
 
 ### Controls
 
@@ -40,7 +42,20 @@ WebAssembly.
 | Travel | click a spot on the map |
 | Inventory | `i`. Letters choose items, `Tab` switches category, `Esc` closes |
 | Everything else | standard NetHack keys (`,` pick up, `d` drop, `q` quaff, `#` extended commands…) |
-| Settings | the gear button or `F1` (zoom, animation speed, screen shake) |
+| Settings | the gear button, `F1`, or *Settings & controls* on the start screen |
+
+When a command asks you to pick a spot (travel, farlook `;`, throwing at a target…), a gold
+cursor appears: move it with the direction keys, then press `.` or `,` or click.
+
+### Settings
+
+- **Display**: zoom, brightness, animation speed, screen shake, missile speed, message lines,
+  blood, hero/pet rings, reduce motion.
+- **Gameplay**: autopickup, click to travel, safe pets, confirm peacefuls, auto-open doors,
+  auto-quiver, push weapon, space rests, verbose messages, turn counter, experience points, tutorial.
+- **Controls**: how to move and fight, and every command in the game with its key, read from
+  NetHack's own command table. It's searchable, and clicking a command runs it.
+- **Saves**: export a save to a file, import one, or delete it.
 
 Add `#wizard` to the URL to start in NetHack's debug mode.
 
@@ -87,9 +102,16 @@ cd test && npm install && cd ..
 CHROME=/path/to/chrome npm test
 ```
 
-`test/smoke.mjs` serves the app, starts a game, checks the inventory and the map, and fails on any
-console error. `test/showcase.mjs` plays a debug-mode game, wishing for and equipping a full kit,
-and saves screenshots.
+- `test/smoke.mjs` serves the app with the network blocked, starts a game, checks the inventory,
+  the map and the fonts, and fails on any console error or outside request.
+- `test/commands.mjs <url> <out>` runs every command in NetHack's command table through the UI
+  (138 in a debug-mode game), answers whatever each one asks, and finishes by really quitting and
+  by saving, reloading and resuming a game.
+- `test/playtest.mjs <url> <out> <Role> [actions] [--save-restore]` autoplays a real game:
+  it explores, fights, eats, prays, takes the stairs down and tours the inventory, look, attributes and
+  settings screens, reporting hangs, console errors and unknown keys.
+- `test/settings.mjs` and `test/showcase.mjs` take screenshots of every settings tab and of a
+  fully kitted-out debug-mode character.
 
 ## License
 

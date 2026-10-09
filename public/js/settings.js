@@ -89,8 +89,8 @@ export function openSettings(ui, startTab = 'display') {
       ${chk('set-markers', 'Hero & pet rings', s.markers, 'Coloured rings under you and your pets')}
       ${chk('set-reduce', 'Reduce motion', s.reduceMotion, 'Fewer particles, no screen shake')}
     </div>`,
-    gameplay: () => `<p class="note">These apply when you start or resume a game. Inside a game, NetHack's own option
-      screen (<kbd>O</kbd>) changes them for the current session.</p><div class="grid">
+    gameplay: () => `<p class="note">Click to travel applies right away. The NetHack options apply when you start or resume
+      a game; inside a game, NetHack's own option screen (<kbd>O</kbd>) changes them for the current session.</p><div class="grid">
       ${sel('set-pickup', 'Autopickup', [['$', 'Gold only'], ['$?!/="+', 'Gold, scrolls, potions, wands, rings, amulets, books'], ['$?!/="+*', '…and gems'], ['', 'Off']], s.game.autopickup)}
       ${chk('set-click', 'Click to travel', s.clickTravel, 'Clicking the map walks you there')}
       ${chk('set-safepet', 'Safe pets', s.game.safePet, 'Ask before attacking your pet')}
