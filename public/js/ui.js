@@ -1,6 +1,7 @@
 // HUD, message feed, menus, prompts and input for NetHack Gauntlet.
 import { BL, CONDITIONS, badConditions } from './game.js';
 import { isInventoryMenu, inventoryMenu } from './inventory.js';
+import { openSettings } from './settings.js';
 
 const ESC = 27;
 const $ = (sel) => document.querySelector(sel);
@@ -17,6 +18,9 @@ export function keyToCode(e) {
   const dir = ARROWS[e.key] || NUMPAD[e.code];
   if (dir) return (e.shiftKey && dir !== '.' ? dir.toUpperCase() : dir).charCodeAt(0);
   if (e.ctrlKey && e.key.length === 1 && /[a-z]/i.test(e.key)) return e.key.toLowerCase().charCodeAt(0) & 0x1f;
+  if (e.ctrlKey && e.key.length === 1 && '@[\\]^_'.includes(e.key)) return e.key.charCodeAt(0) & 0x1f;   // ^_ retravel, ^^ etc.
+  if (e.ctrlKey && e.key === '-' && e.shiftKey) return 31;
+  if (e.altKey && /^Key[A-Z]$/.test(e.code)) return (e.shiftKey ? e.code[3] : e.code[3].toLowerCase()).charCodeAt(0) | 0x80;
   if (e.altKey && e.key.length === 1) return e.key.charCodeAt(0) | 0x80;
   if (e.key.length === 1) return e.key.charCodeAt(0);
   return null;
@@ -54,7 +58,7 @@ export class UI {
     else if (this.keyQueue.length < 8) this.keyQueue.push({ key: code });
   }
   onPointer(e) {
-    if (this.modal) return;
+    if (this.modal || (this.settings.clickTravel === false && !this.isTargeting)) return;
     const c = this.renderer.screenToCell(e.clientX, e.clientY);
     const ev = { click: { x: c.x, y: c.y, button: e.button === 2 ? 2 : 1 } };
     if (this.waiter && this.waiter.allowClick) { const w = this.waiter; this.waiter = null; w(ev); }
@@ -65,6 +69,24 @@ export class UI {
   }
   async waitKey() { const ev = await this.waitInput({ allowClick: false }); return ev.key; }
 
+  // "pick a position" mode: NetHack has moved the map cursor off the hero
+  targeting(on) {
+    if (on === this.isTargeting) return;
+    this.isTargeting = on;
+    let el = $('#target-hint');
+    if (!el) {
+      el = document.createElement('div'); el.id = 'target-hint'; el.setAttribute('role', 'status');
+      el.innerHTML = 'Choose a spot: move with the direction keys (Shift moves 8), <kbd>.</kbd> or <kbd>,</kbd> or click to pick, <kbd>&lt;</kbd> <kbd>&gt;</kbd> <kbd>_</kbd> <kbd>m</kbd> jump to stairs, altars, monsters, <kbd>Esc</kbd> to cancel';
+      $('#stage').appendChild(el);
+    }
+    el.hidden = !on;
+  }
+
+  trimFeed() {
+    const n = +this.settings.feedLines || 6;
+    while (this.feed.children.length > n) this.feed.firstChild.remove();
+  }
+
   // ------------------------------------------------------------------ messages
   message(text, attr = 0, { history = false } = {}) {
     if (!text) return;
@@ -74,7 +96,7 @@ export class UI {
     div.innerHTML = this.decorate(text);
     if (attr === 1 || /You die|You feel much better|Welcome to experience level/.test(text)) div.className = 'strong';
     this.feed.appendChild(div);
-    while (this.feed.children.length > 6) this.feed.firstChild.remove();
+    this.trimFeed();
     [...this.feed.children].forEach((d, i, all) => { d.style.opacity = String(0.35 + 0.65 * (i + 1) / all.length); });
   }
   decorate(text) {
@@ -298,11 +320,16 @@ export class UI {
   }
 
   extCommand(cmds) {
+    if (this.pendingExt) {   // chosen from the Controls list
+      const c = cmds.find((x) => x.name === this.pendingExt);
+      this.pendingExt = null;
+      if (c) return Promise.resolve(c.index);
+    }
     return new Promise((resolve) => {
       const el = document.createElement('form'); el.className = 'panel getline ext';
       el.innerHTML = `<label for="ext-input">Extended command</label><input id="ext-input" autocomplete="off" spellcheck="false" placeholder="pray, offer, force, loot…"><div class="ext-list" role="listbox"></div><div class="foot"><kbd>Tab</kbd> complete · <kbd>Enter</kbd> run · <kbd>Esc</kbd> cancel</div>`;
       const input = el.querySelector('input'), list = el.querySelector('.ext-list');
-      const usable = cmds.filter((c) => c.name && c.name !== '#' && c.name !== '?');
+      const usable = cmds.filter((c) => c.name && c.name !== '#' && c.name !== '?' && !(c.flags & 0x40) && (this.wizard || !(c.flags & 0x4)));
       let matches = usable;
       const render = () => {
         const q = input.value.trim().toLowerCase();
@@ -323,24 +350,11 @@ export class UI {
   }
 
   // ------------------------------------------------------------------ settings & end
-  openSettings() {
-    const s = this.settings;
-    const el = document.createElement('form'); el.className = 'panel settings';
-    const sel = (id, label, opts, val) => `<label for="${id}">${label}</label><select id="${id}">${opts.map(([v, t]) => `<option value="${v}" ${String(val) === String(v) ? 'selected' : ''}>${t}</option>`).join('')}</select>`;
-    el.innerHTML = `<h2>Settings</h2><div class="grid">
-      ${sel('set-zoom', 'Zoom', [['auto', 'Auto'], [2, '2×'], [3, '3×'], [4, '4×'], [5, '5×']], s.zoom)}
-      ${sel('set-anim', 'Animation', [['smooth', 'Smooth'], ['snappy', 'Snappy'], ['instant', 'Instant']], s.animSpeed)}
-      ${sel('set-shake', 'Screen shake', [['subtle', 'Subtle'], ['off', 'Off'], ['full', 'Full']], s.shake)}
-      ${sel('set-missiles', 'Missiles & zaps', [['normal', 'Normal speed'], ['fast', 'Fast']], s.fastMissiles ? 'fast' : 'normal')}
-      </div><div class="foot"><button type="submit" class="primary">Done</button></div>`;
-    el.addEventListener('submit', (e) => {
-      e.preventDefault();
-      s.zoom = el.querySelector('#set-zoom').value; s.animSpeed = el.querySelector('#set-anim').value;
-      s.shake = el.querySelector('#set-shake').value; s.fastMissiles = el.querySelector('#set-missiles').value === 'fast';
-      this.saveSettings(); this.renderer.resize(); this.closeModal();
-    });
-    this.openModal(el, (e) => { if (e.key === 'Escape') { this.closeModal(); return; } return false; });
+  openSettings(tab) { openSettings(this, tab); }
+  applySettings() {
+    this.renderer.resize(); this.renderer.rebuildLight(); this.trimFeed();
   }
+
 
   gameOver(text) {
     const el = $('#gameover');

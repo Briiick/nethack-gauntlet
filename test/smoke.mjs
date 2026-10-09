@@ -1,4 +1,5 @@
-// Smoke test: serve the app, start a game, open the inventory, walk a little; fail on any console error.
+// Smoke test: serve the app with the network blocked, start a game, open the inventory, walk a little;
+// fail on any console error, any request that leaves this machine, or a missing font.
 // Run with `npm test` (needs `npm install` in test/ for playwright-core and a Chromium; set CHROME to its path).
 import { spawn } from 'node:child_process';
 import { chromium } from 'playwright-core';
@@ -10,7 +11,13 @@ await new Promise((r) => setTimeout(r, 600));
 
 const browser = await chromium.launch({ executablePath: process.env.CHROME || undefined });
 const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
-const errs = [];
+const errs = [], external = [];
+// no network: anything not served by our own local server is blocked and reported
+await page.route('**/*', (route) => {
+  const u = new URL(route.request().url());
+  if (u.protocol === 'data:' || u.hostname === '127.0.0.1' || u.hostname === 'localhost') return route.continue();
+  external.push(u.href); return route.abort();
+});
 page.on('console', (m) => { if (m.type() === 'error') errs.push(m.text()); });
 page.on('pageerror', (e) => errs.push(e.message));
 try {
@@ -27,6 +34,9 @@ try {
   const state = await page.evaluate(() => ({ hero: window.__nhg.game.hero, actors: window.__nhg.renderer.actors.size }));
   if (!state.hero || state.actors < 1) fail('no hero on the map: ' + JSON.stringify(state));
   if (errs.length) fail('console errors:\n' + errs.join('\n'));
+  if (external.length) fail('tried to reach the network:\n' + external.join('\n'));
+  const fonts = await page.evaluate(async () => { await document.fonts.ready; const want = ['700 16px Cinzel', '600 16px "Barlow Condensed"', '500 16px "EB Garamond"', '16px "Pirata One"']; await Promise.all(want.map((f) => document.fonts.load(f))); return want.filter((f) => !document.fonts.check(f)); });
+  if (fonts.length) fail('fonts not loaded: ' + fonts.join(', '));
   console.log(`ok: ${items} items in the starting inventory, ${state.actors} actors on the map`);
 } finally {
   await browser.close();

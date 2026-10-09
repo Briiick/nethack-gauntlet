@@ -53,8 +53,30 @@ export class Game {
   shim_getmsghistory() { return ''; }
   shim_putmsghistory(msg) { if (msg) this.ui.message(msg, 0, { history: true }); }
   shim_nhbell() { this.ui.bell(); }
-  shim_cliparound(x, y) { this.hero.x = x; this.hero.y = y; this.renderer.setHero(x, y); }
-  shim_curs() {}
+  shim_cliparound() {}   // the hero comes from glyph flags; the camera follows the hero or the targeting cursor
+  shim_curs(win, x, y) {
+    // NetHack moves the map cursor away from the hero only while you pick a position
+    const w = this.windows.get(win);
+    if (!w || w.type !== NHW.MAP) return;
+    const away = x !== this.hero.x || y !== this.hero.y;
+    this.renderer.cursor = away ? { x, y } : null;
+    this.ui.targeting(away);
+  }
+
+  // the engine stopped (exit) without going through exit_nhwindows
+  async onEngineExit() {
+    if (this.over) return;
+    this.over = true;
+    await persistSaves(this.mod);
+    const log = this.ui.historyLog.slice(-12);
+    const death = [...log].reverse().find((m) => /^you die|killed by|you (drown|starve|turn to stone|burn to a crisp)|died/i.test(m));
+    const where = this.status[BL.LEVELDESC]?.val?.replace(/^Dlvl:/, 'dungeon level ') || '';
+    const turn = (this.status[BL.TIME]?.val.match(/\d+/) || [])[0];
+    const when = [where && `on ${where}`, turn && `on turn ${turn}`].filter(Boolean).join(', ');
+    if (death) this.ui.gameOver(`${death}${when ? ` (${when})` : ''}`);
+    else if (log.some((m) => /saving|be seeing you/i.test(m))) this.ui.gameOver('Your game has been saved.');
+    else this.ui.gameOver(`Your adventure has ended${when ? ` ${when}` : ''}.`);
+  }
 
   async shim_exit_nhwindows(str) {
     this.over = true;

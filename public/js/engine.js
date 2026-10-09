@@ -17,16 +17,36 @@ export async function loadEngine(handler) {
     if (globalThis.__nhgDebug && !/print_glyph|status_update|curs$/.test(name)) console.log('[shim]', name, JSON.stringify(args).slice(0, 200));
     try {
       const fn = handler[name];
+      // what the engine is blocked on right now (read by tests and the debug console)
+      handler.waiting = name; handler.calls = (handler.calls || 0) + 1;
       const ret = fn ? await fn.apply(handler, args) : undefined;
+      handler.waiting = null;
       return normalize(name, ret);
     } catch (err) {
       console.error('window-port call failed:', name, err);
       return normalize(name, undefined);
     }
   };
+  // NetHack can end by calling exit() without closing its windows first (quitting and skipping
+  // the summary, some panics): tell the window port either way
+  const ended = (code) => { try { handler.onEngineExit?.(code); } catch (e) { console.error(e); } };
   const mod = await createNetHack({
     print: (s) => console.log('[nethack]', s),
     printErr: (s) => console.warn('[nethack]', s),
+    onExit: ended,
+    // wrap the engine's exit imports so the UI hears about every exit
+    instantiateWasm(info, receive) {
+      for (const ns of Object.values(info)) {
+        for (const [k, f] of Object.entries(ns)) {
+          if (typeof f === 'function' && /^(_proc_exit|exitJS|_exit)$/.test(f.name)) ns[k] = (code, ...rest) => { ended(code); return f(code, ...rest); };
+        }
+      }
+      const url = new URL('../nethack/nethack.wasm', import.meta.url);
+      WebAssembly.instantiateStreaming(fetch(url), info)
+        .catch(async () => WebAssembly.instantiate(await (await fetch(url)).arrayBuffer(), info))
+        .then((r) => receive(r.instance), (e) => console.error('could not load nethack.wasm', e));
+      return {};
+    },
   });
   handler.mod = mod;
   try { mod.FS.mkdir(SAVE_DIR); } catch (e) { /* exists */ }
@@ -102,7 +122,8 @@ export function readExtCommands(mod) {
     const txt = mod.getValue(p + EXTCMD.txt, '*');
     if (!txt) break;
     const desc = mod.getValue(p + EXTCMD.desc, '*');
-    out.push({ index: i, name: mod.UTF8ToString(txt), desc: desc ? mod.UTF8ToString(desc) : '' });
+    out.push({ index: i, name: mod.UTF8ToString(txt), desc: desc ? mod.UTF8ToString(desc) : '',
+      key: mod.HEAPU8[p], flags: mod.getValue(p + EXTCMD.flags, 'i32') >>> 0 });
   }
   return out;
 }

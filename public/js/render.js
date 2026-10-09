@@ -469,9 +469,10 @@ export class Renderer {
       L[i] = this.terrainClassAt(x, y) === 'void' ? 0 : m * 0.92;
     }
     const img = this.lightTexCtx.createImageData(COLNO, ROWNO); const d = img.data;
+    const bk = { dim: 0.82, normal: 1, bright: 1.22 }[this.settings.brightness] || 1, lift = this.settings.brightness === 'bright' ? 22 : 0;
     for (let i = 0; i < L.length; i++) {
       const v = Math.max(0, L[i]);
-      d[i * 4] = 26 + v * 160; d[i * 4 + 1] = 30 + v * 166; d[i * 4 + 2] = 52 + v * 168; d[i * 4 + 3] = 255;
+      d[i * 4] = Math.min(255, (26 + lift + v * 160) * bk); d[i * 4 + 1] = Math.min(255, (30 + lift + v * 166) * bk); d[i * 4 + 2] = Math.min(255, (52 + lift + v * 168) * bk); d[i * 4 + 3] = 255;
     }
     this.lightTexCtx.putImageData(img, 0, 0);
     this.torches = []; this.lightSources = [];
@@ -636,9 +637,10 @@ export class Renderer {
     this.burst(cx, cy - 3, 16, 'blood', { speed: 60, up: 46 });
   }
 
-  addShake(n) { if (this.settings.shake !== 'off') this.shake = Math.max(this.shake, n * (this.settings.shake === 'subtle' ? 0.5 : 1)); }
+  addShake(n) { if (this.settings.shake !== 'off' && !this.settings.reduceMotion) this.shake = Math.max(this.shake, n * (this.settings.shake === 'subtle' ? 0.5 : 1)); }
 
   splat(cx, cy, r) {
+    if (this.settings.gore === false) return;
     const pts = new Set(); const blobs = [[cx, cy, r]];
     for (let i = 0; i < 6; i++) blobs.push([cx + (Math.random() * 2 - 1) * r, cy + (Math.random() * 2 - 1) * r * 0.6, r * (0.25 + Math.random() * 0.3)]);
     for (const [bx, by, br] of blobs) for (let y = Math.floor(by - br) - 1; y <= by + br + 1; y++) for (let x = Math.floor(bx - br) - 1; x <= bx + br + 1; x++)
@@ -653,6 +655,7 @@ export class Renderer {
 
   burst(x, y, n, kind, o = {}) {
     if (this.settings.reduceMotion) n = Math.ceil(n / 3);
+    if (kind === 'blood' && this.settings.gore === false) kind = 'spark';
     for (let i = 0; i < n; i++) {
       const a = (o.dir ?? Math.random() * Math.PI * 2) + (Math.random() - 0.5) * (o.spread ?? Math.PI * 2);
       const sp = (o.speed ?? 50) * (0.4 + Math.random() * 0.8);
@@ -687,7 +690,10 @@ export class Renderer {
     const { sctx, lctx, vw, vh } = this;
     const hero = this.heroActor();
     const hx = hero ? hero.drawX(t) * T + T / 2 : this.heroCell.x * T + T / 2, hy = hero ? hero.drawY(t) * T + T / 2 : this.heroCell.y * T + T / 2;
-    let tx = hx - vw / 2, ty = hy - vh / 2;
+    // while picking a map position, the camera follows the cursor instead
+    const cur = this.cursor;
+    const fx = cur ? cur.x * T + T / 2 : hx, fy = cur ? cur.y * T + T / 2 : hy;
+    let tx = fx - vw / 2, ty = fy - vh / 2;
     if (vw >= W) tx = (W - vw) / 2; else tx = Math.max(-T, Math.min(W - vw + T, tx));
     if (vh >= H) ty = (H - vh) / 2 - T; else ty = Math.max(-T * 3, Math.min(H - vh + T * 2, ty));
     if (!this.cam.init) { this.cam.x = tx; this.cam.y = ty; this.cam.init = true; }
@@ -755,10 +761,24 @@ export class Renderer {
     sctx.globalAlpha = 1;
     this.drawArcs(t);
     this.drawPillars(t, hx, hy);
+    if (cur) this.drawCursor(cur, t);
 
     sctx.setTransform(1, 0, 0, 1, 0, 0);
     this.vctx.imageSmoothingEnabled = false;
     this.vctx.drawImage(this.scene, 0, 0, vw * this.zoom, vh * this.zoom);
+  }
+
+  // targeting brackets for "pick a position" prompts
+  drawCursor(c, t) {
+    const x = c.x * T, y = c.y * T, p = Math.round(1 + Math.sin(t / 140)), L = 6;
+    const ctx = this.sctx;
+    ctx.fillStyle = 'rgba(255,214,90,.16)'; ctx.fillRect(x, y, T, T);
+    for (const [cx, cy, sx, sy] of [[x - p, y - p, 1, 1], [x + T - 1 + p, y - p, -1, 1], [x - p, y + T - 1 + p, 1, -1], [x + T - 1 + p, y + T - 1 + p, -1, -1]]) {
+      ctx.fillStyle = '#1a1000';
+      ctx.fillRect(cx + (sx < 0 ? -L : 0), cy - 1 + (sy < 0 ? 0 : 0), L + 1, 3); ctx.fillRect(cx - 1, cy + (sy < 0 ? -L : 0), 3, L + 1);
+      ctx.fillStyle = '#ffd65a';
+      ctx.fillRect(cx + (sx < 0 ? -L + 1 : 0), cy, L, 1); ctx.fillRect(cx, cy + (sy < 0 ? -L + 1 : 0), 1, L);
+    }
   }
 
   light(x, y, r, rgb, k) {
@@ -796,8 +816,8 @@ export class Renderer {
     const prevAlpha = sctx.globalAlpha;
     sctx.globalAlpha = prevAlpha * (ghostly ? 0.6 : 1) * fadeIn;
     const cx = x + T / 2, ground = y + T - 3;
-    if (a.hero) sctx.drawImage(this.rings.hero, cx - 15, ground - 7);
-    else if (a.f & MG.PET) sctx.drawImage(this.rings.pet, cx - 15, ground - 7);
+    if (a.hero && this.settings.markers !== false) sctx.drawImage(this.rings.hero, cx - 15, ground - 7);
+    else if ((a.f & MG.PET) && this.settings.markers !== false) sctx.drawImage(this.rings.pet, cx - 15, ground - 7);
     const e = this.sheets.get(this.mnumOf(a.g));
     if (e) {
       const { size, feet } = e.meta;

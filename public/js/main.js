@@ -3,12 +3,12 @@ import { loadEngine, runGame, listSaves, deleteSave } from './engine.js';
 import { Game } from './game.js';
 import { Renderer } from './render.js';
 import { UI } from './ui.js';
+import { DEFAULTS, gameOptions } from './settings.js';
 
-const DEFAULTS = { zoom: 'auto', animSpeed: 'smooth', shake: 'subtle', fastMissiles: false, reduceMotion: false };
 function loadSettings() {
   let s = {};
   try { s = JSON.parse(localStorage.getItem('nhg-settings') || '{}'); } catch (e) { /* private mode */ }
-  const out = { ...DEFAULTS, ...s };
+  const out = { ...DEFAULTS, ...s, game: { ...DEFAULTS.game, ...(s.game || {}) } };
   if (matchMedia('(prefers-reduced-motion: reduce)').matches) { out.reduceMotion = true; out.shake = 'off'; }
   return out;
 }
@@ -34,6 +34,7 @@ async function boot() {
   ui.game = game;
   const mod = await loadEngine(game);
   renderer.objDescr = (o) => mod._nhg_obj_descr(o);
+  ui.mod = mod; ui.wizard = location.hash === '#wizard';
   window.__nhg = { game, renderer, ui, mod };   // handy for debugging in the console
 
   const nameInput = document.getElementById('start-name');
@@ -55,6 +56,11 @@ async function boot() {
     });
   }
 
+  // the start screen mirrors the Gameplay settings
+  const pk = document.getElementById('start-pickup');
+  if ([...pk.options].some((o) => o.value === settings.game.autopickup)) pk.value = settings.game.autopickup;
+  document.getElementById('start-tutorial').checked = !!settings.game.tutorial;
+  document.getElementById('start-settings')?.addEventListener('click', () => ui.openSettings());
   const go = document.getElementById('start-go');
   go.disabled = false; go.textContent = 'Enter the dungeon';
   const form = document.getElementById('start-form');
@@ -65,15 +71,15 @@ async function boot() {
     const name = nameInput.value.trim().replace(/[^A-Za-z0-9 _-]/g, '').slice(0, 30) || 'Adventurer';
     try { localStorage.setItem('nhg-last-name', name); } catch (e) { /* ignore */ }
     const role = document.getElementById('start-role').value;
-    const pickup = document.getElementById('start-pickup').value;
-    const opts = [`name:${name}`, 'number_pad:0', 'time', 'showexp', 'color', 'hilite_pet', 'lit_corridor', 'dark_room', '!rest_on_space', 'pile_limit:3'];
+    settings.game.autopickup = document.getElementById('start-pickup').value;
+    settings.game.tutorial = document.getElementById('start-tutorial').checked;
+    saveSettings();
+    const opts = [`name:${name}`, 'number_pad:0', 'color', 'hilite_pet', 'lit_corridor', 'dark_room', 'pile_limit:3', ...gameOptions(settings.game)];
     if (role !== 'ask') {
       opts.push(`role:${role}`);
       if (role === 'Valkyrie') opts.push('gender:female', 'race:human', 'align:lawful');
       else opts.push('race:random', 'gender:random', 'align:random');
     }
-    if (pickup) opts.push('autopickup', `pickup_types:${pickup}`); else opts.push('!autopickup');
-    if (!document.getElementById('start-tutorial').checked) opts.push('!tutorial');
     if (location.hash === '#wizard') {   // developer mode: NetHack's debug ("wizard") mode
       opts.push('playmode:debug');
       const sc = new TextDecoder().decode(mod.FS.readFile('/sysconf')).replace(/^WIZARDS=.*$/m, 'WIZARDS=*');
