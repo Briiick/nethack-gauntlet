@@ -335,7 +335,7 @@ kbd { font-family: var(--ui); font-weight: 700; color: var(--bone); border: 1px 
 .linkbtn { background: none; border: 0; color: var(--brass); text-decoration: underline; text-underline-offset: 3px; cursor: pointer; padding: 6px; font: 600 16px var(--ui); }
 .linkbtn:hover { color: var(--gold); }
 @media (max-width: 700px) { .panel.settings .controls { grid-template-columns: 1fr; } .panel.settings .grid { grid-template-columns: 1fr; } }
-#target-hint { position: absolute; left: 50%; bottom: calc(env(safe-area-inset-bottom, 0px) + 24px); transform: translateX(-50%); z-index: 6; max-width: calc(100% - 32px);
+#target-hint { position: absolute; left: 50%; top: calc(env(safe-area-inset-top, 0px) + 76px); transform: translateX(-50%); z-index: 6; max-width: calc(100% - 32px);
   padding: 8px 16px; background: rgba(20,14,4,.92); border: 1px solid var(--gold); color: var(--bone); font: 500 16px/1.4 var(--ui); text-align: center; text-wrap: balance;
   box-shadow: 0 0 18px rgba(255,208,80,.25); }
 #target-hint[hidden] { display: none; }

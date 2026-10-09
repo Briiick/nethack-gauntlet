@@ -23,6 +23,7 @@ const BAD_CONDITIONS = 0x1000000 | 0x100000 | 0x40000 | 0x200000 | 0x2000 | 0x80
 
 export class Game {
   constructor({ ui, renderer, tiles }) {
+    this.recentText = [];
     this.ui = ui; this.renderer = renderer; this.tiles = tiles;
     this.mod = null;
     this.windows = new Map();
@@ -64,25 +65,25 @@ export class Game {
   }
 
   // the engine stopped (exit) without going through exit_nhwindows
-  async onEngineExit() {
+  async onEngineExit(code, str) {
     if (this.over) return;
     this.over = true;
     await persistSaves(this.mod);
     const log = this.ui.historyLog.slice(-12);
-    const death = [...log].reverse().find((m) => /^you die|killed by|you (drown|starve|turn to stone|burn to a crisp)|died/i.test(m));
+    // NetHack's own epitaph ("killed by a dwarf") from the tombstone and goodbye text, else the last death message
+    const cause = [...this.recentText].reverse().map((t) => t.trim()).find((t) => /^(killed by|died of|choked on|starved|drowned|turned to stone|petrified|burned by|crushed|squished|zapped|quit|escaped|ascended)/i.test(t)
+      || /, (killed by|died of|choked on) /i.test(t));
+    const said = [...log].reverse().find((m) => /^you die|killed by|you (drown|starve|turn to stone|burn to a crisp)|died/i.test(m));
+    const death = cause ? cause.replace(/^.*?, (?=(killed|died|choked))/i, '').replace(/^./, (c) => c.toUpperCase()).replace(/\.?$/, '.') : said;
     const where = this.status[BL.LEVELDESC]?.val?.replace(/^Dlvl:/, 'dungeon level ') || '';
     const turn = (this.status[BL.TIME]?.val.match(/\d+/) || [])[0];
     const when = [where && `on ${where}`, turn && `on turn ${turn}`].filter(Boolean).join(', ');
     if (death) this.ui.gameOver(`${death}${when ? ` (${when})` : ''}`);
-    else if (log.some((m) => /saving|be seeing you/i.test(m))) this.ui.gameOver('Your game has been saved.');
-    else this.ui.gameOver(`Your adventure has ended${when ? ` ${when}` : ''}.`);
+    else if (log.some((m) => /saving|be seeing you/i.test(m)) || /be seeing you/i.test(str || '')) this.ui.gameOver('Your game has been saved.');
+    else this.ui.gameOver(str || `Your adventure has ended${when ? ` ${when}` : ''}.`);
   }
 
-  async shim_exit_nhwindows(str) {
-    this.over = true;
-    await persistSaves(this.mod);
-    this.ui.gameOver(str || 'Be seeing you…');
-  }
+  async shim_exit_nhwindows(str) { await this.onEngineExit(0, str); }
 
   async shim_delay_output() {
     // NetHack paces thrown objects, zaps and explosions with this
@@ -140,9 +141,10 @@ export class Game {
     }
     if (w.type === NHW.STATUS) return;      // status arrives via status_update
     w.lines.push({ text: str, attr });
+    this.recentText.push(str); if (this.recentText.length > 80) this.recentText.shift();   // tombstone, "Goodbye..."
   }
 
-  shim_raw_print(str) { if (str) { this.ui.message(str, 0); } }
+  shim_raw_print(str) { if (str) { this.ui.message(str, 0); this.recentText.push(str); } }
   shim_raw_print_bold(str) { if (str) { this.ui.message(str, 1); } }
 
   async shim_display_file(name) {
