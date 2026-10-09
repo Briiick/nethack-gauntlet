@@ -70,11 +70,14 @@ export class Game {
     this.over = true;
     await persistSaves(this.mod);
     const log = this.ui.historyLog.slice(-12);
-    // NetHack's own epitaph ("killed by a dwarf") from the tombstone and goodbye text, else the last death message
-    const cause = [...this.recentText].reverse().map((t) => t.trim()).find((t) => /^(killed by|died of|choked on|starved|drowned|turned to stone|petrified|burned by|crushed|squished|zapped|quit|escaped|ascended)/i.test(t)
-      || /, (killed by|died of|choked on) /i.test(t));
+    // NetHack's own epitaph from the score line / tombstone ("...on level 2.  Killed by a sewer rat."),
+    // searched across wrapped lines
+    const text = this.recentText.join(' ').replace(/\s+/g, ' ');
+    const re = /\b(killed by|died of|choked on|petrified by|turned to stone by|starved to death|drowned in|burned by|crushed to death by|squished under|dissolved in|zapped (him|her)self with|quit|escaped|ascended)\b([^.!]*)/gi;
+    let m, cause = null;
+    while ((m = re.exec(text))) cause = (m[1] + m[3]).trim();
     const said = [...log].reverse().find((m) => /^you die|killed by|you (drown|starve|turn to stone|burn to a crisp)|died/i.test(m));
-    const death = cause ? cause.replace(/^.*?, (?=(killed|died|choked))/i, '').replace(/^./, (c) => c.toUpperCase()).replace(/\.?$/, '.') : said;
+    const death = cause && cause.split(' ').length > 2 ? cause.replace(/^./, (c) => c.toUpperCase()) + '.' : said;
     const where = this.status[BL.LEVELDESC]?.val?.replace(/^Dlvl:/, 'dungeon level ') || '';
     const turn = (this.status[BL.TIME]?.val.match(/\d+/) || [])[0];
     const when = [where && `on ${where}`, turn && `on turn ${turn}`].filter(Boolean).join(', ');
