@@ -856,15 +856,42 @@ export class Renderer {
 
   drawFx(t) {
     const { sctx } = this; const cell = this.tiles.cell, cols = this.tiles.cols;
+    let engulfer = null;
     for (let y = 0; y < ROWNO; y++) for (let x = 0; x < COLNO; x++) {
       const g = this.glyph[this.idx(x, y)];
       if (g < 0 || !FX_CLASSES.has(this.cls[g])) continue;
+      if (this.cls[g] === 'swallow') { engulfer = this.tiles.gname[g].replace(/^swallow \w+ \w+ /, ''); continue; }
       const tile = this.tiles.g2t[g], sx = (tile % cols) * cell, sy = Math.floor(tile / cols) * cell;
       sctx.globalCompositeOperation = 'lighter';
       sctx.globalAlpha = 0.35 + 0.15 * Math.sin(t / 60);
       sctx.drawImage(this.atlas, sx, sy, cell, cell, x * T - 3, y * T - 3, T + 6, T + 6);
       sctx.globalCompositeOperation = 'source-over'; sctx.globalAlpha = 1;
       sctx.drawImage(this.atlas, sx, sy, cell, cell, x * T + (T - cell) / 2, y * T + (T - cell) / 2, cell, cell);
+    }
+    if (engulfer) this.drawEngulf(t, engulfer);
+  }
+
+  // Engulfed: the hero inside a churning wall of whatever swallowed them
+  drawEngulf(t, name) {
+    const { sctx } = this, h = this.heroCell, cx = h.x * T + T / 2, cy = h.y * T + T / 2;
+    const rgb = /fog|steam/.test(name) ? [170, 178, 190] : /dust/.test(name) ? [160, 128, 84] : /ice/.test(name) ? [170, 220, 255]
+      : /energy/.test(name) ? [120, 160, 255] : /fire/.test(name) ? [255, 120, 40] : /air/.test(name) ? [200, 220, 240] : [130, 46, 58];
+    const vortex = /vortex|cloud|elemental/.test(name);
+    // the inside of the engulfer: a tinted haze, thickest at the walls
+    const g = sctx.createRadialGradient(cx, cy, 6, cx, cy, 46);
+    g.addColorStop(0, `rgba(${rgb},0.10)`); g.addColorStop(0.55, `rgba(${rgb},0.32)`); g.addColorStop(1, `rgba(${rgb},0.75)`);
+    sctx.fillStyle = g; sctx.beginPath(); sctx.ellipse(cx, cy, 46, 38, 0, 0, Math.PI * 2); sctx.fill();
+    for (let ring = 0; ring < 4; ring++) {
+      const R = 18 + ring * 8, n = 30 + ring * 10;
+      for (let i = 0; i < n; i++) {
+        const a = (i / n) * Math.PI * 2 + (vortex ? t / (500 - ring * 90) : Math.sin(t / 700 + i) * 0.05) * (ring % 2 ? -1 : 1);
+        const wob = Math.sin(t / 260 + i * 1.7 + ring) * 2.5;
+        const x = Math.round(cx + Math.cos(a) * (R + wob)), y = Math.round(cy + Math.sin(a) * (R + wob) * 0.8);
+        const k = 0.75 + 0.45 * Math.sin(i * 2.1 + t / 300 + ring);
+        sctx.fillStyle = `rgba(${Math.min(255, rgb[0] * k) | 0},${Math.min(255, rgb[1] * k) | 0},${Math.min(255, rgb[2] * k) | 0},${0.55 + ring * 0.12})`;
+        const sz = 2 + ring;
+        sctx.fillRect(x - 1, y - 1, sz + 1, sz);
+      }
     }
   }
 

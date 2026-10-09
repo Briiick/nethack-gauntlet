@@ -1,4 +1,5 @@
 // The window port: turns NetHack's window calls into map/status state and UI requests.
+import { epitaph } from './epitaph.js';
 import { readGlyphInfo, readExtCommands, writeMenuSelection, persistSaves } from './engine.js';
 
 export const COLNO = 80, ROWNO = 21;
@@ -59,7 +60,11 @@ export class Game {
     // NetHack moves the map cursor away from the hero only while you pick a position
     const w = this.windows.get(win);
     if (!w || w.type !== NHW.MAP) return;
-    const away = x !== this.hero.x || y !== this.hero.y;
+    // compare with where the engine says the hero is (the map can't tell while engulfed)
+    let hx = this.hero.x, hy = this.hero.y;
+    try { const h = this.mod._nhg_hero(); hx = h & 0xff; hy = (h >> 8) & 0xff; this.renderer.engulfed = !!((h >> 16) & 1); } catch (e) { /* older engine */ }
+    if (this.renderer.engulfed) { this.hero.x = hx; this.hero.y = hy; this.renderer.setHero(hx, hy); }
+    const away = x !== hx || y !== hy;
     this.renderer.cursor = away ? { x, y } : null;
     this.ui.targeting(away);
   }
@@ -70,14 +75,8 @@ export class Game {
     this.over = true;
     await persistSaves(this.mod);
     const log = this.ui.historyLog.slice(-12);
-    // NetHack's own epitaph from the score line / tombstone ("...on level 2.  Killed by a sewer rat."),
-    // searched across wrapped lines
-    const text = this.recentText.join(' ').replace(/\s+/g, ' ');
-    const re = /\b(killed by|died of|choked on|petrified by|turned to stone by|starved to death|drowned in|burned by|crushed to death by|squished under|dissolved in|zapped (him|her)self with|quit|escaped|ascended)\b([^.!]*)/gi;
-    let m, cause = null;
-    while ((m = re.exec(text))) cause = (m[1] + m[3]).trim();
     const said = [...log].reverse().find((m) => /^you die|killed by|you (drown|starve|turn to stone|burn to a crisp)|died/i.test(m));
-    const death = cause && cause.split(' ').length > 2 ? cause.replace(/^./, (c) => c.toUpperCase()) + '.' : said;
+    const death = epitaph(this.recentText, this.ui.historyLog.slice(-12)) || said;
     const where = this.status[BL.LEVELDESC]?.val?.replace(/^Dlvl:/, 'dungeon level ') || '';
     const turn = (this.status[BL.TIME]?.val.match(/\d+/) || [])[0];
     const when = [where && `on ${where}`, turn && `on turn ${turn}`].filter(Boolean).join(', ');

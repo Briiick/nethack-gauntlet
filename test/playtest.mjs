@@ -176,10 +176,12 @@ for (let a = 0; a < MAX; a++) {
   else if (a % 80 === 67) { await key('F1'); await wait(200); const ok = await page.$('.panel.settings'); report.uiChecks.settings = (report.uiChecks.settings || 0) + (ok ? 1 : 0); if (!ok) problem('settings did not open'); await key('Escape'); }
   if (a % 150 === 149) await shot(`t${v.time}`);
 
-  const adj = v.mons.filter((m) => !m.pet && Math.abs(m.x - v.hero.x) <= 1 && Math.abs(m.y - v.hero.y) <= 1 && !peaceful.has(m.name));
+  const adj = v.mons.filter((m) => !m.pet && (m.x !== v.hero.x || m.y !== v.hero.y) && Math.abs(m.x - v.hero.x) <= 1 && Math.abs(m.y - v.hero.y) <= 1 && !peaceful.has(m.name));
   let act = '';
   if (v.hp && v.hpmax && v.hp < v.hpmax / 3 && v.time - prayedAt > 1000) {
     act = 'pray'; prayedAt = v.time; await key('Alt+p');
+  } else if (await page.evaluate(() => !!window.__nhg.renderer.engulfed)) {
+    act = 'fight engulfer'; await key('F'); await key('l');
   } else if (adj.length) {
     const m = adj[0], d = DIRS[`${m.x - v.hero.x},${m.y - v.hero.y}`];
     act = 'fight ' + m.name; await key('F'); await key(d);

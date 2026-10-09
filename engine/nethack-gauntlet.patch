@@ -1,5 +1,5 @@
 diff --git a/sys/libnh/libnhmain.c b/sys/libnh/libnhmain.c
-index f974bc4..24db435 100644
+index f974bc4..55d0ec0 100644
 --- a/sys/libnh/libnhmain.c
 +++ b/sys/libnh/libnhmain.c
 @@ -769,6 +769,7 @@ sys_random_seed(void)
@@ -10,7 +10,7 @@ index f974bc4..24db435 100644
  /* for command-line options that perform some immediate action and then
     terminate the program without starting play, like 'nethack --version'
     or 'nethack -s Zelda'; do some cleanup before that termination */
-@@ -795,6 +796,35 @@ after_opt_showpaths(const char *dir)
+@@ -795,6 +796,43 @@ after_opt_showpaths(const char *dir)
      /*NOTREACHED*/
  }
  
@@ -41,13 +41,21 @@ index f974bc4..24db435 100644
 +{
 +    return (otyp >= 0 && otyp < NUM_OBJECTS) ? objects[otyp].oc_descr_idx : otyp;
 +}
++
++/* where the hero really is (the map can't tell while engulfed): x | y << 8 | engulfed << 16 */
++EMSCRIPTEN_KEEPALIVE int nhg_hero(void);
++int
++nhg_hero(void)
++{
++    return u.ux | (u.uy << 8) | ((u.uswallow ? 1 : 0) << 16);
++}
 +#endif
 +
  #ifdef __EMSCRIPTEN__
  /***
   * Helpers
 diff --git a/sys/unix/hints/include/cross-pre2.500 b/sys/unix/hints/include/cross-pre2.500
-index ddc3ba7..92ccafb 100644
+index ddc3ba7..41ddd12 100644
 --- a/sys/unix/hints/include/cross-pre2.500
 +++ b/sys/unix/hints/include/cross-pre2.500
 @@ -275,14 +275,14 @@ EMCC_LFLAGS =
@@ -60,7 +68,7 @@ index ddc3ba7..92ccafb 100644
  EMCC_LFLAGS += -O3
  EMCC_LFLAGS += -s MODULARIZE
 -EMCC_LFLAGS += -s EXPORTED_FUNCTIONS='["_main", "_shim_graphics_set_callback", "_repopulate_perminvent", "_malloc"]'
-+EMCC_LFLAGS += -s EXPORTED_FUNCTIONS='["_main", "_shim_graphics_set_callback", "_repopulate_perminvent", "_malloc", "_free", "_nhg_obj_descr"]'
++EMCC_LFLAGS += -s EXPORTED_FUNCTIONS='["_main", "_shim_graphics_set_callback", "_repopulate_perminvent", "_malloc", "_free", "_nhg_obj_descr", "_nhg_hero"]'
  EMCC_LFLAGS += -s EXPORTED_RUNTIME_METHODS='["cwrap", "ccall", "addFunction", \
  			"removeFunction", "UTF8ToString", "stringToUTF8", "getValue", \
 -			"setValue", "ENV", "FS", "IDBFS"]'

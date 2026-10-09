@@ -110,6 +110,9 @@ CHROME=/path/to/chrome npm test
 - `test/playtest.mjs <url> <out> <Role> [actions] [--save-restore]` autoplays a real game:
   it explores, fights, eats, prays, takes the stairs down and tours the inventory, look, attributes and
   settings screens, reporting hangs, console errors and unknown keys.
+- `test/keys.mjs` checks every way to move (arrows, `hjklyubn`, numpad, Home/PgUp/End/PgDn,
+  Shift-run, wait); `test/engulf.mjs` gets swallowed by a fog cloud and fights out;
+  `test/death.mjs` and `test/epitaph.test.mjs` check the game-over screen names the cause of death.
 - `test/settings.mjs` and `test/showcase.mjs` take screenshots of every settings tab and of a
   fully kitted-out debug-mode character.
 
