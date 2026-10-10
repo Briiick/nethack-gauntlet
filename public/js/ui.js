@@ -165,13 +165,15 @@ export class UI {
     const hero = this.renderer.heroActor();
     if (!hero) return;   // the hero's actor is briefly rebuilt during combat: keep the last portrait
     const c = $('#portrait'), ctx = c.getContext('2d');
-    const e = this.renderer.sheets.get(this.tiles.gmon[hero.g]);
-    const key = hero.g + (e ? ':s' : ':t');
+    const e = this.official ? null : this.renderer.sheets.get(this.tiles.gmon[hero.g]);
+    const key = hero.g + (this.official ? ':o' : e ? ':s' : ':t');
     if (key === this.portraitKey) return;
     this.portraitKey = key;
     ctx.clearRect(0, 0, c.width, c.height);
     ctx.imageSmoothingEnabled = false;
-    if (e) {
+    if (this.official) {
+      this.renderer.drawOfficial(ctx, hero.g, 2, 2, c.width - 4);
+    } else if (e) {
       // head and shoulders, cropped to the sprite's real bounds
       const [bx, by, bw] = spriteBounds(e);
       const w = Math.max(16, Math.round(bw * 0.86));
@@ -192,7 +194,17 @@ export class UI {
   closeModal() { $('#modal').hidden = true; $('#modal').innerHTML = ''; this.modal = null; }
 
   // Item icon for an object glyph at `px` pixels, from the atlas that scales most cleanly.
+  get official() { return this.settings.graphics === 'official' && !!this.renderer.officialImg; }
+
+  // NetHack's own tile for a glyph (appearance shuffle included), as an icon of px pixels
+  officialIcon(glyph, px) {
+    if (glyph < 0) return '';
+    const t = this.renderer.officialTile(glyph), cols = this.tiles.cols, k = px / 16;
+    return `<span class="icon official" style="width:${px}px;height:${px}px;background-image:url(assets/official.png);background-position:-${(t % cols) * 16 * k}px -${Math.floor(t / cols) * 16 * k}px;background-size:${cols * 16 * k}px auto"></span>`;
+  }
+
   itemIcon(glyph, px = 48) {
+    if (this.official) return this.officialIcon(glyph, px);
     const it = this.renderer.itemOf(glyph);
     if (!it || !this.renderer.items) return this.tileIcon(glyph, px / this.tiles.cell, true);
     if (it.corpse !== undefined) {
@@ -210,6 +222,7 @@ export class UI {
 
   tileIcon(glyph, s = 2, raw = false) {
     if (glyph < 0) return '';
+    if (!raw && this.official) return this.officialIcon(glyph, 16 * Math.max(1, Math.round(s)));
     if (!raw && this.renderer.itemOf(glyph)) return this.itemIcon(glyph, Math.round(this.tiles.cell * s));
     const t = this.tiles.g2t[glyph], cell = this.tiles.cell, cols = this.tiles.cols;
     const x = (t % cols) * cell, y = Math.floor(t / cols) * cell;
@@ -369,8 +382,9 @@ export class UI {
   }
 
 
-  gameOver(text) {
+  gameOver(text, heading) {
     const el = $('#gameover');
+    el.querySelector('h1').textContent = heading || 'Farewell';
     el.querySelector('p').textContent = text;
     el.hidden = false;
   }

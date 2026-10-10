@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build the tile atlas and glyph table for NetHack Gauntlet.
+"""Build the tile atlases and glyph table for the NetHack interface.
 
 Inputs (from a NetHack 5.0 source tree):
   win/share/{monsters,objects,other}.txt   the official 16x16 tile art
@@ -7,6 +7,8 @@ Inputs (from a NetHack 5.0 source tree):
 
 Outputs:
   public/assets/atlas.png    every tile restyled (dark outline on sprites), 18x18 cells
+  public/assets/official.png NetHack's own tiles exactly as shipped (16x16, same tile order), with
+                             the tileset's background teal transparent as NetHack's tile ports draw it
   public/assets/tiles.json   glyph -> tile index, glyph -> render class, tile names
 
 Usage: python3 tools/make_atlas.py <nethack-src-dir> <out-assets-dir>
@@ -45,6 +47,25 @@ def parse_tiles(path):
         elif cur is not None:
             cur.append(line.strip())
     return pal, tiles
+
+
+TEAL = (71, 108, 108)   # the tileset's background colour
+
+
+def official_image(pal, rows, gray=False):
+    """One tile as NetHack ships it; only the background teal becomes transparent."""
+    im = Image.new('RGBA', (16, 16), (0, 0, 0, 0))
+    px = im.load()
+    for y, r in enumerate(rows[:16]):
+        for x, ch in enumerate(r[:16]):
+            c = pal.get(ch, TEAL)
+            if c == TEAL:
+                continue
+            if gray:
+                l = int(c[0] * 0.3 + c[1] * 0.59 + c[2] * 0.11)
+                c = (l, l, l)
+            px[x, y] = (*c, 255)
+    return im
 
 
 def tile_image(pal, rows, outline, gray=False, transparent=None):
@@ -142,7 +163,9 @@ def main():
     rows_n = (total + COLS - 1) // COLS
     atlas = Image.new('RGBA', (COLS * CELL, rows_n * CELL), (0, 0, 0, 0))
     names = [''] * total
+    official = Image.new('RGBA', (COLS * 16, rows_n * 16), (0, 0, 0, 0))
     for idx, (f, i, name, rows, pal) in enumerate(tiles):
+        official.alpha_composite(official_image(pal, rows), ((idx % COLS) * 16, (idx // COLS) * 16))
         solid_terrain = f == 'other.txt' and any(k in name for k in (
             'walls', 'floor', 'corridor', 'stone', 'water', 'lava', 'ice', 'dark part', 'door', 'unexplored', 'nothing', 'air', 'cloud', 'explosion', 'swallow'))
         im = tile_image(pal, rows, outline=(f != 'other.txt'), transparent=not solid_terrain)
@@ -153,6 +176,7 @@ def main():
             mf, mi, mname, mrows, mpal = tiles[file_base['monsters.txt'] + local]
             im = tile_image(mpal, mrows, outline=True, gray=True)
             atlas.alpha_composite(im, ((tidx % COLS) * CELL, (tidx // COLS) * CELL))
+            official.alpha_composite(official_image(mpal, mrows, gray=True), ((tidx % COLS) * 16, (tidx // COLS) * 16))
             names[tidx] = 'statue of ' + mname
 
     g2t, gcls, gtheme, gname, gmon, gobj = [], [], [], [], [], []
@@ -185,6 +209,7 @@ def main():
     gobj = [corpse if o == -2 else o for o in gobj]
 
     atlas.save(OUT / 'atlas.png', optimize=True)
+    official.save(OUT / 'official.png', optimize=True)
     data = {
         'cell': CELL, 'cols': COLS, 'tiles': total, 'glyphs': max_glyph,
         'classes': classes, 'themes': themes,

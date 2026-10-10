@@ -92,6 +92,13 @@ export class Renderer {
     this.view = canvas; this.vctx = canvas.getContext('2d');
     this.items = items;                       // { cols, img18 } rendered item icons, one per object appearance
     this.objDescr = (o) => o;                 // replaced once the engine is up (appearances are shuffled per game)
+    this.officialImg = null;                  // NetHack's own 16x16 tiles (Settings > Graphics)
+    this.objGlyph = [new Map(), new Map()];   // [plain, piletop]: object type -> its glyph
+    tiles.gobj.forEach((o, g) => {
+      if (o < 0 || /body of /.test(tiles.gname[g])) return;
+      const m = this.objGlyph[/^piletop /.test(tiles.gname[g]) ? 1 : 0];
+      if (!m.has(o)) m.set(o, g);
+    });
     this.corpseCache = new Map();
     this.tiles = tiles; this.atlas = atlas; this.settings = settings;
     this.sheets = new ActorSheets(actorManifest, (mnum) => this.onSheet(mnum));
@@ -676,6 +683,11 @@ export class Renderer {
   }
 
   screenToCell(clientX, clientY) {
+    if (this.officialView) {
+      const r = this.view.getBoundingClientRect(), o = this.officialView;
+      const px = (clientX - r.left) * (this.view.width / r.width), py = (clientY - r.top) * (this.view.height / r.height);
+      return { x: Math.floor((px - o.x0) / o.size), y: Math.floor((py - o.y0) / o.size) };
+    }
     const r = this.view.getBoundingClientRect();
     const wx = this.cam.x + (clientX - r.left) * (this.vw / r.width);
     const wy = this.cam.y + (clientY - r.top) * (this.vh / r.height);
@@ -684,6 +696,8 @@ export class Renderer {
 
   frame(t) {
     requestAnimationFrame((tt) => this.frame(tt));
+    if (this.settings.graphics === 'official' && this.officialImg) { this.frameOfficial(); return; }
+    if (this.officialView) { this.officialView = null; this.resize(); }   // back from official tiles
     const dt = Math.min(0.05, (t - (this.lastFrame || t)) / 1000); this.lastFrame = t;
     if (t < this.hitstop) return;
     if (this.anyDirty && t - this.lastCommit > 120) this.commit();
@@ -766,6 +780,57 @@ export class Renderer {
     sctx.setTransform(1, 0, 0, 1, 0, 0);
     this.vctx.imageSmoothingEnabled = false;
     this.vctx.drawImage(this.scene, 0, 0, vw * this.zoom, vh * this.zoom);
+  }
+
+  // ------------------------------------------------------------------ official NetHack tiles
+  // The tile NetHack's own tile ports would draw for a glyph, following the per-game appearance shuffle.
+  officialTile(g) {
+    const o = this.tiles.gobj[g];
+    if (o >= 0 && !/body of /.test(this.tiles.gname[g])) {
+      let d = o;
+      try { d = this.objDescr(o); } catch (e) { /* engine not ready */ }
+      const alt = this.objGlyph[/^piletop /.test(this.tiles.gname[g]) ? 1 : 0].get(d);
+      if (alt !== undefined) g = alt;
+    }
+    return this.tiles.g2t[g];
+  }
+
+  drawOfficial(ctx, g, dx, dy, size) {
+    const t = this.officialTile(g), cols = this.tiles.cols;
+    ctx.drawImage(this.officialImg, (t % cols) * 16, Math.floor(t / cols) * 16, 16, 16, dx, dy, size, size);
+  }
+
+  // Draw the map the way NetHack's tile interfaces do: the background glyph, then the glyph, cell by cell.
+  frameOfficial() {
+    const c = this.view, ctx = this.vctx;
+    const dpr = Math.min(2, devicePixelRatio || 1);
+    const cw = Math.max(1, Math.round(c.clientWidth * dpr)), ch = Math.max(1, Math.round(c.clientHeight * dpr));
+    if (c.width !== cw || c.height !== ch) { c.width = cw; c.height = ch; }
+    const z = this.settings.zoom === 'auto' ? Math.max(1, Math.floor(Math.min(cw / (16 * 40), ch / (16 * 21)))) : +this.settings.zoom * (dpr > 1.5 ? 2 : 1);
+    const size = 16 * z;
+    const focus = this.cursor || this.heroCell;
+    const fit = (n, view) => (n * size <= view ? (view - n * size) / 2 : null);
+    let x0 = fit(COLNO, cw), y0 = fit(ROWNO, ch);
+    if (x0 === null) x0 = Math.round(Math.max(cw - COLNO * size, Math.min(0, cw / 2 - (focus.x + 0.5) * size)));
+    if (y0 === null) y0 = Math.round(Math.max(ch - ROWNO * size, Math.min(0, ch / 2 - (focus.y + 0.5) * size)));
+    x0 = Math.round(x0); y0 = Math.round(y0);
+    this.officialView = { x0, y0, size };
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.imageSmoothingEnabled = false;
+    ctx.fillStyle = '#000'; ctx.fillRect(0, 0, cw, ch);
+    const xa = Math.max(0, Math.floor(-x0 / size)), xb = Math.min(COLNO - 1, Math.ceil((cw - x0) / size));
+    const ya = Math.max(0, Math.floor(-y0 / size)), yb = Math.min(ROWNO - 1, Math.ceil((ch - y0) / size));
+    for (let y = ya; y <= yb; y++) for (let x = xa; x <= xb; x++) {
+      const i = this.idx(x, y), g = this.glyph[i], bk = this.bk[i];
+      const dx = x0 + x * size, dy = y0 + y * size;
+      if (bk >= 0 && bk !== g) this.drawOfficial(ctx, bk, dx, dy, size);
+      if (g >= 0) this.drawOfficial(ctx, g, dx, dy, size);
+    }
+    if (this.cursor) {   // the cursor while picking a position
+      const dx = x0 + this.cursor.x * size, dy = y0 + this.cursor.y * size;
+      ctx.strokeStyle = '#ffd65a'; ctx.lineWidth = Math.max(2, z);
+      ctx.strokeRect(dx + ctx.lineWidth / 2, dy + ctx.lineWidth / 2, size - ctx.lineWidth, size - ctx.lineWidth);
+    }
   }
 
   // targeting brackets for "pick a position" prompts

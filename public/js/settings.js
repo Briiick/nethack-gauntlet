@@ -4,21 +4,28 @@ import { listSaves, deleteSave, persistSaves, readExtCommands } from './engine.j
 
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
+export const SETTINGS_VERSION = 2;
+
+// NetHack 5.0's own defaults (include/optlist.h), so a new game plays exactly like NetHack
+export const NETHACK_DEFAULTS = { autopickup: 'all', safePet: true, confirm: true, autoquiver: false, pushweapon: false,
+  autoopen: true, verbose: true, showTime: false, showExp: false, tutorial: true, restOnSpace: false };
+
 export const DEFAULTS = {
+  version: SETTINGS_VERSION, graphics: 'redrawn',
   zoom: 'auto', animSpeed: 'smooth', shake: 'subtle', fastMissiles: false, reduceMotion: false,
   brightness: 'normal', gore: true, feedLines: 6, clickTravel: true, markers: true,
-  game: { autopickup: '$', safePet: true, confirm: true, autoquiver: true, pushweapon: false, autoopen: true,
-    verbose: true, showTime: true, showExp: true, tutorial: false, restOnSpace: false },
+  game: { ...NETHACK_DEFAULTS, showTime: true, showExp: true },   // these two only change what the status shows
 };
 
-// NetHack options (.nethackrc) for a new game from the Gameplay settings.
+// NetHack options (.nethackrc) for a new game: only the ones you changed from NetHack's defaults.
 export function gameOptions(g) {
-  const o = [];
-  const flag = (on, name) => o.push(on ? name : '!' + name);
-  if (g.autopickup) o.push('autopickup', `pickup_types:${g.autopickup}`); else o.push('!autopickup');
-  flag(g.safePet, 'safe_pet'); flag(g.confirm, 'confirm'); flag(g.autoquiver, 'autoquiver'); flag(g.pushweapon, 'pushweapon');
-  flag(g.autoopen, 'autoopen'); flag(g.verbose, 'verbose'); flag(g.showTime, 'time'); flag(g.showExp, 'showexp');
-  flag(g.tutorial, 'tutorial'); flag(g.restOnSpace, 'rest_on_space');
+  const o = [], d = NETHACK_DEFAULTS;
+  const flag = (key, name) => { if (g[key] !== d[key]) o.push(g[key] ? name : '!' + name); };
+  if (g.autopickup === 'off') o.push('!autopickup');
+  else if (g.autopickup && g.autopickup !== 'all') o.push(`pickup_types:${g.autopickup}`);
+  flag('safePet', 'safe_pet'); flag('confirm', 'confirm'); flag('autoquiver', 'autoquiver'); flag('pushweapon', 'pushweapon');
+  flag('autoopen', 'autoopen'); flag('verbose', 'verbose'); flag('showTime', 'time'); flag('showExp', 'showexp');
+  flag('tutorial', 'tutorial'); flag('restOnSpace', 'rest_on_space');
   return o;
 }
 
@@ -79,6 +86,7 @@ export function openSettings(ui, startTab = 'display') {
 
   const panes = {
     display: () => `<div class="grid">
+      ${sel('set-graphics', 'Graphics', [['redrawn', 'Redrawn NetHack sprites (animated)'], ['official', 'Official NetHack tiles']], s.graphics, 'The official 16×16 tileset that ships with NetHack')}
       ${sel('set-zoom', 'Zoom', [['auto', 'Auto (fit the window)'], [2, '2×'], [3, '3×'], [4, '4×'], [5, '5×']], s.zoom)}
       ${sel('set-bright', 'Brightness', [['dim', 'Dim'], ['normal', 'Normal'], ['bright', 'Bright']], s.brightness, 'How dark unlit areas are')}
       ${sel('set-anim', 'Animation speed', [['smooth', 'Smooth'], ['snappy', 'Snappy'], ['instant', 'Instant']], s.animSpeed)}
@@ -89,9 +97,9 @@ export function openSettings(ui, startTab = 'display') {
       ${chk('set-markers', 'Hero & pet rings', s.markers, 'Coloured rings under you and your pets')}
       ${chk('set-reduce', 'Reduce motion', s.reduceMotion, 'Fewer particles, no screen shake')}
     </div>`,
-    gameplay: () => `<p class="note">Click to travel applies right away. The NetHack options apply when you start or resume
-      a game; inside a game, NetHack's own option screen (<kbd>O</kbd>) changes them for the current session.</p><div class="grid">
-      ${sel('set-pickup', 'Autopickup', [['$', 'Gold only'], ['$?!/="+', 'Gold, scrolls, potions, wands, rings, amulets, books'], ['$?!/="+*', '…and gems'], ['', 'Off']], s.game.autopickup)}
+    gameplay: () => `<p class="note">These start at NetHack's own defaults. Changes apply when you start or resume a game;
+      inside a game, NetHack's option screen (<kbd>O</kbd>) changes them for the current session. Click to travel applies right away.</p><div class="grid">
+      ${sel('set-pickup', 'Autopickup', [['all', 'Everything (NetHack default)'], ['$', 'Gold only'], ['$?!/="+', 'Gold, scrolls, potions, wands, rings, amulets, books'], ['off', 'Off']], s.game.autopickup)}
       ${chk('set-click', 'Click to travel', s.clickTravel, 'Clicking the map walks you there')}
       ${chk('set-safepet', 'Safe pets', s.game.safePet, 'Ask before attacking your pet')}
       ${chk('set-confirm', 'Confirm peacefuls', s.game.confirm, 'Ask before attacking peaceful monsters')}
@@ -131,8 +139,8 @@ export function openSettings(ui, startTab = 'display') {
           <button type="button" class="ghostbtn danger" data-delete="${esc(f)}">Delete</button></li>`).join('') : '<li class="none">No saved games yet.</li>'}</ul>
         <div class="row-actions"><label class="ghostbtn file">Import a save…<input type="file" class="import" hidden></label></div>`;
     },
-    about: () => `<div class="about"><p><b>NetHack Gauntlet</b>: NetHack 5.0.0, the real game, compiled to WebAssembly
-      and running entirely on this computer. No internet connection is needed or used.</p>
+    about: () => `<div class="about"><p><b>NetHack Gauntlet</b>: NetHack 5.0.0, the real game, unchanged, compiled to WebAssembly
+      and running entirely on this computer. This is only an interface: what happens in the game is NetHack's. No internet connection is needed or used.</p>
       <p>NetHack is © Stichting Mathematisch Centrum and M. Stephenson and the NetHack DevTeam, distributed under the
       NetHack General Public License. Fonts: Cinzel, Barlow Condensed, EB Garamond, IBM Plex Mono and Pirata One
       (SIL Open Font License).</p><p>In-game help: <kbd>?</kbd>. Command list: the Controls tab.</p></div>`,
@@ -159,7 +167,7 @@ export function openSettings(ui, startTab = 'display') {
   const collect = () => {
     const v = (id) => el.querySelector('#' + id);
     if (v('set-zoom')) {
-      s.zoom = v('set-zoom').value; s.brightness = v('set-bright').value; s.animSpeed = v('set-anim').value;
+      s.graphics = v('set-graphics').value; s.zoom = v('set-zoom').value; s.brightness = v('set-bright').value; s.animSpeed = v('set-anim').value;
       s.shake = v('set-shake').value; s.fastMissiles = v('set-missiles').value === 'fast'; s.feedLines = +v('set-feed').value;
       s.gore = v('set-gore').checked; s.markers = v('set-markers').checked; s.reduceMotion = v('set-reduce').checked;
       if (s.reduceMotion) s.shake = 'off';

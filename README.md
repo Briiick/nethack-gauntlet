@@ -4,6 +4,11 @@ Real NetHack 5.0, unmodified rules, with an overhead, torchlit pixel-art interfa
 newer *Gauntlet* games and *Nuclear Throne*. Everything runs locally in your browser and works
 fully offline: the engine, art and fonts are all in this folder, and nothing is sent anywhere.
 
+- **It's NetHack, not a new game.** Every rule, level, monster, item and message comes from the
+  unmodified NetHack 5.0.0 engine, and new games use NetHack's own option defaults and character
+  questions. The interface only changes how things look: torchlit walls, lighting, blood and
+  animation are cosmetic and don't affect play. Prefer the classic look? Settings → Graphics →
+  *Official NetHack tiles*.
 - **The real game.** NetHack 5.0.0 compiled to WebAssembly, driven through its own window-port API.
   Saves persist in your browser (IndexedDB).
 - **Hand-lit 3D-to-pixel sprites.** All 383 monsters and every player role are modelled in 3D and
@@ -49,9 +54,11 @@ cursor appears: move it with the direction keys, then press `.` or `,` or click.
 
 ### Settings
 
-- **Display**: zoom, brightness, animation speed, screen shake, missile speed, message lines,
+- **Display**: graphics (the redrawn animated sprites, or NetHack's official 16×16 tileset drawn
+  exactly as NetHack's own tile interfaces draw it), zoom, brightness, animation speed, screen shake, missile speed, message lines,
   blood, hero/pet rings, reduce motion.
-- **Gameplay**: autopickup, click to travel, safe pets, confirm peacefuls, auto-open doors,
+- **Gameplay** (these start at NetHack's own defaults, and only options you change are passed
+  to the game): autopickup, click to travel, safe pets, confirm peacefuls, auto-open doors,
   auto-quiver, push weapon, space rests, verbose messages, turn counter, experience points, tutorial.
 - **Controls**: how to move and fight, and every command in the game with its key, read from
   NetHack's own command table. It's searchable, and clicking a command runs it.
@@ -113,6 +120,8 @@ CHROME=/path/to/chrome npm test
 - `test/keys.mjs` checks every way to move (arrows, `hjklyubn`, numpad, Home/PgUp/End/PgDn,
   Shift-run, wait); `test/engulf.mjs` gets swallowed by a fog cloud and fights out;
   `test/death.mjs` and `test/epitaph.test.mjs` check the game-over screen names the cause of death.
+- `test/official.mjs` plays with the official tileset: map, inventory, targeting, the appearance
+  shuffle, and switching back.
 - `test/settings.mjs` and `test/showcase.mjs` take screenshots of every settings tab and of a
   fully kitted-out debug-mode character.
 

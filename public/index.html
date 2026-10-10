@@ -68,11 +68,11 @@
           <option value="Knight">Knight</option><option value="Monk">Monk</option><option value="Priest">Priest</option>
           <option value="Ranger">Ranger</option><option value="Rogue">Rogue</option><option value="Samurai">Samurai</option>
           <option value="Tourist">Tourist</option><option value="Wizard">Wizard</option><option value="random">Random</option>
-          <option value="ask">Choose in-game (race, gender, alignment)</option>
+          <option value="ask">Let NetHack ask (role, race, gender, alignment)</option>
         </select>
-        <span></span><label class="check"><input type="checkbox" id="start-tutorial"> Offer NetHack's tutorial</label>
+        <span></span><label class="check"><input type="checkbox" id="start-tutorial" checked> Offer NetHack's tutorial</label>
         <label for="start-pickup">Autopickup</label>
-        <select id="start-pickup"><option value="$">Gold only</option><option value="$?!/=&quot;+">Gold, scrolls, potions, wands, rings, amulets, books</option><option value="">Off</option></select>
+        <select id="start-pickup"><option value="all">Everything (NetHack default)</option><option value="$">Gold only</option><option value="$?!/=&quot;+">Gold, scrolls, potions, wands, rings, amulets, books</option><option value="off">Off</option></select>
       </div>
       <button type="submit" class="primary" id="start-go" disabled>Loading the dungeon…</button>
       <button type="button" class="linkbtn" id="start-settings">Settings &amp; controls</button>

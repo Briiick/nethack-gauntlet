@@ -222,8 +222,11 @@ export function inventoryMenu(ui, menu, how) {
         const g = ctx.createRadialGradient(32, 28, 4, 32, 40, 56);
         g.addColorStop(0, a.hero ? '#5a6a8a' : '#4a6a48'); g.addColorStop(1, '#0a0d0e');
         ctx.fillStyle = g; ctx.fillRect(0, 0, 64, 80);
-        const sh = ui.renderer.sheets.get(tiles.gmon[a.g]);
-        if (sh) {
+        const sh = ui.official ? null : ui.renderer.sheets.get(tiles.gmon[a.g]);
+        if (ui.official) {
+          ui.renderer.drawOfficial(ctx, a.g, 0, 8, 64);
+          p.done = true;
+        } else if (sh) {
           const [bx, by, bw, bh] = opaqueBounds(sh);
           if (sh.meta.rig === 'humanoid') {   // head and shoulders
             const w = Math.max(18, bw * 0.92), h = w * 1.25;
@@ -249,6 +252,7 @@ export function inventoryMenu(ui, menu, how) {
     const t0 = performance.now();
     const drawHero = () => {
       hx.clearRect(0, 0, 256, 256);
+      if (ui.official) { if (heroA) ui.renderer.drawOfficial(hx, heroA.g, 32, 48, 192); return; }   // NetHack's own tile, 12x
       const heroSheet = heroA ? ui.renderer.sheets.get(tiles.gmon[heroA.g]) : null;
       if (!heroSheet) {
         if (heroA) {

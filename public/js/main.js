@@ -3,11 +3,13 @@ import { loadEngine, runGame, listSaves, deleteSave } from './engine.js';
 import { Game } from './game.js';
 import { Renderer } from './render.js';
 import { UI } from './ui.js';
-import { DEFAULTS, gameOptions } from './settings.js';
+import { DEFAULTS, SETTINGS_VERSION, gameOptions } from './settings.js';
 
 function loadSettings() {
   let s = {};
   try { s = JSON.parse(localStorage.getItem('nhg-settings') || '{}'); } catch (e) { /* private mode */ }
+  // settings saved before version 2 carried this interface's own gameplay defaults: reset those to NetHack's
+  if ((s.version || 1) < SETTINGS_VERSION) { delete s.game; s.version = SETTINGS_VERSION; }
   const out = { ...DEFAULTS, ...s, game: { ...DEFAULTS.game, ...(s.game || {}) } };
   if (matchMedia('(prefers-reduced-motion: reduce)').matches) { out.reduceMotion = true; out.shake = 'off'; }
   return out;
@@ -27,7 +29,9 @@ async function boot() {
       .then(([meta, img18]) => ({ ...meta, img18 })).catch(() => null),
   ]);
   [32, 48].forEach((n) => img(`assets/items/items${n}.png`).catch(() => {}));   // warm the cache for the inventory
+  const officialImg = img('assets/official.png').catch(() => null);   // NetHack's own tiles (Settings > Graphics)
   const renderer = new Renderer(document.getElementById('view'), tiles, atlas, actors, settings, items);
+  officialImg.then((i) => { renderer.officialImg = i; });
   const ui = new UI({ tiles, atlas, renderer, settings, saveSettings });
   ui.startPortraitLoop();
   const game = new Game({ ui, renderer, tiles });
@@ -74,12 +78,10 @@ async function boot() {
     settings.game.autopickup = document.getElementById('start-pickup').value;
     settings.game.tutorial = document.getElementById('start-tutorial').checked;
     saveSettings();
+    // display-only options, then gameplay options only where you changed NetHack's defaults
     const opts = [`name:${name}`, 'number_pad:0', 'color', 'hilite_pet', 'lit_corridor', 'dark_room', 'pile_limit:3', ...gameOptions(settings.game)];
-    if (role !== 'ask') {
-      opts.push(`role:${role}`);
-      if (role === 'Valkyrie') opts.push('gender:female', 'race:human', 'align:lawful');
-      else opts.push('race:random', 'gender:random', 'align:random');
-    }
+    if (role === 'random') opts.push('role:random', 'race:random', 'gender:random', 'align:random');
+    else if (role !== 'ask') opts.push(`role:${role}`);   // NetHack asks about race, gender and alignment
     if (location.hash === '#wizard') {   // developer mode: NetHack's debug ("wizard") mode
       opts.push('playmode:debug');
       const sc = new TextDecoder().decode(mod.FS.readFile('/sysconf')).replace(/^WIZARDS=.*$/m, 'WIZARDS=*');
