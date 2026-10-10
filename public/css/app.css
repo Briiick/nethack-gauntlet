@@ -340,3 +340,28 @@ kbd { font-family: var(--ui); font-weight: 700; color: var(--bone); border: 1px 
   box-shadow: 0 0 18px rgba(255,208,80,.25); }
 #target-hint[hidden] { display: none; }
 #target-hint kbd { margin: 0 1px; }
+
+/* ---- Modern controls: action bar, command palette, scheme switch */
+#actionbar { position: absolute; right: calc(env(safe-area-inset-right, 0px) + 12px); top: 50%; transform: translateY(-50%); z-index: 5;
+  display: flex; flex-direction: column; gap: 4px; padding: 5px; background: rgba(10,16,40,.82); border: 1px solid var(--brass-dim); border-radius: 8px; }
+#actionbar[hidden] { display: none; }
+#actionbar button { position: relative; width: 46px; height: 42px; display: grid; place-items: center; padding: 0; background: rgba(255,255,255,.03);
+  border: 1px solid #2a3458; border-radius: 5px; color: var(--steel); cursor: pointer; }
+#actionbar button:hover, #actionbar button:focus-visible { border-color: var(--brass); color: var(--bone); background: rgba(200,160,80,.14); }
+#actionbar kbd { position: absolute; right: 1px; bottom: 1px; font: 700 10px/1 var(--ui); padding: 1px 3px; border-width: 1px; border-radius: 2px; }
+#actionbar .lbl { position: absolute; right: calc(100% + 10px); top: 50%; transform: translateY(-50%); white-space: nowrap; padding: 4px 9px;
+  background: rgba(10,16,40,.95); border: 1px solid var(--brass-dim); border-radius: 3px; color: var(--bone); font: 600 15px var(--ui); opacity: 0; pointer-events: none; transition: opacity .12s; }
+#actionbar button:hover .lbl, #actionbar button:focus-visible .lbl { opacity: 1; }
+@media (max-height: 620px) { #actionbar button { height: 34px; width: 40px; } }
+.panel.palette { width: min(560px, 100%); }
+.panel.palette .pal-list { display: flex; flex-direction: column; max-height: 50vh; overflow: auto; padding: 0 14px 8px; }
+.panel.palette .pal-list button { display: flex; justify-content: space-between; gap: 12px; padding: 7px 10px; background: none; border: 1px solid transparent; color: var(--parch); text-align: left; cursor: pointer; font: 500 17px var(--serif); }
+.panel.palette .pal-list button.focus, .panel.palette .pal-list button:hover { border-color: var(--gilt-lo); background: rgba(201,163,90,.1); }
+.panel.palette .pal-list kbd { color: var(--gilt-hi); background: #120d0a; border-color: var(--gilt-lo); }
+.panel.settings .scheme { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 14px 18px 0; }
+.panel.settings .scheme label { display: flex; flex-direction: column; gap: 4px; padding: 12px 14px; border: 1px solid var(--gilt-lo); border-radius: 4px; cursor: pointer; background: rgba(0,0,0,.2); }
+.panel.settings .scheme label.on { border-color: var(--gilt-hi); background: rgba(201,163,90,.12); box-shadow: 0 0 12px rgba(242,214,140,.15); }
+.panel.settings .scheme input { position: absolute; opacity: 0; pointer-events: none; }
+.panel.settings .scheme b { font: 700 17px var(--display); color: var(--gilt-hi); }
+.panel.settings .scheme small { font: italic 500 15px/1.3 var(--serif); color: #c8b490; }
+.panel.settings .grid.compact { padding-top: 10px; padding-bottom: 0; }

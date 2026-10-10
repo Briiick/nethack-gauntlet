@@ -1,6 +1,7 @@
 // Settings screen: Display, Gameplay, Controls (every NetHack command, from the engine's own
 // command table), Saves (export / import / delete) and About.
 import { listSaves, deleteSave, persistSaves, readExtCommands } from './engine.js';
+import { MODERN_HELP } from './controls.js';
 
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
@@ -11,7 +12,7 @@ export const NETHACK_DEFAULTS = { autopickup: 'all', safePet: true, confirm: tru
   autoopen: true, verbose: true, showTime: false, showExp: false, tutorial: true, restOnSpace: false };
 
 export const DEFAULTS = {
-  version: SETTINGS_VERSION, graphics: 'redrawn',
+  version: SETTINGS_VERSION, graphics: 'redrawn', controls: 'modern', actionBar: true,
   zoom: 'auto', animSpeed: 'smooth', shake: 'subtle', fastMissiles: false, reduceMotion: false,
   brightness: 'normal', gore: true, feedLines: 6, clickTravel: true, markers: true,
   game: { ...NETHACK_DEFAULTS, showTime: true, showExp: true },   // these two only change what the status shows
@@ -118,11 +119,19 @@ export function openSettings(ui, startTab = 'display') {
       const groups = {};
       for (const c of cmds) (groups[c.group] = groups[c.group] || []).push(c);
       const order = ['Prefixes', 'Combat', 'Items', 'Magic & faith', 'World', 'Information', 'Game', 'Other', 'Debug mode'];
-      return `<div class="controls">
-        <section class="move"><h3>Moving and fighting</h3>
-          <div class="pad" aria-hidden="true">${['y', 'k', 'u', 'h', '.', 'l', 'b', 'j', 'n'].map((k) => `<kbd>${k}</kbd>`).join('')}</div>
-          <dl>${MOVE_HELP.map(([a, b]) => `<dt>${a}</dt><dd>${b}</dd>`).join('')}</dl></section>
-        <section class="cmds"><h3>Every command <small>(click one to use it)</small></h3>
+      const modern = s.controls !== 'classic';
+      return `<div class="scheme" role="radiogroup" aria-label="Control scheme">
+          <label class="${modern ? 'on' : ''}"><input type="radio" name="scheme" value="modern" ${modern ? 'checked' : ''}>
+            <b>Modern</b><small>WASD to move, E to interact, I for inventory, Tab for every action, plus an action bar</small></label>
+          <label class="${modern ? '' : 'on'}"><input type="radio" name="scheme" value="classic" ${modern ? '' : 'checked'}>
+            <b>Classic NetHack</b><small>NetHack's own keys: hjklyubn to move, a letter for every command</small></label>
+        </div>
+        ${modern ? `<div class="grid compact">${chk('set-actionbar', 'Show the action bar', s.actionBar !== false, 'Clickable buttons along the bottom')}</div>` : ''}
+        <div class="controls">
+        <section class="move"><h3>${modern ? 'Modern controls' : 'Moving and fighting'}</h3>
+          ${modern ? '' : `<div class="pad" aria-hidden="true">${['y', 'k', 'u', 'h', '.', 'l', 'b', 'j', 'n'].map((k) => `<kbd>${k}</kbd>`).join('')}</div>`}
+          <dl>${(modern ? MODERN_HELP : MOVE_HELP).map(([a, b]) => `<dt>${a}</dt><dd>${b}</dd>`).join('')}</dl></section>
+        <section class="cmds"><h3>Every command <small>(click one to use it${modern ? '; keys shown are NetHack\'s, also available in Modern mode via Tab' : ''})</small></h3>
           <input type="search" class="filter" placeholder="Search commands…" aria-label="Search commands">
           <div class="cmdlist">${order.filter((g) => groups[g]).map((g) => `<h4>${g}</h4>${groups[g].map((c) => `
             <button type="button" class="cmd" data-cmd="${esc(c.name)}" data-key="${c.key || 0}" title="#${esc(c.name)}">
@@ -172,6 +181,9 @@ export function openSettings(ui, startTab = 'display') {
       s.gore = v('set-gore').checked; s.markers = v('set-markers').checked; s.reduceMotion = v('set-reduce').checked;
       if (s.reduceMotion) s.shake = 'off';
     }
+    const scheme = el.querySelector('input[name=scheme]:checked');
+    if (scheme) s.controls = scheme.value;
+    if (v('set-actionbar')) s.actionBar = v('set-actionbar').checked;
     if (v('set-pickup')) {
       Object.assign(s.game, { autopickup: v('set-pickup').value, safePet: v('set-safepet').checked, confirm: v('set-confirm').checked,
         autoopen: v('set-autoopen').checked, autoquiver: v('set-autoquiver').checked, pushweapon: v('set-pushweapon').checked,
@@ -188,6 +200,7 @@ export function openSettings(ui, startTab = 'display') {
   };
 
   el.addEventListener('change', collect);
+  el.addEventListener('change', (e) => { if (e.target.name === 'scheme') render(); });   // show that scheme's keys
   el.addEventListener('submit', (e) => { e.preventDefault(); close(); });
   el.addEventListener('click', async (e) => {
     const t = e.target.closest('[data-tab]');

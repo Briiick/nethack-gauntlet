@@ -56,17 +56,25 @@ export class Game {
   shim_putmsghistory(msg) { if (msg) this.ui.message(msg, 0, { history: true }); }
   shim_nhbell() { this.ui.bell(); }
   shim_cliparound() {}   // the hero comes from glyph flags; the camera follows the hero or the targeting cursor
+  // The engine's view: where the hero is (the map can't tell while engulfed) and whether
+  // NetHack is asking the player to pick a spot on the map.
+  engineState() {
+    try {
+      const h = this.mod._nhg_hero();
+      return { x: h & 0xff, y: (h >> 8) & 0xff, engulfed: !!((h >> 16) & 1), picking: !!((h >> 17) & 1) };
+    } catch (e) { return { x: this.hero.x, y: this.hero.y, engulfed: false, picking: null }; }   // older engine
+  }
+
   shim_curs(win, x, y) {
-    // NetHack moves the map cursor away from the hero only while you pick a position
     const w = this.windows.get(win);
     if (!w || w.type !== NHW.MAP) return;
-    // compare with where the engine says the hero is (the map can't tell while engulfed)
-    let hx = this.hero.x, hy = this.hero.y;
-    try { const h = this.mod._nhg_hero(); hx = h & 0xff; hy = (h >> 8) & 0xff; this.renderer.engulfed = !!((h >> 16) & 1); } catch (e) { /* older engine */ }
-    if (this.renderer.engulfed) { this.hero.x = hx; this.hero.y = hy; this.renderer.setHero(hx, hy); }
-    const away = x !== hx || y !== hy;
-    this.renderer.cursor = away ? { x, y } : null;
-    this.ui.targeting(away);
+    const s = this.engineState();
+    this.renderer.engulfed = s.engulfed;
+    if (s.engulfed) { this.hero.x = s.x; this.hero.y = s.y; this.renderer.setHero(s.x, s.y); }
+    this.cursorAt = { x, y };
+    const picking = s.picking === null ? (x !== s.x || y !== s.y) : s.picking;
+    this.renderer.cursor = picking ? { x, y } : null;
+    this.ui.targeting(picking);
   }
 
   // the engine stopped (exit) without going through exit_nhwindows
@@ -235,6 +243,12 @@ export class Game {
 
   async shim_nh_poskey(xp, yp, modp) {
     this.renderer.commit();
+    const s = this.engineState();   // picking a spot starts with the cursor on the hero: say so right away
+    if (s.picking !== null) {
+      if (s.picking && !this.renderer.cursor) this.renderer.cursor = { ...(this.cursorAt || { x: s.x, y: s.y }) };
+      if (!s.picking) this.renderer.cursor = null;
+      this.ui.targeting(s.picking);
+    }
     const ev = await this.ui.waitInput({ allowClick: true });
     this.messagesSinceInput = 0;
     if (ev.click) {

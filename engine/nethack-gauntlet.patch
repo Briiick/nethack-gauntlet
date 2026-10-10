@@ -1,5 +1,5 @@
 diff --git a/sys/libnh/libnhmain.c b/sys/libnh/libnhmain.c
-index f974bc4..55d0ec0 100644
+index f974bc4..2bfb2ef 100644
 --- a/sys/libnh/libnhmain.c
 +++ b/sys/libnh/libnhmain.c
 @@ -769,6 +769,7 @@ sys_random_seed(void)
@@ -10,7 +10,7 @@ index f974bc4..55d0ec0 100644
  /* for command-line options that perform some immediate action and then
     terminate the program without starting play, like 'nethack --version'
     or 'nethack -s Zelda'; do some cleanup before that termination */
-@@ -795,6 +796,43 @@ after_opt_showpaths(const char *dir)
+@@ -795,6 +796,44 @@ after_opt_showpaths(const char *dir)
      /*NOTREACHED*/
  }
  
@@ -42,12 +42,13 @@ index f974bc4..55d0ec0 100644
 +    return (otyp >= 0 && otyp < NUM_OBJECTS) ? objects[otyp].oc_descr_idx : otyp;
 +}
 +
-+/* where the hero really is (the map can't tell while engulfed): x | y << 8 | engulfed << 16 */
++/* where the hero really is (the map can't tell while engulfed), and whether NetHack is asking
++   the player to pick a map position: x | y << 8 | engulfed << 16 | picking << 17 */
 +EMSCRIPTEN_KEEPALIVE int nhg_hero(void);
 +int
 +nhg_hero(void)
 +{
-+    return u.ux | (u.uy << 8) | ((u.uswallow ? 1 : 0) << 16);
++    return u.ux | (u.uy << 8) | ((u.uswallow ? 1 : 0) << 16) | ((gg.getposx ? 1 : 0) << 17);
 +}
 +#endif
 +

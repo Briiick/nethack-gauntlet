@@ -3,6 +3,7 @@ import { BL, CONDITIONS, badConditions } from './game.js';
 import { isInventoryMenu, inventoryMenu } from './inventory.js';
 import { openSettings } from './settings.js';
 import { spriteBounds } from './render.js';
+import { ModernControls, mountActionBar } from './controls.js';
 
 const ESC = 27;
 const $ = (sel) => document.querySelector(sel);
@@ -39,15 +40,22 @@ export class UI {
     $('#view').addEventListener('contextmenu', (e) => e.preventDefault());
     $('#settings-btn').addEventListener('click', () => this.openSettings());
     $('#help-btn').addEventListener('click', () => this.pushKey('?'.charCodeAt(0)));
+    this.controls = new ModernControls(this);
+    mountActionBar(this);
   }
 
   // ------------------------------------------------------------------ input queue
   onKey(e) {
+    // modern controls also answer "in what direction?" with WASD
+    if (this.dirFinish && this.controls.on && this.controls.directionPrompt(e, this.dirFinish)) { e.preventDefault(); return; }
     if (this.modal && this.modal.onKey) { if (this.modal.onKey(e) !== false) { e.preventDefault(); return; } }
     if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT')) return;
     if (['Shift', 'Control', 'Alt', 'Meta', 'CapsLock'].includes(e.key)) return;
     if (e.key === 'F1') { e.preventDefault(); this.openSettings(); return; }
     if (e.metaKey) return;
+    if (this.controls.on && !this.modal && !(this.game && this.game.over)) {
+      if (this.isTargeting ? this.controls.targeting(e) : this.controls.command(e)) { e.preventDefault(); return; }
+    }
     const code = keyToCode(e);
     if (code === null) return;
     e.preventDefault();
@@ -61,6 +69,11 @@ export class UI {
   onPointer(e) {
     if (this.modal || (this.settings.clickTravel === false && !this.isTargeting)) return;
     const c = this.renderer.screenToCell(e.clientX, e.clientY);
+    if (e.button === 2 && this.controls.on && !this.isTargeting && this.waiter) {   // right-click: examine that spot
+      this.pushKey(';'.charCodeAt(0));
+      this.keyQueue.push({ click: { x: c.x, y: c.y, button: 1 } });
+      return;
+    }
     const ev = { click: { x: c.x, y: c.y, button: e.button === 2 ? 2 : 1 } };
     if (this.waiter && this.waiter.allowClick) { const w = this.waiter; this.waiter = null; w(ev); }
   }
@@ -75,11 +88,10 @@ export class UI {
     if (on === this.isTargeting) return;
     this.isTargeting = on;
     let el = $('#target-hint');
-    if (!el) {
-      el = document.createElement('div'); el.id = 'target-hint'; el.setAttribute('role', 'status');
-      el.innerHTML = 'Choose a spot: move with the direction keys (Shift moves 8), <kbd>.</kbd> or <kbd>,</kbd> or click to pick, <kbd>&lt;</kbd> <kbd>&gt;</kbd> <kbd>_</kbd> <kbd>m</kbd> jump to stairs, altars, monsters, <kbd>Esc</kbd> to cancel';
-      $('#stage').appendChild(el);
-    }
+    if (!el) { el = document.createElement('div'); el.id = 'target-hint'; el.setAttribute('role', 'status'); $('#stage').appendChild(el); }
+    el.innerHTML = this.controls.on
+      ? 'Choose a spot: move with <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> (Shift moves 8), then <kbd>E</kbd>, <kbd>Space</kbd> or click to pick it · <kbd>&lt;</kbd> <kbd>&gt;</kbd> jump to stairs · <kbd>Esc</kbd> cancels'
+      : 'Choose a spot: move with the direction keys (Shift moves 8), <kbd>.</kbd> or <kbd>,</kbd> or click to pick, <kbd>&lt;</kbd> <kbd>&gt;</kbd> <kbd>_</kbd> <kbd>m</kbd> jump to stairs, altars, monsters, <kbd>Esc</kbd> to cancel';
     el.hidden = !on;
   }
 
@@ -310,7 +322,8 @@ export class UI {
       this.prompt.hidden = false;
       $('#compass').hidden = !isDir;
       if (isDir) this.renderer.showCompass = true;
-      const finish = (code) => { this.prompt.hidden = true; $('#compass').hidden = true; this.renderer.showCompass = false; this.closeModal(); resolve(code); };
+      const finish = (code) => { this.dirFinish = null; this.prompt.hidden = true; $('#compass').hidden = true; this.renderer.showCompass = false; this.closeModal(); resolve(code); };
+      this.dirFinish = isDir ? finish : null;
       this.prompt.onclick = (e) => { const b = e.target.closest('button'); if (b) finish(b.dataset.k.charCodeAt(0)); };
       $('#compass').onclick = (e) => { const b = e.target.closest('button'); if (b) finish(b.dataset.k.charCodeAt(0)); };
       this.openModal(document.createElement('div'), (e) => {
@@ -378,7 +391,7 @@ export class UI {
   // ------------------------------------------------------------------ settings & end
   openSettings(tab) { openSettings(this, tab); }
   applySettings() {
-    this.renderer.resize(); this.renderer.rebuildLight(); this.trimFeed();
+    this.renderer.resize(); this.renderer.rebuildLight(); this.trimFeed(); mountActionBar(this);
   }
 
 

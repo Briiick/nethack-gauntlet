@@ -64,6 +64,9 @@ async function boot() {
   const pk = document.getElementById('start-pickup');
   if ([...pk.options].some((o) => o.value === settings.game.autopickup)) pk.value = settings.game.autopickup;
   document.getElementById('start-tutorial').checked = !!settings.game.tutorial;
+  const ctl = document.getElementById('start-controls');
+  ctl.value = settings.controls === 'classic' ? 'classic' : 'modern';
+  ctl.addEventListener('change', () => { settings.controls = ctl.value; saveSettings(); ui.applySettings(); });
   document.getElementById('start-settings')?.addEventListener('click', () => ui.openSettings());
   const go = document.getElementById('start-go');
   go.disabled = false; go.textContent = 'Enter the dungeon';
