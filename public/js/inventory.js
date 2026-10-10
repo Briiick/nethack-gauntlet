@@ -132,10 +132,18 @@ export function inventoryMenu(ui, menu, how) {
     const heroRank = titleVal.includes(' the ') ? 'the ' + titleVal.split(' the ').slice(1).join(' the ') : '';
     const xl = (val(BL.XP).match(/\d+/) || [])[0];
     const hp = +val(BL.HP) || 0, hpmax = +val(BL.HPMAX) || 0;
-    const prompt = menu.prompt && !/^\s*inventory:?\s*$/i.test(menu.prompt) ? menu.prompt : '';
+    const asked = menu.prompt || menu.context || '';
+    const prompt = asked && !/^\s*inventory:?\s*$/i.test(asked) ? asked : '';
+    // When NetHack opens this screen to *do* something (drop, eat, wear...), say so loudly:
+    // a click here acts, it doesn't just inspect.
+    const bare = prompt.replace(/\s*\[[^\]]*\]\s*$/, '');
+    const verbMatch = bare.match(/what (?:do you want|would you like) to ([a-z][a-z -]*?)(?: from [^?]*)?\??$/i) || bare.match(/^([a-z][a-z -]*?) what(?: type of [a-z ]+)?\??$/i);
+    const verb = verbMatch ? verbMatch[1].trim().toLowerCase() : '';
+    const acting = !!verb || (!!prompt && how !== 0);
+    const title = verb ? verb.replace(/^./, (c) => c.toUpperCase()) : 'Inventory';
 
     const el = document.createElement('div');
-    el.className = 'bg-inv';
+    el.className = 'bg-inv' + (acting ? ' acting' : '');
     el.setAttribute('role', 'dialog');
     el.setAttribute('aria-label', menu.prompt || 'Inventory');
 
@@ -162,9 +170,12 @@ export function inventoryMenu(ui, menu, how) {
         <main class="page">
           <canvas class="cracks" aria-hidden="true"></canvas>
           <header class="top">
-            <div class="plaque"><h2>Inventory</h2></div>
+            <div class="plaque"><h2>${esc(title)}</h2></div>
             <div class="who"><b>${esc(heroName)}</b><span>${esc([heroRank, val(BL.ALIGN), xl && 'Level ' + xl].filter(Boolean).join(' · '))}</span></div>
           </header>
+          ${acting ? `<div class="actbar" role="alert">${how === 2
+            ? `Choose what to <b>${esc(verb || 'select')}</b>, then <kbd>Enter</kbd>`
+            : `Click an item to <b>${esc(verb || 'choose')}</b> it`}<br><small><kbd>Esc</kbd> cancels and does nothing</small></div>` : ''}
           <section class="stage">
             <div class="badges">
               <div class="badge ac" title="Armour class (lower is better)"><svg viewBox="0 0 60 70" aria-hidden="true"><path d="M30 3 56 12v20c0 17-11 29-26 35C15 61 4 49 4 32V12z"/></svg><b>${esc(val(BL.AC) || '?')}</b><small>AC</small></div>
@@ -184,8 +195,9 @@ export function inventoryMenu(ui, menu, how) {
             <div class="box quiver"><h3>Quiver</h3><div class="row">${slot('quiver')}</div></div>
             <div class="state">${[val(BL.HUNGER), val(BL.CAP)].filter(Boolean).map((s) => `<span>${esc(s)}</span>`).join('')}</div>
           </section>
-          <div class="info" aria-live="polite"><div class="desc"></div><div class="hint">${prompt ? `<span class="ask">${esc(prompt)}</span>` : ''}${
-            pickNone ? '<span><kbd>Esc</kbd> close</span>' : pickAny ? '<span><kbd>letter</kbd> mark · <kbd>,</kbd> all · <kbd>Enter</kbd> confirm</span>' : '<span><kbd>letter</kbd> or click</span>'}${
+          <div class="info" aria-live="polite"><div class="desc"></div><div class="hint">${prompt && !verb ? `<span class="ask">${esc(prompt)}</span>` : ''}${
+            pickNone ? '<span><kbd>Esc</kbd> close</span>' : pickAny ? '<span><kbd>letter</kbd> mark · <kbd>,</kbd> all · <kbd>Enter</kbd> confirm</span>'
+              : acting ? '<span><kbd>letter</kbd> or click</span>' : '<span>Click an item to see what you can do with it · <kbd>Esc</kbd> close</span>'}${
             pickAny ? '<button type="button" class="confirm">Confirm</button>' : ''}</div></div>
           <section class="pack">
             <div class="bag" title="Inventory letters in use"><span class="sack" aria-hidden="true"></span><b>${entries.filter((e) => !/gold piece/.test(e.it.text)).length}</b><small>of 52</small></div>

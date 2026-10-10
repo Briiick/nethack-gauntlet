@@ -197,6 +197,7 @@ export class Game {
     const w = this.windows.get(win);
     this.renderer.commit();
     if (!w || !w.menu) { this.mod.setValue(listPtr, 0, '*'); return how === PICK.NONE ? 0 : -1; }
+    if (!w.menu.prompt && this.lastQuery) w.menu.context = this.lastQuery;
     const result = await this.ui.menu(w.menu, how);
     this.messagesSinceInput = 0;
     if (result === null) { this.mod.setValue(listPtr, 0, '*'); return -1; }
@@ -212,6 +213,7 @@ export class Game {
   // ---------------------------------------------------------------- prompts
   async shim_yn_function(query, resp, def) {
     this.renderer.commit();
+    this.lastQuery = query || '';   // "What do you want to drop? [abc or ?*]": the item list that may follow belongs to it
     const k = await this.ui.yn(query || '', resp || null, def & 0xff);
     this.messagesSinceInput = 0;
     return k;
@@ -243,6 +245,7 @@ export class Game {
 
   async shim_nh_poskey(xp, yp, modp) {
     this.renderer.commit();
+    this.lastQuery = '';   // back at the command prompt
     const s = this.engineState();   // picking a spot starts with the cursor on the hero: say so right away
     if (s.picking !== null) {
       if (s.picking && !this.renderer.cursor) this.renderer.cursor = { ...(this.cursorAt || { x: s.x, y: s.y }) };
