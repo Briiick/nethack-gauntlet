@@ -359,7 +359,8 @@ export class Renderer {
 
   drawWall(x, y, th) {
     const ctx = this.tctx, ox = x * T, oy = y * T;
-    const cap = hexrgb(th.cap), capHi = hexrgb(th.capHi), face = hexrgb(th.face), faceHi = hexrgb(th.faceHi), mortar = hexrgb(th.mortar);
+    // wall tops a little brighter than the dark around them, with a lit rim facing the room
+    const cap = shade(hexrgb(th.cap), 1.3), capHi = shade(hexrgb(th.capHi), 1.45), face = hexrgb(th.face), faceHi = hexrgb(th.faceHi), mortar = hexrgb(th.mortar);
     const img = ctx.createImageData(T, T); const d = img.data;
     const below = this.terrainClassAt(x, y + 1);
     const hasFace = OPEN_GROUND.has(below) || below === 'closeddoor';
@@ -371,7 +372,8 @@ export class Renderer {
       if (th.rough) c = shade(cap, 0.85 + hash(ax >> 1, ay >> 1) * 0.3);
       if (py <= 1 && n !== 'wall') c = capHi;
       if (px <= 1 && OPEN_GROUND.has(w)) c = capHi;
-      if (px >= T - 2 && OPEN_GROUND.has(e)) c = shade(cap, 0.7);
+      if (px >= T - 2 && OPEN_GROUND.has(e)) c = capHi;
+      if (py >= T - 2 && !hasFace && OPEN_GROUND.has(below)) c = capHi;
       if (hasFace && py >= faceTop) {
         const yy = py - faceTop, row = Math.floor(yy / 5);
         const isMortar = th.rough ? hash(ax >> 1, ay >> 1, 4) < 0.18 : ((yy % 5) === 4 || ((ax + (row % 2) * 8) % 16) === 0);
@@ -482,7 +484,20 @@ export class Renderer {
       d[i * 4] = Math.min(255, (26 + lift + v * 160) * bk); d[i * 4 + 1] = Math.min(255, (30 + lift + v * 166) * bk); d[i * 4 + 2] = Math.min(255, (52 + lift + v * 168) * bk); d[i * 4 + 3] = 255;
     }
     this.lightTexCtx.putImageData(img, 0, 0);
-    this.torches = []; this.lightSources = [];
+    this.torches = []; this.lightSources = []; this.exits = [];
+    // doorways that lead somewhere you haven't been yet: they glow and get an arrow
+    for (let y = 0; y < ROWNO; y++) for (let x = 0; x < COLNO; x++) {
+      const c = this.terrainClassAt(x, y);
+      if (c !== 'doorway' && c !== 'opendoor' && c !== 'closeddoor') continue;
+      for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+        const n = this.terrainClassAt(x + dx, y + dy);
+        if (n === 'stone' || n === 'void') {
+          this.exits.push({ x, y, dx, dy });
+          this.lightSources.push({ x, y, r: 46, rgb: '255,196,110', k: 0.42 });
+          break;
+        }
+      }
+    }
     for (let y = 0; y < ROWNO; y++) for (let x = 0; x < COLNO; x++) {
       const g = this.glyph[this.idx(x, y)];
       const below = y + 1 < ROWNO ? this.terrainClassAt(x, y + 1) : 'void';
@@ -708,8 +723,9 @@ export class Renderer {
     const cur = this.cursor;
     const fx = cur ? cur.x * T + T / 2 : hx, fy = cur ? cur.y * T + T / 2 : hy;
     let tx = fx - vw / 2, ty = fy - vh / 2;
-    if (vw >= W) tx = (W - vw) / 2; else tx = Math.max(-T, Math.min(W - vw + T, tx));
-    if (vh >= H) ty = (H - vh) / 2 - T; else ty = Math.max(-T * 3, Math.min(H - vh + T * 2, ty));
+    // keep the hero centred even at the map's edges, so they never end up under the HUD
+    if (vw >= W * 1.6) tx = (W - vw) / 2;
+    if (vh >= H * 1.6) ty = (H - vh) / 2 - T;
     if (!this.cam.init) { this.cam.x = tx; this.cam.y = ty; this.cam.init = true; }
     this.cam.x += (tx - this.cam.x) * Math.min(1, dt * 7); this.cam.y += (ty - this.cam.y) * Math.min(1, dt * 7);
     this.shake *= Math.pow(0.01, dt);
@@ -934,6 +950,22 @@ export class Renderer {
       sctx.drawImage(this.atlas, sx, sy, cell, cell, x * T + (T - cell) / 2, y * T + (T - cell) / 2, cell, cell);
     }
     if (engulfer) this.drawEngulf(t, engulfer);
+    if (this.settings.exitMarkers !== false) this.drawExits(t);
+  }
+
+  // a small pulsing chevron just outside each unexplored exit, pointing the way out
+  drawExits(t) {
+    const { sctx } = this, k = 0.55 + 0.45 * Math.sin(t / 320);
+    for (const e of this.exits || []) {
+      const cx = e.x * T + T / 2 + e.dx * 17, cy = e.y * T + T / 2 + e.dy * 17 - (e.dy === 0 ? 2 : 0);
+      const nudge = Math.round(Math.sin(t / 320) * 2);
+      for (let i = 0; i <= 6; i++) for (const side of [1, -1]) {
+        const u = i - 3 + nudge, v = side * (6 - i);
+        const px = Math.round(cx + u * e.dx - v * e.dy), py = Math.round(cy + u * e.dy + v * e.dx);
+        sctx.fillStyle = 'rgba(20,12,0,0.7)'; sctx.fillRect(px - 1, py, 3, 3);
+        sctx.fillStyle = `rgba(255,214,110,${0.55 + 0.45 * k})`; sctx.fillRect(px - 1, py - 1, 3, 3);
+      }
+    }
   }
 
   // Engulfed: the hero inside a churning wall of whatever swallowed them

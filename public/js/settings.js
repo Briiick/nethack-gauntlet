@@ -14,7 +14,7 @@ export const NETHACK_DEFAULTS = { autopickup: 'all', safePet: true, confirm: tru
 export const DEFAULTS = {
   version: SETTINGS_VERSION, graphics: 'redrawn', controls: 'modern', actionBar: true,
   zoom: 'auto', animSpeed: 'smooth', shake: 'subtle', fastMissiles: false, reduceMotion: false,
-  brightness: 'normal', gore: true, feedLines: 6, clickTravel: true, markers: true,
+  brightness: 'normal', gore: true, feedLines: 6, clickTravel: true, markers: true, exitMarkers: true,
   game: { ...NETHACK_DEFAULTS, showTime: true, showExp: true },   // these two only change what the status shows
 };
 
@@ -96,6 +96,7 @@ export function openSettings(ui, startTab = 'display') {
       ${sel('set-feed', 'Message lines', [[3, '3'], [6, '6'], [10, '10']], s.feedLines)}
       ${chk('set-gore', 'Blood', s.gore, 'Blood splashes and stains')}
       ${chk('set-markers', 'Hero & pet rings', s.markers, 'Coloured rings under you and your pets')}
+      ${chk('set-exits', 'Show unexplored exits', s.exitMarkers !== false, 'A glow and an arrow at doorways you haven\'t been through')}
       ${chk('set-reduce', 'Reduce motion', s.reduceMotion, 'Fewer particles, no screen shake')}
     </div>`,
     gameplay: () => `<p class="note">These start at NetHack's own defaults. Changes apply when you start or resume a game;
@@ -178,7 +179,7 @@ export function openSettings(ui, startTab = 'display') {
     if (v('set-zoom')) {
       s.graphics = v('set-graphics').value; s.zoom = v('set-zoom').value; s.brightness = v('set-bright').value; s.animSpeed = v('set-anim').value;
       s.shake = v('set-shake').value; s.fastMissiles = v('set-missiles').value === 'fast'; s.feedLines = +v('set-feed').value;
-      s.gore = v('set-gore').checked; s.markers = v('set-markers').checked; s.reduceMotion = v('set-reduce').checked;
+      s.gore = v('set-gore').checked; s.markers = v('set-markers').checked; s.exitMarkers = v('set-exits').checked; s.reduceMotion = v('set-reduce').checked;
       if (s.reduceMotion) s.shake = 'off';
     }
     const scheme = el.querySelector('input[name=scheme]:checked');
