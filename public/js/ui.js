@@ -1,6 +1,7 @@
 // HUD, message feed, menus, prompts and input for NetHack Gauntlet.
 import { BL, CONDITIONS, badConditions } from './game.js';
 import { isInventoryMenu, inventoryMenu } from './inventory.js';
+import { isSpellMenu, spellCards } from './spells.js';
 import { openSettings } from './settings.js';
 import { spriteBounds } from './render.js';
 import { ModernControls, mountActionBar } from './controls.js';
@@ -254,6 +255,7 @@ export class UI {
   }
 
   menu(menu, how) {
+    if (isSpellMenu(menu) && this.settings.spellCards !== false) return spellCards(this, menu, how);
     if (isInventoryMenu(menu, this.tiles)) return inventoryMenu(this, menu, how);
     return new Promise((resolve) => {
       const items = menu.items;

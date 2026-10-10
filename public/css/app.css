@@ -389,3 +389,18 @@ kbd { font-family: var(--ui); font-weight: 700; color: var(--bone); border: 1px 
 .bg-inv .figure.droptarget .pool { box-shadow: 0 0 0 2px rgba(240, 200, 110, .55), 0 0 40px rgba(240, 190, 90, .45); }
 .bg-inv .dropover { outline: 2px solid #ffd27a; box-shadow: 0 0 18px rgba(255, 200, 100, .6); }
 .bg-inv .figure.dropover .pool { box-shadow: 0 0 0 3px #ffd27a, 0 0 60px rgba(255, 200, 100, .7); }
+
+/* spell cards */
+.panel.spells { width: min(880px, 94vw); padding: 18px 20px 14px; }
+.panel.spells h2 { margin: 0 0 12px; font: 700 22px var(--display); letter-spacing: .06em; color: var(--gilt-hi); }
+.panel.spells .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; max-height: 64vh; overflow: auto; padding: 2px; }
+.panel.spells .card { position: relative; display: grid; justify-items: center; gap: 4px; padding: 14px 10px 10px; background: linear-gradient(180deg, rgba(255,255,255,.05), rgba(0,0,0,.25)); border: 1px solid color-mix(in srgb, var(--sc) 55%, #000); border-radius: 6px; color: var(--sc); cursor: pointer; }
+.panel.spells .card:hover, .panel.spells .card:focus-visible, .panel.spells .card.sel { border-color: var(--sc); box-shadow: 0 0 0 1px var(--sc), 0 0 18px color-mix(in srgb, var(--sc) 40%, transparent); }
+.panel.spells .card .key { position: absolute; top: 5px; left: 7px; font: 700 13px var(--ui); color: var(--parch); opacity: .8; }
+.panel.spells .card .nm { font: 600 17px/1.15 var(--serif); color: var(--parch); text-align: center; }
+.panel.spells .card .meta { font: 500 12px var(--ui); color: #b8a888; text-transform: capitalize; }
+.panel.spells .card .fail { font: 700 22px/1 var(--ui); }
+.panel.spells .card .fail small { font-size: 12px; font-weight: 500; color: #b8a888; }
+.panel.spells .card .ret { width: 80%; height: 4px; background: rgba(0,0,0,.5); border-radius: 2px; overflow: hidden; }
+.panel.spells .card .ret i { display: block; height: 100%; background: var(--sc); opacity: .75; }
+.panel.spells .foot { margin-top: 10px; font: 500 13px var(--ui); color: #a8957a; }
