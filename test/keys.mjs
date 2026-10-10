@@ -9,6 +9,7 @@ const errs = []; page.on('pageerror', (e) => errs.push(e.message));
 const H = harness(page);
 await page.goto(`${url}?k=${Date.now()}#wizard`);
 await page.waitForSelector('#start-go:not([disabled])');
+await page.selectOption('#start-controls', 'classic');   // NetHack's own movement keys
 await page.click('#start-go'); await H.settle({ maxSteps: 25 });
 // a big empty level to move around in
 await H.key('#'); await H.wait(150); await page.keyboard.type('wizmap'); await H.key('Enter'); await H.settle();

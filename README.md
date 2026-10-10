@@ -1,8 +1,8 @@
 # NetHack Gauntlet
 
 Real NetHack 5.0, unmodified rules, with an overhead, torchlit pixel-art interface in the spirit of
-newer *Gauntlet* games and *Nuclear Throne*. Everything runs locally in your browser and works
-fully offline: the engine, art and fonts are all in this folder, and nothing is sent anywhere.
+newer *Gauntlet* games and *Nuclear Throne*. Everything runs locally, as a desktop app or in your
+browser, and works fully offline: the engine, art and fonts are all in this folder, and nothing is sent anywhere.
 
 - **It's NetHack, not a new game.** Every rule, level, monster, item and message comes from the
   unmodified NetHack 5.0.0 engine, and new games use NetHack's own option defaults and character
@@ -10,7 +10,7 @@ fully offline: the engine, art and fonts are all in this folder, and nothing is 
   animation are cosmetic and don't affect play. Prefer the classic look? Settings → Graphics →
   *Official NetHack tiles*.
 - **The real game.** NetHack 5.0.0 compiled to WebAssembly, driven through its own window-port API.
-  Saves persist in your browser (IndexedDB).
+  Runs as a desktop app (saves are files on disk, and closing the window saves) or in a browser.
 - **Hand-lit 3D-to-pixel sprites.** All 383 monsters and every player role are modelled in 3D and
   rendered to shaded pixel art, facing 4 directions with idle, walk and attack frames. Statues show
   the actual monster in stone; corpses show the actual monster lying down.
@@ -25,32 +25,86 @@ fully offline: the engine, art and fonts are all in this folder, and nothing is 
 
 ## Play
 
-Needs [Node.js](https://nodejs.org) 18 or newer. There are no dependencies to install.
+### As a desktop app (recommended)
+
+Needs [Node.js](https://nodejs.org) 18 or newer, once, to set it up.
 
 ```sh
 cd nethack-gauntlet
+npm install          # one time: fetches Electron (the app shell) for your computer
+npm run app          # opens NetHack Gauntlet in its own window
+```
+
+To get a real app you can keep in your Applications folder / Start menu, build an installer:
+
+```sh
+npm run dist         # macOS: dist/*.dmg   Windows: dist/*Setup*.exe   Linux: dist/*.AppImage
+```
+
+The Mac app isn't signed with an Apple developer account, so the first time you open it macOS
+will say it can't verify the developer: **right-click the app → Open → Open** (only needed once).
+Each push to `main` also builds the installers for all three systems on GitHub Actions; download
+them from the run's *Artifacts* section (pushing a `v*` tag attaches them to a release).
+
+**Saving.** Closing the window saves your game, exactly as NetHack's own save command does, and
+the next time you start with the same name it carries on where you left off (the start screen
+lists your saved games under *Continue*). Saves are ordinary files in the app's data folder:
+Settings → Saves shows where, with a button to open it. NetHack is a roguelike, so each
+character has one save, replaced every time you save, and dying ends that character for good.
+
+### In a browser
+
+```sh
 npm start            # serves on http://127.0.0.1:8080 and opens your browser
 ```
 
 `npm start -- 9000` (or `PORT=9000 npm start`) picks another port, and `NO_OPEN=1` skips opening
 the browser. The page must be served over http: opening `index.html` as a file won't load the
 WebAssembly. Without Node, any static server works, e.g. `python3 -m http.server -d public 8080`.
+In the browser, saves live in the browser's storage; save with `Ctrl+S` (modern controls) or `S`
+(classic) before closing the tab.
 
 No internet connection is needed at any point, including the first launch.
 
 ### Controls
 
+There are two control schemes; pick one on the start screen or in Settings → Controls, and switch
+any time. Both send NetHack's own commands, so the game plays the same either way.
+
+**Modern** (the default) works like most PC games:
+
 | | |
 |---|---|
-| Move | arrow keys, `hjklyubn`, or the numpad. Shift runs |
-| Attack | move into a monster |
+| Move | `W` `A` `S` `D` or the arrow keys. Hold two for a diagonal (`W`+`D` = up-right). Shift runs |
+| Attack | walk into a monster |
+| Interact | `E` or `Enter`: take the stairs you're standing on, otherwise pick up what's here |
+| Inventory | `I`. Click an item to see everything you can do with it |
+| Wait / rest | `Space` waits a turn (and searches), `R` rests 20 turns |
+| Examine | `X` then pick a spot, or right-click anything on the map |
+| Fire / throw / cast | `F` / `T` / `Z` |
+| Character / dungeon map | `C` / `M` |
+| Every other action | `Tab` opens a searchable list (pray, eat, wear, read, kick, loot…) |
+| Save and quit | `Ctrl+S` |
 | Travel | click a spot on the map |
-| Inventory | `i`. Letters choose items, `Tab` switches category, `Esc` closes |
-| Everything else | standard NetHack keys (`,` pick up, `d` drop, `q` quaff, `#` extended commands…) |
-| Settings | the gear button, `F1`, or *Settings & controls* on the start screen |
+| Cancel | `Esc` always backs out without doing anything |
 
-When a command asks you to pick a spot (travel, farlook `;`, throwing at a target…), a gold
-cursor appears: move it with the direction keys, then press `.` or `,` or click.
+The same actions are on the bar down the right edge of the screen.
+
+**Classic** is NetHack's own keyboard: `hjklyubn`/arrows/numpad to move, `,` pick up, `d` drop,
+`q` quaff, `#` extended commands, `S` save, and so on. Settings → Controls lists every command
+with its key, read from NetHack's own command table; click one to run it.
+
+When the game asks you to pick a spot (travel, examine, throwing at a target…), a gold cursor
+appears: move it, then press `E`/`Space`/`Enter` (modern) or `.`/`,` (classic), or click.
+
+**Finding your way out of a room.** Doorways and open doors glow and show a pulsing arrow, so the
+exits from a room are easy to spot (Settings → Display → *Exit markers*). Many rooms have exits
+you haven't found yet: NetHack hides some doors and corridors, and `Space` (search) next to a
+wall reveals them.
+
+**Menus say what they're for.** When a command asks you to choose an item ("What do you want to
+drop?"), the inventory opens with that verb in its title and an orange banner saying what a click
+will do. `Esc` closes it without doing anything.
 
 ### Settings
 
@@ -62,7 +116,8 @@ cursor appears: move it with the direction keys, then press `.` or `,` or click.
   auto-quiver, push weapon, space rests, verbose messages, turn counter, experience points, tutorial.
 - **Controls**: how to move and fight, and every command in the game with its key, read from
   NetHack's own command table. It's searchable, and clicking a command runs it.
-- **Saves**: export a save to a file, import one, or delete it.
+- **Saves**: export a save to a file, import one, or delete it. In the desktop app it also shows
+  the saves folder and opens it.
 
 Add `#wizard` to the URL to start in NetHack's debug mode.
 
@@ -70,6 +125,7 @@ Add `#wizard` to the URL to start in NetHack's debug mode.
 
 ```
 server.mjs              zero-dependency static server
+desktop/                the desktop app: Electron main process, preload bridge, icon, mac signing hook
 public/
   index.html, css/      HUD, panels, inventory screen
   js/engine.js          loads the WebAssembly engine, bridges its callbacks, IndexedDB saves
@@ -83,6 +139,7 @@ engine/                 the patch on top of NetHack 5.0.0 and the script that bu
 tools/
   make_atlas.py         glyph → tile/monster/object tables (tiles.json) and the fallback atlas
   make_ui.py            procedural stone texture for the inventory
+  make_icon.py          the app icon (desktop/resources/icon.png)
   sprites3d/            the 3D-to-pixel renderer: SDF primitives, rigs, materials,
                         monster roster (batch.py) and item models (items.py)
 test/                   smoke test and screenshot scripts (Playwright)
@@ -122,6 +179,12 @@ CHROME=/path/to/chrome npm test
   `test/death.mjs` and `test/epitaph.test.mjs` check the game-over screen names the cause of death.
 - `test/official.mjs` plays with the official tileset: map, inventory, targeting, the appearance
   shuffle, and switching back.
+- `test/modern.mjs` checks the modern controls (WASD and diagonals, interact, wait, Tab list,
+  action bar, right-click, Ctrl+S) and switching to classic; `test/inventory-actions.mjs` checks
+  the inventory names the action and `Esc` cancels.
+- `test/desktop.mjs` (`npm run test:desktop`; on Linux without a display, `xvfb-run -a npm run test:desktop`)
+  launches the desktop app, plays, closes the window with the inventory open, checks the save file
+  landed on disk, then relaunches and resumes the game.
 - `test/settings.mjs` and `test/showcase.mjs` take screenshots of every settings tab and of a
   fully kitted-out debug-mode character.
 

@@ -81,7 +81,8 @@ export class Game {
   async onEngineExit(code, str) {
     if (this.over) return;
     this.over = true;
-    await persistSaves(this.mod);
+    this.persisted = persistSaves(this.mod);
+    await this.persisted;
     const log = this.ui.historyLog.slice(-12);
     const said = [...log].reverse().find((m) => /^you die|killed by|you (drown|starve|turn to stone|burn to a crisp)|died/i.test(m));
     const death = epitaph(this.recentText, this.ui.historyLog.slice(-12)) || said;
@@ -94,6 +95,25 @@ export class Game {
   }
 
   async shim_exit_nhwindows(str) { await this.onEngineExit(0, str); }
+
+  // Save the game in progress and stop, exactly as NetHack's S command does. The desktop app
+  // calls this when its window closes, so closing never loses a game.
+  async saveAndQuit(timeout = 8000) {
+    if (!this.started || this.over) return;
+    const ui = this.ui, end = Date.now() + timeout;
+    this.autoSaving = true;
+    let sentAt = 0;
+    while (!this.over && Date.now() < end) {
+      if (ui.modal || ui.isTargeting || ui.dirFinish) {
+        dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', code: 'Escape' }));   // back out of whatever is open
+      } else if (ui.waiter && Date.now() - sentAt > 1000) {
+        ui.pushKey('S'.charCodeAt(0)); sentAt = Date.now();
+      }
+      await new Promise((r) => setTimeout(r, 50));
+    }
+    await this.persisted;
+    this.autoSaving = false;
+  }
 
   async shim_delay_output() {
     // NetHack paces thrown objects, zaps and explosions with this
@@ -214,6 +234,7 @@ export class Game {
   async shim_yn_function(query, resp, def) {
     this.renderer.commit();
     this.lastQuery = query || '';   // "What do you want to drop? [abc or ?*]": the item list that may follow belongs to it
+    if (this.autoSaving) return /save/i.test(query || '') ? 121 : 27;   // closing the app: "Really save?" yes, anything else no
     const k = await this.ui.yn(query || '', resp || null, def & 0xff);
     this.messagesSinceInput = 0;
     return k;

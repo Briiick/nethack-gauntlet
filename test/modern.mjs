@@ -78,6 +78,13 @@ await page.mouse.click(box[0], box[1], { button: 'right' }); await H.wait(600);
 const looked = (await H.msgsSince(m0)).join(' ');
 results.push(['Right-click examines', looked.length > 0 && !/unknown/i.test(looked) ? 'ok' : `FAIL (${looked})`]);
 await H.settle();
+// Ctrl+S asks to save (answer no)
+await H.key('Control+s'); await H.wait(300);
+const sp = (await H.state()).prompt;
+results.push(['Ctrl+S asks to save', /save/i.test(sp) ? 'ok' : `FAIL (${sp})`]);
+await H.key('n'); await H.settle();
+const saveBtn = !!(await page.$('#actionbar [data-act="save"]'));
+results.push(['Action bar has Save', saveBtn ? 'ok' : 'FAIL']);
 // classic again: D is drop
 await page.evaluate(() => { window.__nhg.ui.settings.controls = 'classic'; window.__nhg.ui.applySettings(); });
 await page.evaluate(() => { window.__nhg.ui.sent = []; });

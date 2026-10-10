@@ -20,7 +20,7 @@ export const ACTIONS = [
   ['inventory', 'Inventory', 'I'], ['interact', 'Use / stairs / pick up', 'E'], ['wait', 'Wait a turn', 'Space'],
   ['rest', 'Rest 20 turns', 'R'], ['examine', 'Examine', 'X'], ['fire', 'Fire', 'F'], ['throw', 'Throw', 'T'],
   ['cast', 'Cast a spell', 'Z'], ['character', 'Character', 'C'], ['overview', 'Dungeon overview', 'M'],
-  ['commands', 'All actions', 'Tab'], ['help', 'Help', '?'],
+  ['commands', 'All actions', 'Tab'], ['save', 'Save and quit', 'Ctrl+S'], ['help', 'Help', '?'],
 ];
 const KEY_ACTION = { i: 'inventory', e: 'interact', Enter: 'interact', ' ': 'wait', r: 'rest', x: 'examine', f: 'fire', t: 'throw',
   z: 'cast', c: 'character', m: 'overview', Tab: 'commands', g: 'pickup' };
@@ -39,6 +39,7 @@ export const MODERN_HELP = [
   ['Cast', '<kbd>Z</kbd>'],
   ['Character / map', '<kbd>C</kbd> character sheet, <kbd>M</kbd> dungeon overview'],
   ['Everything else', '<kbd>Tab</kbd> lists every action, searchable'],
+  ['Save', '<kbd>Ctrl</kbd>+<kbd>S</kbd> saves and quits (NetHack saves only on the way out); start again with the same name to resume'],
   ['Travel', 'Click a spot on the map'],
   ['Pick a spot', 'When asked: move with WASD, <kbd>E</kbd>/<kbd>Space</kbd>/<kbd>Enter</kbd> or click to choose'],
   ['Directions', 'When asked "in what direction?": WASD (two keys for diagonals), <kbd>Space</kbd> for yourself'],
@@ -89,6 +90,7 @@ export class ModernControls {
   // Keys while NetHack waits for a command. Returns true if handled.
   command(e) {
     const ui = this.ui;
+    if (e.ctrlKey && !e.altKey && e.key.toLowerCase() === 's') { this.act('save'); return true; }
     if (e.ctrlKey || e.altKey || e.metaKey) return false;
     if (this.direction(e, (k) => ui.pushKey(k.charCodeAt(0)))) return true;
     const k = e.key.length === 1 ? e.key.toLowerCase() : e.key;
@@ -129,6 +131,7 @@ export class ModernControls {
       case 'character': ui.pushKey(24); break;   // ^X
       case 'overview': ui.pushKey(15); break;    // ^O
       case 'help': push('?'); break;
+      case 'save': push('S'); break;   // NetHack asks "Really save?"
       case 'commands': openCommandPalette(ui); break;
       case 'interact': {
         // stairs if you're on them, otherwise pick up whatever is here
@@ -156,6 +159,7 @@ const ICON = {
   character: 'M12 4a4 4 0 1 0 0 8 4 4 0 0 0 0-8zM4 21c0-4 4-7 8-7s8 3 8 7',
   overview: 'M3 6l6-2 6 2 6-2v14l-6 2-6-2-6 2V6zm6-2v14m6-12v14',
   commands: 'M4 6h16M4 12h16M4 18h10',
+  save: 'M5 3h11l3 3v15H5V3zm3 0v5h7V3M8 21v-7h8v7',
 };
 
 // ---- the action bar down the right-hand edge

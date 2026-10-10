@@ -330,6 +330,8 @@ kbd { font-family: var(--ui); font-weight: 700; color: var(--bone); border: 1px 
 .panel.settings .saves li span { font: 600 18px var(--serif); }
 .panel.settings .saves li small { flex: 1; color: #8a7558; }
 .panel.settings .saves .none { color: #a8957a; font-style: italic; }
+.panel.settings .saves-dir { display: flex; align-items: center; gap: 10px; margin: 8px 18px; }
+.panel.settings .saves-dir code { flex: 1; min-width: 0; overflow-wrap: anywhere; font: 13px ui-monospace, monospace; color: #c9b48f; background: rgba(0,0,0,.3); border: 1px solid #3a2c1c; padding: 6px 8px; }
 .panel.settings .file { display: inline-block; }
 .panel.settings .about { padding: 6px 18px 14px; font: 500 17px/1.5 var(--serif); }
 .linkbtn { background: none; border: 0; color: var(--brass); text-decoration: underline; text-underline-offset: 3px; cursor: pointer; padding: 6px; font: 600 16px var(--ui); }

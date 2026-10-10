@@ -79,6 +79,10 @@ export function openSettings(ui, startTab = 'display') {
   el.setAttribute('aria-label', 'Settings');
   const TABS = [['display', 'Display'], ['gameplay', 'Gameplay'], ['controls', 'Controls'], ['saves', 'Saves'], ['about', 'About']];
   let tab = startTab;
+  // in the desktop app saves are files on disk: show where, with a button to open the folder
+  const desktop = globalThis.nhgDesktop || null;
+  let savesPath = '';
+  if (desktop) desktop.savesDir().then((d) => { savesPath = d; if (tab === 'saves') render(); });
 
   const sel = (id, label, opts, val, hint = '') => `<label for="${id}">${label}${hint ? `<small>${hint}</small>` : ''}</label>
     <select id="${id}">${opts.map(([v, t]) => `<option value="${esc(v)}" ${String(val) === String(v) ? 'selected' : ''}>${esc(t)}</option>`).join('')}</select>`;
@@ -142,8 +146,11 @@ export function openSettings(ui, startTab = 'display') {
     },
     saves: () => {
       const saves = ui.mod ? listSaves(ui.mod) : [];
-      return `<p class="note">Saved games live in this browser's storage on this computer. Export one to keep a copy
-        or move it to another browser; import puts it back. Save during play with <kbd>S</kbd>.</p>
+      return `${desktop ? `<p class="note">Saved games are files in your saves folder. Closing the window saves the game
+        in progress automatically, and you can also save during play with <kbd>S</kbd>. Export a save to keep a copy, or import one back.</p>
+        <p class="saves-dir"><code>${esc(savesPath || '…')}</code><button type="button" class="ghostbtn" data-open-saves>Open saves folder</button></p>`
+        : `<p class="note">Saved games live in this browser's storage on this computer. Export one to keep a copy
+        or move it to another browser; import puts it back. Save during play with <kbd>S</kbd>.</p>`}
         <ul class="saves">${saves.length ? saves.map((f) => `<li><span>${esc(f.replace(/^\d+/, '').replace(/\.gz$|\.Z$/, ''))}</span><small>${esc(f)}</small>
           <button type="button" class="ghostbtn" data-export="${esc(f)}">Export</button>
           <button type="button" class="ghostbtn danger" data-delete="${esc(f)}">Delete</button></li>`).join('') : '<li class="none">No saved games yet.</li>'}</ul>
@@ -211,6 +218,7 @@ export function openSettings(ui, startTab = 'display') {
     if (r) { run(r.dataset.run.charCodeAt(0)); return; }
     const c = e.target.closest('.cmd');
     if (c) { run(+c.dataset.key, c.dataset.cmd); return; }
+    if (e.target.closest('[data-open-saves]')) { desktop.openSavesFolder(); return; }
     const x = e.target.closest('[data-export]');
     if (x) {
       const data = ui.mod.FS.readFile('/save/' + x.dataset.export);

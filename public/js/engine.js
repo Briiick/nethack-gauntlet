@@ -50,11 +50,18 @@ export async function loadEngine(handler) {
   });
   handler.mod = mod;
   try { mod.FS.mkdir(SAVE_DIR); } catch (e) { /* exists */ }
-  try {
-    mod.FS.mount(mod.IDBFS, {}, SAVE_DIR);
-    await new Promise((res) => mod.FS.syncfs(true, () => res()));
-  } catch (e) {
-    console.warn('IndexedDB saves unavailable; this game will not persist', e);
+  if (desktop()) {
+    // desktop app: saved games are real files in the app's saves folder
+    try {
+      for (const f of await desktop().listSaves()) mod.FS.writeFile(SAVE_DIR + '/' + f.name, new Uint8Array(f.data));
+    } catch (e) { console.error('could not read the saves folder', e); }
+  } else {
+    try {
+      mod.FS.mount(mod.IDBFS, {}, SAVE_DIR);
+      await new Promise((res) => mod.FS.syncfs(true, () => res()));
+    } catch (e) {
+      console.warn('IndexedDB saves unavailable; this game will not persist', e);
+    }
   }
   mod.ccall('shim_graphics_set_callback', null, ['string'], [cbName]);
   return mod;
@@ -76,7 +83,19 @@ export async function deleteSave(mod, file) {
 
 const HOME = '/home/web_user';
 
-export function persistSaves(mod) {
+// The desktop app's bridge (desktop/preload.cjs), or null in a browser.
+const desktop = () => globalThis.nhgDesktop || null;
+
+export async function persistSaves(mod) {
+  if (desktop()) {
+    // mirror the in-memory save folder to disk: write what's there, remove what's gone
+    try {
+      const here = listSaves(mod);
+      for (const f of here) await desktop().writeSave(f, mod.FS.readFile(SAVE_DIR + '/' + f));
+      for (const f of await desktop().listSaves()) if (!here.includes(f.name)) await desktop().deleteSave(f.name);
+    } catch (e) { console.error('could not write the saves folder', e); }
+    return;
+  }
   return new Promise((res) => { try { mod.FS.syncfs(false, () => res()); } catch (e) { res(); } });
 }
 

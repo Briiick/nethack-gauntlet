@@ -33,6 +33,7 @@ async function start(name) {
   await page.waitForSelector('#start-go:not([disabled])', { timeout: 30000 });
   await page.fill('#start-name', name);
   await page.selectOption('#start-role', role);
+  await page.selectOption('#start-controls', 'classic');   // the autoplayer types NetHack's own keys
   await page.click('#start-go');
   await settle({ maxSteps: 30 });
 }

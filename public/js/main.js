@@ -46,6 +46,8 @@ async function boot() {
   try { last = localStorage.getItem('nhg-last-name') || ''; } catch (e) { /* ignore */ }
   nameInput.value = last || NAMES[Math.floor(Math.random() * NAMES.length)];
 
+  if (globalThis.nhgDesktop) document.getElementById('start-fine').innerHTML = 'Closing the window saves your game; it resumes when you start again with the same name. You can also save with <kbd>S</kbd>.';
+
   const saves = listSaves(mod).map((f) => ({ file: f, name: f.replace(/^\d+/, '') }));
   const savesEl = document.getElementById('saves');
   if (saves.length) {
@@ -91,8 +93,22 @@ async function boot() {
       mod.FS.writeFile('/sysconf', sc);
     }
     document.getElementById('start').hidden = true;
+    game.started = true;
     runGame(mod, `OPTIONS=${opts.join(',')}\n`);
   }
+}
+
+// Desktop app: closing the window saves the game in progress first.
+// Browser: a game in progress isn't saved by closing the tab, so ask first (S saves).
+if (globalThis.nhgDesktop) {
+  nhgDesktop.onCloseRequested(async () => {
+    try { await window.__nhg?.game.saveAndQuit(); } finally { nhgDesktop.readyToClose(); }
+  });
+} else {
+  addEventListener('beforeunload', (e) => {
+    const g = window.__nhg?.game;
+    if (g && g.started && !g.over) { e.preventDefault(); e.returnValue = ''; }
+  });
 }
 
 boot().catch((err) => {

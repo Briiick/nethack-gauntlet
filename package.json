@@ -3,14 +3,67 @@
   "version": "0.1.0",
   "private": true,
   "description": "Play NetHack 5.0 locally with a Gauntlet-style animated pixel-art interface.",
+  "author": "Briiick",
+  "license": "NGPL",
   "type": "module",
+  "main": "desktop/main.cjs",
+  "desktopName": "nethack-gauntlet.desktop",
   "scripts": {
     "start": "node server.mjs",
     "build:engine": "bash engine/build-engine.sh",
     "build:art": "bash tools/build-art.sh",
     "test": "node test/epitaph.test.mjs && node test/smoke.mjs",
     "test:commands": "node test/commands.mjs http://127.0.0.1:8080/ test/out",
-    "test:playtest": "node test/playtest.mjs http://127.0.0.1:8080/ test/out Valkyrie 450"
+    "test:playtest": "node test/playtest.mjs http://127.0.0.1:8080/ test/out Valkyrie 450",
+    "app": "electron .",
+    "dist": "electron-builder",
+    "test:desktop": "node test/desktop.mjs"
   },
-  "license": "NGPL"
+  "devDependencies": {
+    "electron": "43.7.0",
+    "electron-builder": "26.16.1"
+  },
+  "build": {
+    "appId": "com.briiick.nethackgauntlet",
+    "productName": "NetHack Gauntlet",
+    "directories": {
+      "buildResources": "desktop/resources",
+      "output": "dist"
+    },
+    "files": [
+      "desktop/**",
+      "public/**",
+      "package.json",
+      "!public/**/*.map"
+    ],
+    "afterPack": "desktop/after-pack.cjs",
+    "mac": {
+      "target": [
+        "dmg",
+        "zip"
+      ],
+      "category": "public.app-category.role-playing-games",
+      "identity": null,
+      "icon": "desktop/resources/icon.png"
+    },
+    "win": {
+      "target": [
+        "nsis",
+        "portable"
+      ],
+      "icon": "desktop/resources/icon.png"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
+    },
+    "linux": {
+      "target": [
+        "AppImage"
+      ],
+      "category": "Game",
+      "icon": "desktop/resources/icon.png",
+      "syncDesktopName": true
+    }
+  }
 }

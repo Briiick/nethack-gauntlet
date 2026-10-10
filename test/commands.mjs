@@ -26,6 +26,7 @@ async function newGame(name = 'Tester', wizard = true) {
   await page.waitForSelector('#start-go:not([disabled])', { timeout: 30000 });
   await page.fill('#start-name', name);
   await page.selectOption('#start-role', 'Valkyrie');
+  await page.selectOption('#start-controls', 'classic');   // every command by NetHack's own key
   await page.click('#start-go');
   await settle(30);
   if (!wizard) return;
