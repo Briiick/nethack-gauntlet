@@ -40,6 +40,7 @@ export const MODERN_HELP = [
   ['Fire / throw', '<kbd>F</kbd> fires what\'s in your quiver, <kbd>T</kbd> throws'],
   ['Cast', '<kbd>Z</kbd>'],
   ['Character / map', '<kbd>C</kbd> character sheet, <kbd>M</kbd> dungeon overview'],
+  ['Quickbar', '<kbd>1</kbd>–<kbd>9</kbd> use what you put there: hover an item in the inventory (or a spell card) and press a number'],
   ['Everything else', '<kbd>Tab</kbd> lists every action, searchable'],
   ['Save', '<kbd>Ctrl</kbd>+<kbd>S</kbd> saves and quits (NetHack saves only on the way out); start again with the same name to resume'],
   ['Travel', 'Click a spot on the map'],
@@ -152,6 +153,7 @@ export class ModernControls {
     const ui = this.ui;
     if (e.ctrlKey || e.altKey || e.metaKey) return false;
     if (this.direction(e, (k) => ui.pushKey(k.charCodeAt(0)))) return true;
+    if (/^[1-9]$/.test(e.key) && ui.quickbar && ui.quickbar.on) { ui.quickbar.use(+e.key); return true; }   // quickbar slots
     const k = e.key.length === 1 ? e.key.toLowerCase() : e.key;
     const act = KEY_ACTION[k];
     if (!act || (e.key.length === 1 && e.key !== e.key.toLowerCase() && act !== 'commands')) return false;   // Shift+letter: NetHack's own command

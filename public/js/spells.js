@@ -44,12 +44,19 @@ export function spellCards(ui, menu, how) {
           ${s.retention ? `<span class="ret" title="Memory of this spell: ${esc(s.retention)}"><i style="width:${Math.min(100, keep)}%"></i></span>` : ''}
         </button>`;
       }).join('')}</div>
-      <div class="foot">${how === 0 ? 'Press any key to close' : '<kbd>letter</kbd> or click to cast · <kbd>Esc</kbd> cancel'}</div>`;
+      <div class="foot">${how === 0 ? 'Press any key to close' : '<kbd>letter</kbd> or click to cast · point at a spell and press <kbd>1</kbd>–<kbd>9</kbd> for the quickbar · <kbd>Esc</kbd> cancel'}</div>`;
     const finish = (sel) => { ui.closeModal(); resolve(sel); };
     const choose = (s) => finish(how === 0 ? [] : [{ ident: s.it.ident, count: -1 }]);
     el.addEventListener('click', (e) => { const b = e.target.closest('.card'); if (b) choose(spells[+b.dataset.i]); });
+    let hovered = null;
+    el.addEventListener('mouseover', (e) => { const b = e.target.closest('.card'); if (b) hovered = spells[+b.dataset.i]; });
     ui.openModal(el, (e) => {
       if (e.key === 'Escape') return finish(how === 0 ? [] : null);
+      if (/^[1-9]$/.test(e.key) && hovered && ui.quickbar) {   // put the spell under the mouse on the quickbar
+        ui.quickbar.assign(+e.key, { kind: 'spell', letter: String.fromCharCode(hovered.it.ch), name: hovered.name, school: hovered.school });
+        el.querySelector('.foot').textContent = `${hovered.name} is on the quickbar: ${e.key}`;
+        return;
+      }
       if (how === 0) return finish([]);
       if (e.key.length === 1) { const s = spells.find((x) => x.it.ch === e.key.charCodeAt(0)); if (s) choose(s); return; }
       return false;

@@ -53,7 +53,7 @@ export function harness(page) {
         note('yn:' + s.prompt.split('\n')[0].slice(0, 70));
         const custom = policy.yn && policy.yn(s.prompt);
         if (custom) { await key(custom); continue; }
-        if (/quit|really|save|sure you want to (die|quit)|unrecognized|destroy|genocide|level teleport/i.test(s.prompt) || yes > 1) await key('Escape');
+        if (/quit|really|save|sure you want to (die|quit)|unrecognized|destroy|genocide|level teleport|no return|still climb/i.test(s.prompt) || yes > 1) await key('Escape');
         else {
           yes++;
           const letters = s.prompt.match(/\[([a-zA-Z$])[^\]]*\]/);

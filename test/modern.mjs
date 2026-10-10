@@ -31,7 +31,8 @@ const spaceWant = await page.evaluate(() => { const { renderer: r, ui } = window
 await expect(`Space does the right thing here (${{ F: 'attack', ',': 'pick up', s: 'wait' }[spaceWant] || 'stairs'})`, () => H.key(' '), spaceWant);
 await expect('. waits', () => H.key('.'), 's');
 await expect('R rests', () => H.key('r'), '20s');
-await expect('E interacts (nothing here: pick up)', () => H.key('e'), ',');
+const eWant = await page.evaluate(() => window.__nhg.ui.controls.here().stairs || ',');
+await expect(`E interacts (${eWant === ',' ? 'pick up' : 'stairs'})`, () => H.key('e'), eWant);
 await expect('G picks up', () => H.key('g'), ',');
 await expect('I inventory', async () => { await H.key('i'); }, 'i');
 await expect('X examines', () => H.key('x'), ';');

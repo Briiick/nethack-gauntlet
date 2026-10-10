@@ -129,9 +129,9 @@ export class Game {
 
   async shim_delay_output() {
     // NetHack paces thrown objects, zaps and explosions with this
-    const hold = this.autoSaving ? 0 : (this.renderer.onDelay?.() || 0);   // a wand/spell wind-up holds the beam back a moment
+    this.renderer.onDelay?.();   // one step of a flying object: the renderer tweens a projectile instead
     this.renderer.commit();
-    await new Promise((r) => setTimeout(r, (this.ui.settings.fastMissiles ? 18 : 40) + hold));
+    await new Promise((r) => setTimeout(r, this.ui.settings.fastMissiles ? 18 : 40));
   }
 
   // ---------------------------------------------------------------- windows
@@ -193,6 +193,7 @@ export class Game {
 
   // One message for the feed; false if it's left out.
   say(str, attr) {
+    if (this.retry && /^Never mind/.test(str)) return false;   // the command is about to be re-issued
     if (this.ui.controls.on && /^Count: \d+$/.test(str)) return false;   // the modern R key types "20s"; don't echo it
     if (str === 'Entering the tutorial.') this.ui.tutorialNote();
     this.ui.message(this.ui.controls.explain(str), attr);
@@ -244,6 +245,7 @@ export class Game {
       this.inventory = w.menu.items;
       this.equipment = equipmentOf(w.menu.items);
       this.renderer.setEquipment?.(this.equipment);
+      this.ui.quickbar?.refresh(this.inventory);
       this.renderer.setInventory?.(this.inventory);
       this.mod.setValue(listPtr, 0, '*');
       return 0;
@@ -253,7 +255,7 @@ export class Game {
     // "What do you want to drop? [abc or ?*]" then "?" lists the items: the list belongs to that question
     if (!w.menu.prompt && /\bor \?\*?\]\s*$/.test(this.lastQuery || '')) w.menu.context = this.lastQuery;
     this.lastQuery = '';
-    const result = await this.ui.menu(w.menu, how);
+    const result = this.ui.takeMenuAnswer(w.menu) || await this.ui.menu(w.menu, how);
     this.messagesSinceInput = 0;
     // equipping from the inventory's "Do what with ...?" menu: show the inventory again afterwards
     if (result && result.length && /^Do what with /.test(w.menu.prompt || '')) {
@@ -262,7 +264,7 @@ export class Game {
     }
     if (this.autoPicking) {   // the picker opened for "What do you want to X?"
       const q = this.autoPicking; this.autoPicking = null;
-      if (!result || !result.length) this.pickCancelled = q;
+      if (!result || !result.length) this.pickerClosed(q);
       else {
         const it = w.menu.items.find((x) => x.ident === result[0].ident);
         try { if (it) this.renderer.onAnswer?.(q, it.ch); } catch (e) { console.warn(e); }   // same visual hooks as a typed letter
@@ -275,10 +277,11 @@ export class Game {
 
   async shim_message_menu(let_, how, mesg) {
     if (this.autoPicking) {   // only one item fits "What do you want to X?": still show it in the picker
-      const q = this.autoPicking; this.autoPicking = null;
+      const q = this.autoPicking;
       const ch = charArg(let_), inv = (this.inventory || []).find((it) => it.ch === ch);
       const sel = await this.ui.menu({ prompt: '', context: q, items: [{ ident: ch, ch, gch: 0, text: inv ? inv.text : mesg.replace(/^. - /, ''), glyph: inv ? inv.glyph : -1, selected: false }] }, PICK.ONE);
-      if (!sel || !sel.length) { this.pickCancelled = q; return 27; }
+      this.autoPicking = null;
+      if (!sel || !sel.length) { this.pickerClosed(q); return 27; }
       try { this.renderer.onAnswer?.(q, ch); } catch (e) { console.warn(e); }
       return ch;
     }
@@ -299,15 +302,23 @@ export class Game {
     try { this.renderer.onAsk?.(query || ''); } catch (e) { console.warn(e); }   // aiming poses while a direction is asked
     const k = await this.ui.yn(query || '', resp || null, charArg(def));
     this.messagesSinceInput = 0;
-    try { this.renderer.onAnswer?.(query || '', k); } catch (e) { console.warn(e); }   // purely visual: zap/throw/quaff poses
+    let windup = 0;   // purely visual: zap/throw/quaff poses; a zap or spell finishes charging before its effect
+    try { windup = (!this.autoSaving && this.renderer.onAnswer?.(query || '', k)) || 0; } catch (e) { console.warn(e); }
+    if (windup > 0) await new Promise((r) => setTimeout(r, Math.min(300, windup)));
     return k;
+  }
+
+  // The picker closed without a choice: cancel, or (a letter typed / "Any item…") ask again with it.
+  pickerClosed(query) {
+    const l = this.ui.pendingLetter; this.ui.pendingLetter = null;
+    if (l && this.lastCmdKey) this.retry = { key: this.lastCmdKey, letter: l };
   }
 
   autoPick(query) {
     if (this.ui.settings.autoPicker === false || (this.ui.answers && this.ui.answers.length)) return null;   // pre-answered (drag, quickbar)
     const m = query.match(/^(What|Which) .*\[(.*)\]\s*$/);
     if (!m || !/(^|\s)\?\*$|^\*$/.test(m[2].trim())) return null;
-    if (this.pickCancelled === query) { this.pickCancelled = null; return 27; }   // the picker was closed: cancel
+    if (this.pickCancelled === query) { this.pickCancelled = null; return 27; }
     this.autoPicking = query;
     return (/\?\*$/.test(m[2].trim()) ? '?' : '*').charCodeAt(0);
   }
@@ -340,6 +351,11 @@ export class Game {
     this.renderer.commit();
     this.lastQuery = '';   // back at the command prompt
     this.autoPicking = null; this.pickCancelled = null;   // back at the command prompt: no picker pending
+    if (this.retry) {   // the picker was left for another item: the same command again, answered with it
+      const { key, letter } = this.retry; this.retry = null;
+      this.ui.answerNext([{ re: /^(What|Which) /, key: letter }]);
+      this.ui.pushKey(key);
+    }
     if (!this.ui.keyQueue.length) {
       this.ui.answers = [];   // pre-answered questions belong to the command just typed
       if (this.ui.reopenInventory) { this.ui.reopenInventory = false; this.ui.pushKey(105); }   // 'i'
@@ -353,6 +369,7 @@ export class Game {
     const ev = await this.ui.waitInput({ allowClick: true });
     this.messagesSinceInput = 0;
     this.renderer.onCommand?.(ev.click ? 0 : ev.key);
+    if (!ev.click) this.lastCmdKey = ev.key;   // so a picker can re-issue its command with another item
     if (ev.click) {
       this.mod.setValue(xp, ev.click.x, 'i16');
       this.mod.setValue(yp, ev.click.y, 'i16');

@@ -4,6 +4,8 @@
 // Used for every NetHack menu whose entries are mostly objects (inventory, pick up,
 // drop, "what do you want to ..." pickers).
 
+import { verbFor, useItem } from './actions.js';
+
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const MG_PET = 0x10;
 const BL = { TITLE: 0, ALIGN: 7, CAP: 9, GOLD: 10, XP: 13, AC: 14, HUNGER: 17, HP: 18, HPMAX: 19 };
@@ -59,10 +61,11 @@ const catKey = (c) => (/^coins/i.test(c) ? 'Coins' : /weapon/i.test(c) ? 'Weapon
 function wearSlot(t, cat) {
   if (/amulet/.test(cat) || /amulet/.test(t)) return 'neck';
   if (/blindfold|towel|lenses|sunglasses/.test(t)) return 'eyes';
-  if (/helm|hat|cap\b|hood|cornuthaum|fedora|dunce|visor|kabuto/.test(t)) return 'head';
-  if (/cloak|robe|apron|mantle|alchemy smock|leather jacket/.test(t)) return 'cloak';
+  // cloaks first ("hooded cloak", "dwarvish cloak" are cloaks, not hats); a leather jacket is body armour
+  if (/cloak|cape|robe|apron|mantle|alchemy smock|mummy wrapping|piece of cloth|\bcope\b/.test(t)) return 'cloak';
+  if (/helm|hat|cap\b|hood|cornuthaum|fedora|dunce|visor|kabuto|dented pot/.test(t)) return 'head';
   if (/shield|buckler/.test(t)) return 'off';
-  if (/glove|gauntlet/.test(t)) return 'hands';
+  if (/glove|gauntlet|yugake/.test(t)) return 'hands';
   if (/boot|shoes/.test(t)) return 'feet';
   if (/shirt/.test(t)) return 'shirt';
   return 'body';
@@ -236,8 +239,9 @@ export function inventoryMenu(ui, menu, how) {
           </section>
           <div class="info" aria-live="polite"><div class="desc"></div><div class="hint">${prompt && !verb ? `<span class="ask">${esc(prompt)}</span>` : ''}${
             pickNone ? '<span><kbd>Esc</kbd> close</span>' : pickAny ? '<span><kbd>letter</kbd> mark · <kbd>,</kbd> all · <kbd>Enter</kbd> confirm</span>'
-              : acting ? '<span><kbd>letter</kbd> or click</span>' : `<span>Click an item for what you can do with it · drag it onto yourself to equip · ${ui.controls.on ? '<kbd>I</kbd> or ' : ''}<kbd>Esc</kbd> close</span>`}${
-            pickAny ? '<button type="button" class="confirm">Confirm</button>' : ''}</div></div>
+              : acting ? '<span><kbd>letter</kbd> or click</span>' : `<span>Double-click to use · click for all actions · drag onto yourself to equip · <kbd>1</kbd>–<kbd>9</kbd> quickbar · ${ui.controls.on ? '<kbd>I</kbd> or ' : ''}<kbd>Esc</kbd> close</span>`}${
+            pickAny ? '<button type="button" class="takeall">Take all</button><button type="button" class="confirm">Confirm</button>' : ''}${
+            acting && !pickAny && ui.game && ui.game.autoPicking ? '<button type="button" class="anyitem" title="NetHack lets you choose any item, not only the ones it suggests">Any item…</button>' : ''}</div></div>
           <section class="pack">
             <div class="bag" title="Inventory letters in use"><span class="sack" aria-hidden="true"></span><b>${entries.filter((e) => !/gold piece/.test(e.it.text)).length}</b><small>of 52</small></div>
             <div class="grid" role="listbox" aria-label="Backpack" ${pickAny ? 'aria-multiselectable="true"' : ''}></div>
@@ -304,7 +308,9 @@ export function inventoryMenu(ui, menu, how) {
     const drawHero = () => {
       hx.clearRect(0, 0, 256, 256);
       if (ui.official) { if (heroA) ui.renderer.drawOfficial(hx, heroA.g, 32, 48, 192); return; }   // NetHack's own tile, 12x
-      const heroSheet = heroA ? ui.renderer.sheets.get(tiles.gmon[heroA.g]) : null;
+      const base = heroA ? ui.renderer.sheets.get(tiles.gmon[heroA.g]) : null;
+      const worn = heroA && base && ui.renderer.heroGearSheet ? ui.renderer.heroGearSheet(heroA, performance.now()) : null;   // in their actual gear
+      const heroSheet = base && worn ? { ...base, img: worn } : base;
       if (!heroSheet) {
         if (heroA) {
           const t = tiles.g2t[heroA.g], cell = tiles.cell, cols = tiles.cols;
@@ -387,9 +393,12 @@ export function inventoryMenu(ui, menu, how) {
     let tab = 'All', focus = 0;
     const packList = () => entries.filter((e) => !e.slot && (tab === 'All' || e.cat === tab));
     const navList = () => { const p = packList(); return p.length ? p : entries.filter((e) => e.slot && (tab === 'All' || e.cat === tab)); };
-    const showDesc = (e) => {
+    const showDesc = (e, note = '') => {
       if (!e) { desc.innerHTML = `<span class="none">${entries.length ? 'Point at an item to examine it.' : 'Your pack is empty.'}</span>`; return; }
       const tags = [];
+      if (note) tags.push([note, 'eqp']);
+      const verbNow = !acting && !pickAny && verbFor({ text: e.it.text, cat: e.cat });
+      if (verbNow) tags.push([`double-click: ${verbNow.label}`, 'n']);
       if (e.slot) tags.push([LABEL[e.slot], 'eqp']);
       tags.push([e.buc, e.buc]);
       if (e.ench) tags.push([e.ench, 'n']);
@@ -421,23 +430,57 @@ export function inventoryMenu(ui, menu, how) {
       el.style.setProperty('--k', Math.max(0.45, k).toFixed(3));
       requestAnimationFrame(drawCracks);
     };
-    const finish = (sel) => { clearInterval(tick); window.removeEventListener('resize', fit); ui.closeModal(); resolve(sel); };
+    let done = false, clickTimer = null;
+    const finish = (sel) => {
+      if (done) return;   // a late click (or click + Enter) must not close whatever opened next
+      done = true; clearTimeout(clickTimer); clearInterval(tick); window.removeEventListener('resize', fit); ui.closeModal(); resolve(sel);
+    };
     const choose = (e) => {
       if (pickNone) { tab = 'All'; focus = Math.max(0, navList().indexOf(e)); render(); return; }
       if (pickAny) { e.it.selected = !e.it.selected; render(); return; }
       finish([{ ident: e.it.ident, count: -1 }]);
     };
+    // plain inventory: double-click does the item's natural action (drink, wear, zap...);
+    // a single click (delayed a moment to tell them apart) or right-click lists every action
+    let hovered = null;
+    const quick = (e) => {
+      const verb = verbFor({ text: e.it.text, cat: e.cat });
+      if (!verb) return choose(e);
+      finish(pickNone ? [] : null);
+      if (/^[WTPRw]$/.test(verb.key)) ui.reopenInventory = true;   // equipping: come back to see it on
+      useItem(ui, { ch: e.it.ch, text: e.it.text, cat: e.cat }, verb);
+    };
+    el.addEventListener('dblclick', (ev) => {
+      const b = ev.target.closest('[data-i]');
+      if (!b || b.classList.contains('empty') || acting || pickAny) return;
+      clearTimeout(clickTimer); clickTimer = null;
+      quick(entries[+b.dataset.i]);
+    });
+    el.addEventListener('contextmenu', (ev) => {
+      const b = ev.target.closest('[data-i]');
+      if (!b) return;
+      ev.preventDefault();
+      if (!b.classList.contains('empty')) choose(entries[+b.dataset.i]);
+    });
     el.addEventListener('click', (ev) => {
       const b = ev.target.closest('[data-i]');
-      if (b && !b.classList.contains('empty')) { choose(entries[+b.dataset.i]); return; }
+      if (b && !b.classList.contains('empty')) {
+        const e = entries[+b.dataset.i];
+        if (acting || pickAny || pickNone) { choose(e); return; }
+        clearTimeout(clickTimer); clickTimer = setTimeout(() => { clickTimer = null; choose(e); }, 240);
+        return;
+      }
       const tb = ev.target.closest('[data-tab]');
       if (tb) { tab = tb.dataset.tab; focus = 0; render(); return; }
       if (ev.target.closest('.x')) finish(pickNone ? [] : null);
       if (ev.target.closest('.confirm')) finish(entries.filter((e) => e.it.selected).map((e) => ({ ident: e.it.ident, count: -1 })));
+      if (ev.target.closest('.takeall')) finish(entries.map((e) => ({ ident: e.it.ident, count: -1 })));
+      if (ev.target.closest('.anyitem')) { ui.pendingLetter = '*'; finish(null); }
     });
     el.addEventListener('mouseover', (ev) => {
       const b = ev.target.closest('[data-i]');
       if (!b) return;
+      hovered = entries[+b.dataset.i];
       showDesc(entries[+b.dataset.i]);
       if (b.closest('.quick, .quiver') && swingT < 0) swingT = performance.now();
     });
@@ -518,11 +561,19 @@ export function inventoryMenu(ui, menu, how) {
         if (nav[focus]) return choose(nav[focus]);
         return;
       }
+      // 1-9: put the item under the mouse (or the focused one) on the quickbar
+      if (!acting && !pickAny && /^[1-9]$/.test(ev.key) && ui.quickbar) {
+        const e = hovered || navList()[focus];
+        if (e) { ui.quickbar.assign(+ev.key, { kind: 'item', ch: e.it.ch, text: e.it.text, cat: e.cat, glyph: e.it.glyph, name: e.name }); showDesc(e, `On the quickbar: ${ev.key}`); }
+        return;
+      }
       if (pickAny && ev.key === ',') { const all = !entries.every((e) => e.it.selected); entries.forEach((e) => { e.it.selected = all; }); render(); return; }
       if (ev.key.length === 1) {
         const code = ev.key.charCodeAt(0);
         const e = entries.find((x) => x.it.ch === code) || entries.find((x) => x.it.gch === code);
         if (e) choose(e); else if (pickNone) finish([]);
+        // NetHack accepts any item, not just the ones it suggests ("throw that potion"): pass the letter on
+        else if (acting && ui.game && ui.game.autoPicking && (ui.game.inventory || []).some((it) => it.ch === code)) { ui.pendingLetter = ev.key; finish(null); }
         return;
       }
       return false;

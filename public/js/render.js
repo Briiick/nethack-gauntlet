@@ -7,6 +7,8 @@ import TERRAIN_PROPS from './props/terrain.js';
 import FURNITURE_PROPS from './props/furniture.js';
 import TRAP_PROPS from './props/traps.js';
 import FX_ART from './props/fx.js';
+import { HERO_ANIM } from './heroanim.js';
+import { heroSheet as composedHeroSheet } from './gear.js';
 
 // hand-drawn art for features, traps and terrain details, by NetHack glyph name (see props/README.md)
 const PROPS = { ...TERRAIN_PROPS, ...FURNITURE_PROPS, ...TRAP_PROPS };
@@ -32,7 +34,6 @@ const hash = (x, y, s = 0) => { let h = (x * 374761393 + y * 668265263 + s * 214
 function hexrgb(h) { return [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)]; }
 const shade = (rgb, k) => [Math.min(255, rgb[0] * k) | 0, Math.min(255, rgb[1] * k) | 0, Math.min(255, rgb[2] * k) | 0];
 const ease = (t) => 1 - (1 - t) * (1 - t);
-const now = () => performance.now();
 
 function pxEllipse(rx, ry, a) {
   const c = document.createElement('canvas'); c.width = rx * 2 + 1; c.height = ry * 2 + 1;
@@ -133,7 +134,10 @@ export class Renderer {
     this.liveProps = new Map();   // cell -> { x, y, prop }: props drawn every frame (tall or animated)
     this.particles = []; this.arcs = []; this.flashes = []; this.ghosts = []; this.pillars = [];
     this.pendingKills = []; this.levelTheme = 'main'; this.torches = []; this.lightSources = [];
-    this.cam = { x: 0, y: 0, init: false }; this.shake = 0; this.hitstop = 0;
+    this.cam = { x: 0, y: 0, init: false }; this.shake = 0;
+    // hit-stop freezes the animation clock: clock() is performance.now() minus the time spent frozen
+    this.stopped = 0; this.stopFrom = 0; this.stopUntil = 0;
+    this.initActions();
     this.lastCommit = 0; this.zoom = 2;
     this.shadows = { 48: pxEllipse(9, 3, 0.42), 64: pxEllipse(14, 4, 0.42), small: pxEllipse(7, 2, 0.4) };
     this.rings = { hero: ring('#5aa8ff', '#2a6ae0'), pet: ring('#7ae08a', '#2a8a4a') };
@@ -176,6 +180,7 @@ export class Renderer {
     this.bk[i] = bk && bk.glyph >= 0 && bk.glyph < this.tiles.glyphs ? bk.glyph : -1;
     this.gflags[i] = gi.flags;
     const gc = this.cls[gi.glyph];
+    this.stepSets.set(i, { g: gi.glyph, prev: this.objMem[i] }); this.missileCells.delete(i);   // (thrown-object tracking, see onDelay)
     if (TERRAIN_CLASSES.has(gc) && gc !== 'void') this.terrMem[i] = gi.glyph;
     else if (this.bk[i] >= 0 && !['stone', 'void'].includes(this.cls[this.bk[i]])) this.terrMem[i] = this.bk[i];
     if (gc === 'wall') this.levelTheme = this.theme[gi.glyph] || 'main';
@@ -321,6 +326,7 @@ export class Renderer {
     const c = this.cls[g], nm = this.tiles.gname[g];
     if (c === 'feature' && /staircase|ladder/.test(nm)) this.drawStairs(x, y, /down/.test(nm), /ladder/.test(nm));
     else if (c === 'statue') this.drawStatue(x, y, g);
+    else if (c === 'obj' && this.missileCells.has(this.idx(x, y))) { /* in flight: drawn as a projectile instead */ }
     else if (c === 'obj' && this.drawItem(ctx, g, ox, oy)) { /* drawn */ }
     else if (['feature', 'trap', 'obj', 'bars', 'tree', 'cloud', 'air', 'engraving'].includes(c)) {
       if (c === 'obj') this.tctx.drawImage(this.shadows.small, ox + T / 2 - 7, oy + T - 7);
@@ -564,7 +570,7 @@ export class Renderer {
 
   commit() {
     this.rebuildTerrain();
-    const t = now();
+    const t = this.clock();
     const gap = t - this.lastCommit; this.lastCommit = t;
     const speed = { instant: 0, snappy: 100, smooth: 170 }[this.settings.animSpeed] ?? 170;
     const dur = Math.max(0, Math.min(speed, gap * 0.9));
@@ -573,6 +579,9 @@ export class Renderer {
       const i = this.idx(x, y), g = this.glyph[i];
       if (g >= 0 && this.cls[g] === 'mon') cur.push({ x, y, g, f: this.gflags[i] });
     }
+    // a thrown object NetHack draws on the hero's own cell (thrown into a wall) doesn't make the hero vanish
+    const hc = this.heroCell, ha = this.heroActor();
+    if (ha && ha.x === hc.x && ha.y === hc.y && this.missileCells.has(this.idx(hc.x, hc.y)) && !cur.some((c) => c.x === hc.x && c.y === hc.y)) cur.push({ x: hc.x, y: hc.y, g: ha.g, f: ha.f });
     const old = [...this.actors.values()];
     const used = new Set(), next = new Map();
     const take = (a, c) => { used.add(a.id); next.set(a.id, a); c.done = true; };
@@ -665,7 +674,8 @@ export class Renderer {
   onMessage(msg) {
     const s = msg.trim();
     let m;
-    const t = now();
+    const t = this.clock();
+    if (this.actionMessage(s, t)) return;
     const C = T / 2;
     if ((m = s.match(/^You (hit|kill|destroy|smite|bite|kick|butt|sting|touch|bash|strike|thrust at|slash|miss) (?:the |your |an? )?(.+?)[!.]?$/i))) {
       const verb = m[1].toLowerCase();
@@ -675,7 +685,8 @@ export class Renderer {
       const dx = Math.sign(target.x - hero.x), dy = Math.sign(target.y - hero.y);
       this.setDir(hero, dx, dy, t); hero.atkT = t;
       hero.lunge = { dx, dy, t0: t + 60 };
-      this.arcs.push({ x: hero.x * T + C, y: hero.y * T + C - 4, ang: Math.atan2(dy, dx), t0: t + 70, dur: 200 });
+      // the wielded weapon swings (or a fist jabs); kicks and bites keep the plain swipe
+      if (!this.meleeSwing(hero, target, verb, t)) this.arcs.push({ x: hero.x * T + C, y: hero.y * T + C - 4, ang: Math.atan2(dy, dx), t0: t + 70, dur: 200 });
       this.setDir(target, -dx, -dy, t);
       if (verb !== 'miss') {
         target.hurtT = t + 110; target.hurtCol = 'white'; target.kb = { x: dx * 4, y: dy * 3 };
@@ -684,7 +695,7 @@ export class Renderer {
           this.burst(target.x * T + C, target.y * T + C, 14, 'blood', { dir: Math.atan2(dy, dx), spread: 1.6, speed: 75, up: 30 });
           this.burst(target.x * T + C, target.y * T + C - 3, 7, 'spark', { dir: Math.atan2(dy, dx), spread: 2.4, speed: 90, up: 14, life: 0.35, z: 10 });
         }, 110);
-        if (verb === 'kill' || verb === 'destroy') { this.pendingKills.push({ actor: target, t }); this.hitstop = t + 160; this.addShake(0.8); }
+        if (verb === 'kill' || verb === 'destroy') { this.pendingKills.push({ actor: target, t }); this.addShake(0.8); this.hitStop(110, 80); }
       }
     } else if ((m = s.match(/^(?:The |Your )?(.+?) (bites|hits|misses|touches|stings|butts|kicks|claws|thrusts|swings|lashes|smites|grabs|squeezes|tentacles)\b/))) {
       const a = this.findAdjacent(m[1].toLowerCase());
@@ -696,6 +707,7 @@ export class Renderer {
       this.setDir(hero, -dx, -dy, t);
       if (m[2] !== 'misses') {
         hero.hurtT = t + 140; hero.hurtCol = 'red';
+        this.monsterHitMark(hero, m[2], dx, dy, t + 130);
         setTimeout(() => this.burst(hero.x * T + C, hero.y * T + C - 4, 6, 'blood', { speed: 36, up: 22 }), 140);
       }
     } else if (/You (are surrounded by a shimmering light|feel much better|feel a hopeful feeling)/.test(s)) {
@@ -739,8 +751,8 @@ export class Renderer {
     for (let i = 0; i < n; i++) {
       const a = (o.dir ?? Math.random() * Math.PI * 2) + (Math.random() - 0.5) * (o.spread ?? Math.PI * 2);
       const sp = (o.speed ?? 50) * (0.4 + Math.random() * 0.8);
-      this.particles.push({ x, y, z: o.z ?? 8, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp * 0.6, vz: (o.up ?? 34) * (0.5 + Math.random()), kind, life: o.life ?? 1.2, age: 0,
-        col: kind === 'blood' ? (Math.random() < 0.6 ? '#c01428' : '#7a0a16') : kind === 'holy' ? '#fff0b0' : '#ffd070' });
+      this.particles.push({ x, y, z: o.z ?? 8, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp * 0.6, vz: (o.up ?? 34) * (0.5 + Math.random()), kind, life: (o.life ?? 1.2) * (o.lifeVar ? 0.6 + Math.random() * 0.8 : 1), age: 0, g: o.g,
+        col: kind === 'blood' ? (Math.random() < 0.6 ? '#c01428' : '#7a0a16') : o.col ? (Array.isArray(o.col) ? o.col[i % o.col.length] : o.col) : kind === 'holy' ? '#fff0b0' : '#ffd070' });
     }
   }
 
@@ -767,12 +779,23 @@ export class Renderer {
     return { x: Math.floor(wx / T), y: Math.floor(wy / T) };
   }
 
-  frame(t) {
+  clock() { return performance.now() - this.stopped; }
+  // freeze the picture for `dur` ms starting `delay` ms from now (the moment a blow lands)
+  hitStop(delay, dur) {
+    if (this.settings.reduceMotion) return;
+    const from = performance.now() + delay;
+    if (from < this.stopUntil) { this.stopUntil = Math.max(this.stopUntil, from + dur); return; }
+    this.stopFrom = from; this.stopUntil = from + dur;
+  }
+
+  frame(raw) {
     requestAnimationFrame((tt) => this.frame(tt));
     if (this.settings.graphics === 'official' && this.officialImg) { this.frameOfficial(); return; }
     if (this.officialView) { this.officialView = null; this.resize(); }   // back from official tiles
-    const dt = Math.min(0.05, (t - (this.lastFrame || t)) / 1000); this.lastFrame = t;
-    if (t < this.hitstop) return;
+    const rawDt = raw - (this.lastFrame || raw); this.lastFrame = raw;
+    const dt = Math.min(0.05, rawDt / 1000);
+    if (raw >= this.stopFrom && raw < this.stopUntil) { this.stopped += rawDt; return; }
+    const t = raw - this.stopped;
     if (this.anyDirty && t - this.lastCommit > 120) this.commit();
     const { sctx, lctx, vw, vh } = this;
     const hero = this.heroActor();
@@ -804,6 +827,7 @@ export class Renderer {
     const propsUpTo = (py) => { while (pi < props.length && props[pi].y * T <= py) { const p = props[pi++]; p.o.t = t; p.prop.draw(sctx, p.x * T, p.y * T, p.o); } };
     for (const { a, x, y } of list) { propsUpTo(y); this.drawActor(a, x, y, t); }
     propsUpTo(Infinity);
+    this.drawMissiles(t);
     sctx.globalAlpha = 1; sctx.globalCompositeOperation = 'source-over';
     for (const gh of this.ghosts) {
       const k = (t - gh.t0) / 160;
@@ -812,7 +836,7 @@ export class Renderer {
     this.ghosts = this.ghosts.filter((g) => t - g.t0 < 160);
 
     for (const q of this.particles) {
-      q.age += dt; q.vz -= 190 * dt; q.x += q.vx * dt; q.y += q.vy * dt; q.z += q.vz * dt;
+      q.age += dt; q.vz -= 190 * (q.g ?? 1) * dt; q.x += q.vx * dt; q.y += q.vy * dt; q.z += q.vz * dt;
       if (q.z <= 0) {
         q.z = 0;
         if (q.kind === 'blood') { this.dctx.fillStyle = q.col; this.dctx.fillRect(Math.round(q.x), Math.round(q.y), 1, 1); q.age = q.life; }
@@ -840,6 +864,7 @@ export class Renderer {
       const k = (t - p.t0) / 1600;
       if (k < 1) this.light(hx, hy, 160, p.kind === 'holy' ? '255,220,120' : '255,235,160', Math.sin(k * Math.PI) * 1.1);
     }
+    this.actionLights(t);
     sctx.setTransform(1, 0, 0, 1, 0, 0);
     sctx.globalCompositeOperation = 'multiply'; sctx.drawImage(this.lightC, 0, 0);
     sctx.globalCompositeOperation = 'source-over';
@@ -854,6 +879,7 @@ export class Renderer {
     }
     sctx.globalAlpha = 1;
     this.drawArcs(t);
+    this.drawActionFx(t);
     this.drawPillars(t, hx, hy);
     if (cur) this.drawCursor(cur, t);
 
@@ -963,15 +989,19 @@ export class Renderer {
     const cx = x + T / 2, ground = y + T - 3;
     if (a.hero && this.settings.markers !== false) sctx.drawImage(this.rings.hero, cx - 15, ground - 7);
     else if ((a.f & MG.PET) && this.settings.markers !== false) sctx.drawImage(this.rings.pet, cx - 15, ground - 7);
+    const posed = a.hero && !force && this.pose;
+    if (posed) { this.drawPose(a, cx, ground, t, 'under'); this.drawPose(a, cx, ground, t, 'back'); }
     if (this.tiles.gname[a.g] === 'invisible mon') { this.drawUnseen(cx, ground, t + a.phase); sctx.globalAlpha = prevAlpha; return; }
     const e = this.sheets.get(this.mnumOf(a.g));
+    const worn = a.hero && variant !== 'white' && variant !== 'red' ? this.heroGearSheet(a, t) : null;   // what the hero really wears
     if (e) {
       const { size, feet } = e.meta;
       sctx.drawImage(this.shadows[size] || this.shadows[48], cx - (size === 64 ? 14 : 9), ground - (size === 64 ? 4 : 3));
       const dir = t - a.turnT < 80 ? a.turnVia : a.dir;
       const col = this.frameFor(a, t);
-      const src = variant === 'white' ? e.white : variant === 'red' ? e.red : e.img;
+      const src = worn || (variant === 'white' ? e.white : variant === 'red' ? e.red : e.img);
       sctx.drawImage(src, col * size, dir * size, size, size, cx - feet[0], ground - feet[1], size, size);
+      if (posed) this.drawPose(a, cx, ground, t, 'front');
     } else {
       sctx.drawImage(this.shadows.small, cx - 7, ground - 2);
       const t2 = this.tiles.g2t[a.g], cell = this.tiles.cell, cols = this.tiles.cols;
@@ -979,8 +1009,21 @@ export class Renderer {
       if (variant !== 'base') sctx.filter = variant === 'red' ? 'brightness(0.6) sepia(1) saturate(8) hue-rotate(-30deg)' : 'brightness(3)';
       sctx.drawImage(this.atlas, (t2 % cols) * cell, Math.floor(t2 / cols) * cell, cell, cell, cx - cell / 2, ground - cell + 2 + bob, cell, cell);
       sctx.filter = 'none';
+      if (posed) this.drawPose(a, cx, ground, t, 'front');
     }
     sctx.globalAlpha = prevAlpha;
+  }
+
+  // The hero drawn in the armour and weapons they actually have on (public/js/gear.js composes the
+  // sheet from the role's body and equipment layers). A hand busy in an animation (a swing, a drawn
+  // bow) is left empty on the sprite, since the animation draws that item itself.
+  heroGearSheet(a, t) {
+    if (this.settings.heroGear === false || !this.equipment) return null;
+    const busy = this.heroHandsBusy ? this.heroHandsBusy(t) : {};
+    const eq = { ...this.equipment };
+    if (busy.main) delete eq.main;
+    if (busy.off) delete eq.off;
+    return composedHeroSheet(this.mnumOf(a.g), eq, () => { this.anyDirty = true; });
   }
 
   // "remembered, unseen monster": a smudge of shadow with two dim eyes
@@ -1104,3 +1147,6 @@ export class Renderer {
     }
   }
 }
+
+// weapon swings, zaps, casting, projectiles and item feedback (see heroanim.js)
+Object.assign(Renderer.prototype, HERO_ANIM);

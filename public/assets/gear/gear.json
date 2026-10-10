@@ -1,0 +1,1933 @@
+{
+ "version": 1,
+ "size": 48,
+ "pad": 6,
+ "frame": 60,
+ "cols": 9,
+ "rows": 4,
+ "dirs": [
+  "S",
+  "E",
+  "N",
+  "W"
+ ],
+ "frames": [
+  "idle0",
+  "idle1",
+  "walk0",
+  "walk1",
+  "walk2",
+  "walk3",
+  "atk0",
+  "atk1",
+  "atk2"
+ ],
+ "aux": {
+  "depth": "R: 0 empty, else (t - 20) * 4, smaller is nearer",
+  "tint": "G: 0 fixed, 1 tint, 2 tint * 0.66",
+  "shade": "B: 0..4 light level (sdf.ramp -2..2), +5 depth-darkened (x0.55), 15 outline"
+ },
+ "darkTint": 0.66,
+ "order": [
+  "shirt",
+  "body",
+  "feet",
+  "hands",
+  "cloak",
+  "head",
+  "off",
+  "main"
+ ],
+ "slots": [
+  "shirt",
+  "body",
+  "cloak",
+  "feet",
+  "hands",
+  "head",
+  "off",
+  "main"
+ ],
+ "roles": {
+  "archeologist": {
+   "mnum": 331,
+   "base": "base-archeologist.png",
+   "aux": "base-archeologist.aux.png",
+   "size": 48,
+   "feet": [
+    24,
+    43
+   ],
+   "shift": [
+    [
+     0,
+     0
+    ],
+    [
+     0,
+     0
+    ],
+    [
+     0,
+     0
+    ],
+    [
+     0,
+     0
+    ]
+   ]
+  },
+  "barbarian": {
+   "mnum": 332,
+   "base": "base-barbarian.png",
+   "aux": "base-barbarian.aux.png",
+   "size": 48,
+   "feet": [
+    24,
+    43
+   ],
+   "shift": [
+    [
+     0,
+     0
+    ],
+    [
+     0,
+     0
+    ],
+    [
+     0,
+     0
+    ],
+    [
+     0,
+     0
+    ]
+   ]
+  },
+  "caveman": {
+   "mnum": 333,
+   "base": "base-caveman.png",
+   "aux": "base-caveman.aux.png",
+   "size": 48,
+   "feet": [
+    24,
+    43
+   ],
+   "shift": [
+    [
+     0,
+     0
+    ],
+    [
+     0,
+     0
+    ],
+    [
+     0,
+     0
+    ],
+    [
+     0,
+     0
+    ]
+   ]
+  },
+  "healer": {
+   "mnum": 334,
+   "base": "base-healer.png",
+   "aux": "base-healer.aux.png",
+   "size": 48,
+   "feet": [
+    24,
+    43
+   ],
+   "shift": [
+    [
+     0,
+     0
+    ],
+    [
+     0,
+     0
+    ],
+    [
+     0,
+     0
+    ],
+    [
+     0,
+     0
+    ]
+   ]
+  },
+  "knight": {
+   "mnum": 335,
+   "base": "base-knight.png",
+   "aux": "base-knight.aux.png",
+   "size": 48,
+   "feet": [
+    24,
+    43
+   ],
+   "shift": [
+    [
+     0,
+     0
+    ],
+    [
+     0,
+     0
+    ],
+    [
+     0,
+     0
+    ],
+    [
+     0,
+     0
+    ]
+   ]
+  },
+  "monk": {
+   "mnum": 336,
+   "base": "base-monk.png",
+   "aux": "base-monk.aux.png",
+   "size": 48,
+   "feet": [
+    24,
+    43
+   ],
+   "shift": [
+    [
+     0,
+     0
+    ],
+    [
+     0,
+     0
+    ],
+    [
+     0,
+     0
+    ],
+    [
+     0,
+     0
+    ]
+   ]
+  },
+  "priest": {
+   "mnum": 337,
+   "base": "base-priest.png",
+   "aux": "base-priest.aux.png",
+   "size": 48,
+   "feet": [
+    24,
+    43
+   ],
+   "shift": [
+    [
+     0,
+     0
+    ],
+    [
+     0,
+     0
+    ],
+    [
+     0,
+     0
+    ],
+    [
+     0,
+     0
+    ]
+   ]
+  },
+  "ranger": {
+   "mnum": 338,
+   "base": "base-ranger.png",
+   "aux": "base-ranger.aux.png",
+   "size": 48,
+   "feet": [
+    24,
+    43
+   ],
+   "shift": [
+    [
+     0,
+     0
+    ],
+    [
+     0,
+     0
+    ],
+    [
+     0,
+     0
+    ],
+    [
+     0,
+     0
+    ]
+   ]
+  },
+  "rogue": {
+   "mnum": 339,
+   "base": "base-rogue.png",
+   "aux": "base-rogue.aux.png",
+   "size": 48,
+   "feet": [
+    24,
+    43
+   ],
+   "shift": [
+    [
+     0,
+     0
+    ],
+    [
+     0,
+     0
+    ],
+    [
+     0,
+     0
+    ],
+    [
+     0,
+     0
+    ]
+   ]
+  },
+  "samurai": {
+   "mnum": 340,
+   "base": "base-samurai.png",
+   "aux": "base-samurai.aux.png",
+   "size": 48,
+   "feet": [
+    24,
+    43
+   ],
+   "shift": [
+    [
+     0,
+     0
+    ],
+    [
+     0,
+     0
+    ],
+    [
+     0,
+     0
+    ],
+    [
+     0,
+     0
+    ]
+   ]
+  },
+  "tourist": {
+   "mnum": 341,
+   "base": "base-tourist.png",
+   "aux": "base-tourist.aux.png",
+   "size": 48,
+   "feet": [
+    24,
+    43
+   ],
+   "shift": [
+    [
+     0,
+     0
+    ],
+    [
+     0,
+     0
+    ],
+    [
+     0,
+     0
+    ],
+    [
+     0,
+     0
+    ]
+   ]
+  },
+  "valkyrie": {
+   "mnum": 342,
+   "base": "base-valkyrie.png",
+   "aux": "base-valkyrie.aux.png",
+   "size": 48,
+   "feet": [
+    24,
+    43
+   ],
+   "shift": [
+    [
+     0,
+     0
+    ],
+    [
+     0,
+     0
+    ],
+    [
+     0,
+     0
+    ],
+    [
+     0,
+     0
+    ]
+   ]
+  },
+  "wizard": {
+   "mnum": 343,
+   "base": "base-wizard.png",
+   "aux": "base-wizard.aux.png",
+   "size": 48,
+   "feet": [
+    24,
+    43
+   ],
+   "shift": [
+    [
+     0,
+     0
+    ],
+    [
+     0,
+     0
+    ],
+    [
+     0,
+     0
+    ],
+    [
+     0,
+     0
+    ]
+   ]
+  }
+ },
+ "roleAliases": {
+  "cavewoman": "caveman",
+  "priestess": "priest",
+  "caveperson": "caveman",
+  "cleric": "priest"
+ },
+ "layers": {
+  "head_helmet": {
+   "file": "head_helmet.png",
+   "aux": "head_helmet.aux.png",
+   "slot": "head",
+   "order": 5
+  },
+  "head_plumed": {
+   "file": "head_plumed.png",
+   "aux": "head_plumed.aux.png",
+   "slot": "head",
+   "order": 5
+  },
+  "head_etched": {
+   "file": "head_etched.png",
+   "aux": "head_etched.aux.png",
+   "slot": "head",
+   "order": 5
+  },
+  "head_crested": {
+   "file": "head_crested.png",
+   "aux": "head_crested.aux.png",
+   "slot": "head",
+   "order": 5
+  },
+  "head_visored": {
+   "file": "head_visored.png",
+   "aux": "head_visored.aux.png",
+   "slot": "head",
+   "order": 5
+  },
+  "head_crystal": {
+   "file": "head_crystal.png",
+   "aux": "head_crystal.aux.png",
+   "slot": "head",
+   "order": 5
+  },
+  "head_kabuto": {
+   "file": "head_kabuto.png",
+   "aux": "head_kabuto.aux.png",
+   "slot": "head",
+   "order": 5
+  },
+  "head_hardhat": {
+   "file": "head_hardhat.png",
+   "aux": "head_hardhat.aux.png",
+   "slot": "head",
+   "order": 5
+  },
+  "head_leatherhat": {
+   "file": "head_leatherhat.png",
+   "aux": "head_leatherhat.aux.png",
+   "slot": "head",
+   "order": 5
+  },
+  "head_skullcap": {
+   "file": "head_skullcap.png",
+   "aux": "head_skullcap.aux.png",
+   "slot": "head",
+   "order": 5
+  },
+  "head_pot": {
+   "file": "head_pot.png",
+   "aux": "head_pot.aux.png",
+   "slot": "head",
+   "order": 5
+  },
+  "head_cone": {
+   "file": "head_cone.png",
+   "aux": "head_cone.aux.png",
+   "slot": "head",
+   "order": 5
+  },
+  "head_fedora": {
+   "file": "head_fedora.png",
+   "aux": "head_fedora.aux.png",
+   "slot": "head",
+   "order": 5
+  },
+  "body_plate": {
+   "file": "body_plate.png",
+   "aux": "body_plate.aux.png",
+   "slot": "body",
+   "order": 1
+  },
+  "body_splint": {
+   "file": "body_splint.png",
+   "aux": "body_splint.aux.png",
+   "slot": "body",
+   "order": 1
+  },
+  "body_mail": {
+   "file": "body_mail.png",
+   "aux": "body_mail.aux.png",
+   "slot": "body",
+   "order": 1
+  },
+  "body_scale": {
+   "file": "body_scale.png",
+   "aux": "body_scale.aux.png",
+   "slot": "body",
+   "order": 1
+  },
+  "body_dragon": {
+   "file": "body_dragon.png",
+   "aux": "body_dragon.aux.png",
+   "slot": "body",
+   "order": 1
+  },
+  "body_leather": {
+   "file": "body_leather.png",
+   "aux": "body_leather.aux.png",
+   "slot": "body",
+   "order": 1
+  },
+  "body_studded": {
+   "file": "body_studded.png",
+   "aux": "body_studded.aux.png",
+   "slot": "body",
+   "order": 1
+  },
+  "body_jacket": {
+   "file": "body_jacket.png",
+   "aux": "body_jacket.aux.png",
+   "slot": "body",
+   "order": 1
+  },
+  "shirt_shirt": {
+   "file": "shirt_shirt.png",
+   "aux": "shirt_shirt.aux.png",
+   "slot": "shirt",
+   "order": 0
+  },
+  "shirt_hawaiian": {
+   "file": "shirt_hawaiian.png",
+   "aux": "shirt_hawaiian.aux.png",
+   "slot": "shirt",
+   "order": 0
+  },
+  "cloak_cloak": {
+   "file": "cloak_cloak.png",
+   "aux": "cloak_cloak.aux.png",
+   "slot": "cloak",
+   "order": 4
+  },
+  "cloak_tattered": {
+   "file": "cloak_tattered.png",
+   "aux": "cloak_tattered.aux.png",
+   "slot": "cloak",
+   "order": 4
+  },
+  "cloak_short": {
+   "file": "cloak_short.png",
+   "aux": "cloak_short.aux.png",
+   "slot": "cloak",
+   "order": 4
+  },
+  "cloak_hooded": {
+   "file": "cloak_hooded.png",
+   "aux": "cloak_hooded.aux.png",
+   "slot": "cloak",
+   "order": 4
+  },
+  "cloak_opera": {
+   "file": "cloak_opera.png",
+   "aux": "cloak_opera.aux.png",
+   "slot": "cloak",
+   "order": 4
+  },
+  "cloak_cope": {
+   "file": "cloak_cope.png",
+   "aux": "cloak_cope.aux.png",
+   "slot": "cloak",
+   "order": 4
+  },
+  "cloak_robe": {
+   "file": "cloak_robe.png",
+   "aux": "cloak_robe.aux.png",
+   "slot": "cloak",
+   "order": 4
+  },
+  "cloak_apron": {
+   "file": "cloak_apron.png",
+   "aux": "cloak_apron.aux.png",
+   "slot": "cloak",
+   "order": 4
+  },
+  "cloak_wraps": {
+   "file": "cloak_wraps.png",
+   "aux": "cloak_wraps.aux.png",
+   "slot": "cloak",
+   "order": 4
+  },
+  "shield_small": {
+   "file": "shield_small.png",
+   "aux": "shield_small.aux.png",
+   "slot": "off",
+   "order": 6
+  },
+  "shield_elven": {
+   "file": "shield_elven.png",
+   "aux": "shield_elven.aux.png",
+   "slot": "off",
+   "order": 6
+  },
+  "shield_urukhai": {
+   "file": "shield_urukhai.png",
+   "aux": "shield_urukhai.aux.png",
+   "slot": "off",
+   "order": 6
+  },
+  "shield_orcish": {
+   "file": "shield_orcish.png",
+   "aux": "shield_orcish.aux.png",
+   "slot": "off",
+   "order": 6
+  },
+  "shield_large": {
+   "file": "shield_large.png",
+   "aux": "shield_large.aux.png",
+   "slot": "off",
+   "order": 6
+  },
+  "shield_round": {
+   "file": "shield_round.png",
+   "aux": "shield_round.aux.png",
+   "slot": "off",
+   "order": 6
+  },
+  "shield_reflection": {
+   "file": "shield_reflection.png",
+   "aux": "shield_reflection.aux.png",
+   "slot": "off",
+   "order": 6
+  },
+  "hands_gloves": {
+   "file": "hands_gloves.png",
+   "aux": "hands_gloves.aux.png",
+   "slot": "hands",
+   "order": 3
+  },
+  "hands_gauntlets": {
+   "file": "hands_gauntlets.png",
+   "aux": "hands_gauntlets.aux.png",
+   "slot": "hands",
+   "order": 3
+  },
+  "hands_metal": {
+   "file": "hands_metal.png",
+   "aux": "hands_metal.aux.png",
+   "slot": "hands",
+   "order": 3
+  },
+  "feet_shoes": {
+   "file": "feet_shoes.png",
+   "aux": "feet_shoes.aux.png",
+   "slot": "feet",
+   "order": 2
+  },
+  "feet_boots": {
+   "file": "feet_boots.png",
+   "aux": "feet_boots.aux.png",
+   "slot": "feet",
+   "order": 2
+  },
+  "feet_buckled": {
+   "file": "feet_buckled.png",
+   "aux": "feet_buckled.aux.png",
+   "slot": "feet",
+   "order": 2
+  },
+  "feet_fur": {
+   "file": "feet_fur.png",
+   "aux": "feet_fur.aux.png",
+   "slot": "feet",
+   "order": 2
+  },
+  "feet_laced": {
+   "file": "feet_laced.png",
+   "aux": "feet_laced.aux.png",
+   "slot": "feet",
+   "order": 2
+  },
+  "feet_iron": {
+   "file": "feet_iron.png",
+   "aux": "feet_iron.aux.png",
+   "slot": "feet",
+   "order": 2
+  },
+  "main_dagger": {
+   "file": "main_dagger.png",
+   "aux": "main_dagger.aux.png",
+   "slot": "main",
+   "order": 7
+  },
+  "main_short_sword": {
+   "file": "main_short_sword.png",
+   "aux": "main_short_sword.aux.png",
+   "slot": "main",
+   "order": 7
+  },
+  "main_long_sword": {
+   "file": "main_long_sword.png",
+   "aux": "main_long_sword.aux.png",
+   "slot": "main",
+   "order": 7
+  },
+  "main_two_handed": {
+   "file": "main_two_handed.png",
+   "aux": "main_two_handed.aux.png",
+   "slot": "main",
+   "order": 7
+  },
+  "main_katana": {
+   "file": "main_katana.png",
+   "aux": "main_katana.aux.png",
+   "slot": "main",
+   "order": 7
+  },
+  "main_scimitar": {
+   "file": "main_scimitar.png",
+   "aux": "main_scimitar.aux.png",
+   "slot": "main",
+   "order": 7
+  },
+  "main_axe": {
+   "file": "main_axe.png",
+   "aux": "main_axe.aux.png",
+   "slot": "main",
+   "order": 7
+  },
+  "main_battle_axe": {
+   "file": "main_battle_axe.png",
+   "aux": "main_battle_axe.aux.png",
+   "slot": "main",
+   "order": 7
+  },
+  "main_club": {
+   "file": "main_club.png",
+   "aux": "main_club.aux.png",
+   "slot": "main",
+   "order": 7
+  },
+  "main_mace": {
+   "file": "main_mace.png",
+   "aux": "main_mace.aux.png",
+   "slot": "main",
+   "order": 7
+  },
+  "main_morning_star": {
+   "file": "main_morning_star.png",
+   "aux": "main_morning_star.aux.png",
+   "slot": "main",
+   "order": 7
+  },
+  "main_flail": {
+   "file": "main_flail.png",
+   "aux": "main_flail.aux.png",
+   "slot": "main",
+   "order": 7
+  },
+  "main_hammer": {
+   "file": "main_hammer.png",
+   "aux": "main_hammer.aux.png",
+   "slot": "main",
+   "order": 7
+  },
+  "main_spear": {
+   "file": "main_spear.png",
+   "aux": "main_spear.aux.png",
+   "slot": "main",
+   "order": 7
+  },
+  "main_trident": {
+   "file": "main_trident.png",
+   "aux": "main_trident.aux.png",
+   "slot": "main",
+   "order": 7
+  },
+  "main_polearm": {
+   "file": "main_polearm.png",
+   "aux": "main_polearm.aux.png",
+   "slot": "main",
+   "order": 7
+  },
+  "main_lance": {
+   "file": "main_lance.png",
+   "aux": "main_lance.aux.png",
+   "slot": "main",
+   "order": 7
+  },
+  "main_staff": {
+   "file": "main_staff.png",
+   "aux": "main_staff.aux.png",
+   "slot": "main",
+   "order": 7
+  },
+  "main_bow": {
+   "file": "main_bow.png",
+   "aux": "main_bow.aux.png",
+   "slot": "main",
+   "order": 7
+  },
+  "main_crossbow": {
+   "file": "main_crossbow.png",
+   "aux": "main_crossbow.aux.png",
+   "slot": "main",
+   "order": 7
+  },
+  "main_whip": {
+   "file": "main_whip.png",
+   "aux": "main_whip.aux.png",
+   "slot": "main",
+   "order": 7
+  },
+  "main_pick": {
+   "file": "main_pick.png",
+   "aux": "main_pick.aux.png",
+   "slot": "main",
+   "order": 7
+  },
+  "main_mattock": {
+   "file": "main_mattock.png",
+   "aux": "main_mattock.aux.png",
+   "slot": "main",
+   "order": 7
+  },
+  "main_unicorn_horn": {
+   "file": "main_unicorn_horn.png",
+   "aux": "main_unicorn_horn.aux.png",
+   "slot": "main",
+   "order": 7
+  }
+ },
+ "variants": {
+  "helmet": {
+   "layer": "head_helmet",
+   "slot": "head",
+   "tint": "#7a8296",
+   "metal": true
+  },
+  "helmet_plumed": {
+   "layer": "head_plumed",
+   "slot": "head",
+   "tint": "#7a8296",
+   "metal": true
+  },
+  "helmet_etched": {
+   "layer": "head_etched",
+   "slot": "head",
+   "tint": "#7a8296",
+   "metal": true
+  },
+  "helmet_crested": {
+   "layer": "head_crested",
+   "slot": "head",
+   "tint": "#7a8296",
+   "metal": true
+  },
+  "helmet_visored": {
+   "layer": "head_visored",
+   "slot": "head",
+   "tint": "#7a8296",
+   "metal": true
+  },
+  "helmet_crystal": {
+   "layer": "head_crystal",
+   "slot": "head"
+  },
+  "kabuto": {
+   "layer": "head_kabuto",
+   "slot": "head",
+   "tint": "#9a2a22",
+   "metal": false
+  },
+  "hard_hat": {
+   "layer": "head_hardhat",
+   "slot": "head",
+   "tint": "#7e8698",
+   "metal": true
+  },
+  "leather_hat": {
+   "layer": "head_leatherhat",
+   "slot": "head",
+   "tint": "#7a5a34",
+   "metal": false
+  },
+  "iron_skull_cap": {
+   "layer": "head_skullcap",
+   "slot": "head"
+  },
+  "dented_pot": {
+   "layer": "head_pot",
+   "slot": "head"
+  },
+  "conical_hat": {
+   "layer": "head_cone",
+   "slot": "head",
+   "tint": "#3a4ab8",
+   "metal": false
+  },
+  "fedora": {
+   "layer": "head_fedora",
+   "slot": "head",
+   "tint": "#7a5a32",
+   "metal": false
+  },
+  "plate_mail": {
+   "layer": "body_plate",
+   "slot": "body",
+   "tint": "#7a8296",
+   "metal": true
+  },
+  "crystal_plate_mail": {
+   "layer": "body_plate",
+   "slot": "body",
+   "tint": "#bfe8f4",
+   "metal": false
+  },
+  "bronze_plate_mail": {
+   "layer": "body_plate",
+   "slot": "body",
+   "tint": "#b0702c",
+   "metal": true
+  },
+  "splint_mail": {
+   "layer": "body_splint",
+   "slot": "body",
+   "tint": "#7a8296",
+   "metal": true
+  },
+  "banded_mail": {
+   "layer": "body_splint",
+   "slot": "body",
+   "tint": "#6e7484",
+   "metal": true
+  },
+  "chain_mail": {
+   "layer": "body_mail",
+   "slot": "body",
+   "tint": "#7a8294",
+   "metal": true
+  },
+  "ring_mail": {
+   "layer": "body_mail",
+   "slot": "body",
+   "tint": "#6e6e7a",
+   "metal": true
+  },
+  "orcish_chain_mail": {
+   "layer": "body_mail",
+   "slot": "body",
+   "tint": "#5a5048",
+   "metal": true
+  },
+  "orcish_ring_mail": {
+   "layer": "body_mail",
+   "slot": "body",
+   "tint": "#4e463e",
+   "metal": true
+  },
+  "dwarvish_mithril_coat": {
+   "layer": "body_mail",
+   "slot": "body",
+   "tint": "#a8b2c4",
+   "metal": true
+  },
+  "elven_mithril_coat": {
+   "layer": "body_mail",
+   "slot": "body",
+   "tint": "#c4d0e0",
+   "metal": true
+  },
+  "scale_mail": {
+   "layer": "body_scale",
+   "slot": "body",
+   "tint": "#7e8494",
+   "metal": true
+  },
+  "studded_leather_armor": {
+   "layer": "body_studded",
+   "slot": "body",
+   "tint": "#6a4428",
+   "metal": false
+  },
+  "leather_armor": {
+   "layer": "body_leather",
+   "slot": "body",
+   "tint": "#7a5232",
+   "metal": false
+  },
+  "leather_jacket": {
+   "layer": "body_jacket",
+   "slot": "body",
+   "tint": "#2e2a30",
+   "metal": false
+  },
+  "T_shirt": {
+   "layer": "shirt_shirt",
+   "slot": "shirt",
+   "tint": "#ece8e0",
+   "metal": false
+  },
+  "Hawaiian_shirt": {
+   "layer": "shirt_hawaiian",
+   "slot": "shirt"
+  },
+  "tattered_cape": {
+   "layer": "cloak_tattered",
+   "slot": "cloak",
+   "tint": "#7a5a34",
+   "metal": false
+  },
+  "opera_cloak": {
+   "layer": "cloak_opera",
+   "slot": "cloak",
+   "tint": "#2a2430",
+   "metal": false
+  },
+  "ornamental_cope": {
+   "layer": "cloak_cope",
+   "slot": "cloak",
+   "tint": "#ece8e0",
+   "metal": false
+  },
+  "piece_of_cloth": {
+   "layer": "cloak_short",
+   "slot": "cloak",
+   "tint": "#9a7a4a",
+   "metal": false
+  },
+  "faded_pall": {
+   "layer": "cloak_cloak",
+   "slot": "cloak",
+   "tint": "#56665a",
+   "metal": false
+  },
+  "coarse_mantelet": {
+   "layer": "cloak_cloak",
+   "slot": "cloak",
+   "tint": "#4a4636",
+   "metal": false
+  },
+  "hooded_cloak": {
+   "layer": "cloak_hooded",
+   "slot": "cloak",
+   "tint": "#7a5a34",
+   "metal": false
+  },
+  "slippery_cloak": {
+   "layer": "cloak_cloak",
+   "slot": "cloak",
+   "tint": "#5a6a3a",
+   "metal": true
+  },
+  "robe": {
+   "layer": "cloak_robe",
+   "slot": "cloak",
+   "tint": "#b8342c",
+   "metal": false
+  },
+  "apron": {
+   "layer": "cloak_apron",
+   "slot": "cloak",
+   "tint": "#ece8e0",
+   "metal": false
+  },
+  "leather_cloak": {
+   "layer": "cloak_cloak",
+   "slot": "cloak",
+   "tint": "#6a4428",
+   "metal": false
+  },
+  "mummy_wrapping": {
+   "layer": "cloak_wraps",
+   "slot": "cloak"
+  },
+  "cloak": {
+   "layer": "cloak_cloak",
+   "slot": "cloak",
+   "tint": "#6a4a7a",
+   "metal": false
+  },
+  "wooden_shield": {
+   "layer": "shield_small",
+   "slot": "off"
+  },
+  "elven_shield": {
+   "layer": "shield_elven",
+   "slot": "off"
+  },
+  "white_handed_shield": {
+   "layer": "shield_urukhai",
+   "slot": "off"
+  },
+  "red_eyed_shield": {
+   "layer": "shield_orcish",
+   "slot": "off"
+  },
+  "large_shield": {
+   "layer": "shield_large",
+   "slot": "off"
+  },
+  "large_round_shield": {
+   "layer": "shield_round",
+   "slot": "off"
+  },
+  "polished_silver_shield": {
+   "layer": "shield_reflection",
+   "slot": "off"
+  },
+  "old_gloves": {
+   "layer": "hands_gloves",
+   "slot": "hands",
+   "tint": "#6a4428",
+   "metal": false
+  },
+  "padded_gloves": {
+   "layer": "hands_gauntlets",
+   "slot": "hands",
+   "tint": "#b8a07a",
+   "metal": false
+  },
+  "riding_gloves": {
+   "layer": "hands_gauntlets",
+   "slot": "hands",
+   "tint": "#4a3020",
+   "metal": false
+  },
+  "fencing_gloves": {
+   "layer": "hands_gauntlets",
+   "slot": "hands",
+   "tint": "#e0dcd0",
+   "metal": false
+  },
+  "gauntlets_of_power": {
+   "layer": "hands_metal",
+   "slot": "hands",
+   "tint": "#6a7080",
+   "metal": true
+  },
+  "walking_shoes": {
+   "layer": "feet_shoes",
+   "slot": "feet",
+   "tint": "#5a3a24",
+   "metal": false
+  },
+  "hard_shoes": {
+   "layer": "feet_iron",
+   "slot": "feet",
+   "tint": "#6a7080",
+   "metal": true
+  },
+  "jackboots": {
+   "layer": "feet_boots",
+   "slot": "feet",
+   "tint": "#2e2a30",
+   "metal": false
+  },
+  "combat_boots": {
+   "layer": "feet_laced",
+   "slot": "feet",
+   "tint": "#4a4a32",
+   "metal": false
+  },
+  "jungle_boots": {
+   "layer": "feet_laced",
+   "slot": "feet",
+   "tint": "#3a5a2a",
+   "metal": false
+  },
+  "hiking_boots": {
+   "layer": "feet_laced",
+   "slot": "feet",
+   "tint": "#7a5232",
+   "metal": false
+  },
+  "mud_boots": {
+   "layer": "feet_boots",
+   "slot": "feet",
+   "tint": "#5a4a32",
+   "metal": false
+  },
+  "buckled_boots": {
+   "layer": "feet_buckled",
+   "slot": "feet",
+   "tint": "#4a3020",
+   "metal": false
+  },
+  "riding_boots": {
+   "layer": "feet_boots",
+   "slot": "feet",
+   "tint": "#3a2418",
+   "metal": false
+  },
+  "snow_boots": {
+   "layer": "feet_fur",
+   "slot": "feet",
+   "tint": "#6a5a4a",
+   "metal": false
+  },
+  "dsm_gray": {
+   "layer": "body_dragon",
+   "slot": "body",
+   "tint": "#8a8a96",
+   "metal": false
+  },
+  "dsm_gold": {
+   "layer": "body_dragon",
+   "slot": "body",
+   "tint": "#e0b040",
+   "metal": false
+  },
+  "dsm_silver": {
+   "layer": "body_dragon",
+   "slot": "body",
+   "tint": "#d4dce8",
+   "metal": false
+  },
+  "dsm_red": {
+   "layer": "body_dragon",
+   "slot": "body",
+   "tint": "#c03a2a",
+   "metal": false
+  },
+  "dsm_white": {
+   "layer": "body_dragon",
+   "slot": "body",
+   "tint": "#eeeeee",
+   "metal": false
+  },
+  "dsm_orange": {
+   "layer": "body_dragon",
+   "slot": "body",
+   "tint": "#e07a2a",
+   "metal": false
+  },
+  "dsm_black": {
+   "layer": "body_dragon",
+   "slot": "body",
+   "tint": "#3a3444",
+   "metal": false
+  },
+  "dsm_blue": {
+   "layer": "body_dragon",
+   "slot": "body",
+   "tint": "#3a5ac8",
+   "metal": false
+  },
+  "dsm_green": {
+   "layer": "body_dragon",
+   "slot": "body",
+   "tint": "#3f9a3c",
+   "metal": false
+  },
+  "dsm_yellow": {
+   "layer": "body_dragon",
+   "slot": "body",
+   "tint": "#e8d040",
+   "metal": false
+  },
+  "dagger": {
+   "layer": "main_dagger",
+   "slot": "main"
+  },
+  "short_sword": {
+   "layer": "main_short_sword",
+   "slot": "main"
+  },
+  "long_sword": {
+   "layer": "main_long_sword",
+   "slot": "main"
+  },
+  "two_handed": {
+   "layer": "main_two_handed",
+   "slot": "main"
+  },
+  "katana": {
+   "layer": "main_katana",
+   "slot": "main"
+  },
+  "scimitar": {
+   "layer": "main_scimitar",
+   "slot": "main"
+  },
+  "axe": {
+   "layer": "main_axe",
+   "slot": "main"
+  },
+  "battle_axe": {
+   "layer": "main_battle_axe",
+   "slot": "main"
+  },
+  "club": {
+   "layer": "main_club",
+   "slot": "main"
+  },
+  "mace": {
+   "layer": "main_mace",
+   "slot": "main"
+  },
+  "morning_star": {
+   "layer": "main_morning_star",
+   "slot": "main"
+  },
+  "flail": {
+   "layer": "main_flail",
+   "slot": "main"
+  },
+  "hammer": {
+   "layer": "main_hammer",
+   "slot": "main"
+  },
+  "spear": {
+   "layer": "main_spear",
+   "slot": "main"
+  },
+  "trident": {
+   "layer": "main_trident",
+   "slot": "main"
+  },
+  "polearm": {
+   "layer": "main_polearm",
+   "slot": "main"
+  },
+  "lance": {
+   "layer": "main_lance",
+   "slot": "main"
+  },
+  "staff": {
+   "layer": "main_staff",
+   "slot": "main"
+  },
+  "bow": {
+   "layer": "main_bow",
+   "slot": "main"
+  },
+  "crossbow": {
+   "layer": "main_crossbow",
+   "slot": "main"
+  },
+  "whip": {
+   "layer": "main_whip",
+   "slot": "main"
+  },
+  "pick": {
+   "layer": "main_pick",
+   "slot": "main"
+  },
+  "mattock": {
+   "layer": "main_mattock",
+   "slot": "main"
+  },
+  "unicorn_horn": {
+   "layer": "main_unicorn_horn",
+   "slot": "main"
+  }
+ },
+ "items": {
+  "helmet": "helmet_plumed",
+  "plumed helmet": "helmet_plumed",
+  "helm of caution": "helmet_etched",
+  "etched helmet": "helmet_etched",
+  "helm of opposite alignment": "helmet_crested",
+  "crested helmet": "helmet_crested",
+  "helm of telepathy": "helmet_visored",
+  "visored helmet": "helmet_visored",
+  "helm of brilliance": "helmet_crystal",
+  "crystal helmet": "helmet_crystal",
+  "kabuto": "kabuto",
+  "dwarvish iron helm": "hard_hat",
+  "hard hat": "hard_hat",
+  "elven leather helm": "leather_hat",
+  "leather hat": "leather_hat",
+  "orcish helm": "iron_skull_cap",
+  "iron skull cap": "iron_skull_cap",
+  "dented pot": "dented_pot",
+  "cornuthaum": "conical_hat",
+  "dunce cap": "conical_hat",
+  "conical hat": "conical_hat",
+  "fedora": "fedora",
+  "plate mail": "plate_mail",
+  "tanko": "plate_mail",
+  "crystal plate mail": "crystal_plate_mail",
+  "bronze plate mail": "bronze_plate_mail",
+  "splint mail": "splint_mail",
+  "banded mail": "banded_mail",
+  "chain mail": "chain_mail",
+  "orcish chain mail": "orcish_chain_mail",
+  "crude chain mail": "orcish_chain_mail",
+  "ring mail": "ring_mail",
+  "orcish ring mail": "orcish_ring_mail",
+  "crude ring mail": "orcish_ring_mail",
+  "scale mail": "scale_mail",
+  "dwarvish mithril-coat": "dwarvish_mithril_coat",
+  "elven mithril-coat": "elven_mithril_coat",
+  "studded leather armor": "studded_leather_armor",
+  "leather armor": "leather_armor",
+  "leather jacket": "leather_jacket",
+  "t-shirt": "T_shirt",
+  "hawaiian shirt": "Hawaiian_shirt",
+  "cloak of protection": "tattered_cape",
+  "tattered cape": "tattered_cape",
+  "cloak of invisibility": "opera_cloak",
+  "opera cloak": "opera_cloak",
+  "cloak of magic resistance": "ornamental_cope",
+  "ornamental cope": "ornamental_cope",
+  "cloak of displacement": "piece_of_cloth",
+  "piece of cloth": "piece_of_cloth",
+  "elven cloak": "faded_pall",
+  "faded pall": "faded_pall",
+  "orcish cloak": "coarse_mantelet",
+  "coarse mantelet": "coarse_mantelet",
+  "dwarvish cloak": "hooded_cloak",
+  "hooded cloak": "hooded_cloak",
+  "oilskin cloak": "slippery_cloak",
+  "slippery cloak": "slippery_cloak",
+  "robe": "robe",
+  "alchemy smock": "apron",
+  "apron": "apron",
+  "leather cloak": "leather_cloak",
+  "mummy wrapping": "mummy_wrapping",
+  "small shield": "wooden_shield",
+  "shield of drain resistance": "wooden_shield",
+  "shield of shock resistance": "wooden_shield",
+  "wooden shield": "wooden_shield",
+  "elven shield": "elven_shield",
+  "blue and green shield": "elven_shield",
+  "uruk-hai shield": "white_handed_shield",
+  "white-handed shield": "white_handed_shield",
+  "orcish shield": "red_eyed_shield",
+  "red-eyed shield": "red_eyed_shield",
+  "large shield": "large_shield",
+  "dwarvish roundshield": "large_round_shield",
+  "large round shield": "large_round_shield",
+  "shield of reflection": "polished_silver_shield",
+  "polished silver shield": "polished_silver_shield",
+  "leather gloves": "old_gloves",
+  "yugake": "old_gloves",
+  "old gloves": "old_gloves",
+  "gauntlets of fumbling": "padded_gloves",
+  "padded gloves": "padded_gloves",
+  "gauntlets of power": "gauntlets_of_power",
+  "riding gloves": "riding_gloves",
+  "gauntlets of dexterity": "fencing_gloves",
+  "fencing gloves": "fencing_gloves",
+  "low boots": "walking_shoes",
+  "walking shoes": "walking_shoes",
+  "iron shoes": "hard_shoes",
+  "hard shoes": "hard_shoes",
+  "high boots": "jackboots",
+  "jackboots": "jackboots",
+  "speed boots": "combat_boots",
+  "combat boots": "combat_boots",
+  "water walking boots": "jungle_boots",
+  "jungle boots": "jungle_boots",
+  "jumping boots": "hiking_boots",
+  "hiking boots": "hiking_boots",
+  "elven boots": "mud_boots",
+  "mud boots": "mud_boots",
+  "kicking boots": "buckled_boots",
+  "buckled boots": "buckled_boots",
+  "fumble boots": "riding_boots",
+  "riding boots": "riding_boots",
+  "levitation boots": "snow_boots",
+  "snow boots": "snow_boots",
+  "gray dragon scale mail": "dsm_gray",
+  "gray dragon scales": "dsm_gray",
+  "gold dragon scale mail": "dsm_gold",
+  "gold dragon scales": "dsm_gold",
+  "silver dragon scale mail": "dsm_silver",
+  "silver dragon scales": "dsm_silver",
+  "red dragon scale mail": "dsm_red",
+  "red dragon scales": "dsm_red",
+  "white dragon scale mail": "dsm_white",
+  "white dragon scales": "dsm_white",
+  "orange dragon scale mail": "dsm_orange",
+  "orange dragon scales": "dsm_orange",
+  "black dragon scale mail": "dsm_black",
+  "black dragon scales": "dsm_black",
+  "blue dragon scale mail": "dsm_blue",
+  "blue dragon scales": "dsm_blue",
+  "green dragon scale mail": "dsm_green",
+  "green dragon scales": "dsm_green",
+  "yellow dragon scale mail": "dsm_yellow",
+  "yellow dragon scales": "dsm_yellow",
+  "dagger": "dagger",
+  "elven dagger": "dagger",
+  "runed dagger": "dagger",
+  "orcish dagger": "dagger",
+  "crude dagger": "dagger",
+  "silver dagger": "dagger",
+  "athame": "dagger",
+  "scalpel": "dagger",
+  "knife": "dagger",
+  "shito": "dagger",
+  "stiletto": "dagger",
+  "worm tooth": "dagger",
+  "crysknife": "dagger",
+  "short sword": "short_sword",
+  "wakizashi": "short_sword",
+  "elven short sword": "short_sword",
+  "runed short sword": "short_sword",
+  "orcish short sword": "short_sword",
+  "crude short sword": "short_sword",
+  "dwarvish short sword": "short_sword",
+  "broad short sword": "short_sword",
+  "scimitar": "scimitar",
+  "curved sword": "scimitar",
+  "silver saber": "scimitar",
+  "broadsword": "long_sword",
+  "ninja-to": "long_sword",
+  "elven broadsword": "long_sword",
+  "runed broadsword": "long_sword",
+  "long sword": "long_sword",
+  "runesword": "long_sword",
+  "two-handed sword": "two_handed",
+  "tsurugi": "katana",
+  "long samurai sword": "katana",
+  "katana": "katana",
+  "samurai sword": "katana",
+  "axe": "axe",
+  "battle-axe": "battle_axe",
+  "double-headed axe": "battle_axe",
+  "club": "club",
+  "aklys": "club",
+  "thonged club": "club",
+  "rubber hose": "club",
+  "mace": "mace",
+  "silver mace": "mace",
+  "morning star": "morning_star",
+  "war hammer": "hammer",
+  "flail": "flail",
+  "nunchaku": "flail",
+  "quarterstaff": "staff",
+  "staff": "staff",
+  "bullwhip": "whip",
+  "spear": "spear",
+  "elven spear": "spear",
+  "runed spear": "spear",
+  "orcish spear": "spear",
+  "crude spear": "spear",
+  "dwarvish spear": "spear",
+  "stout spear": "spear",
+  "silver spear": "spear",
+  "javelin": "spear",
+  "throwing spear": "spear",
+  "trident": "trident",
+  "lance": "lance",
+  "bow": "bow",
+  "elven bow": "bow",
+  "runed bow": "bow",
+  "orcish bow": "bow",
+  "crude bow": "bow",
+  "yumi": "bow",
+  "long bow": "bow",
+  "crossbow": "crossbow",
+  "pick-axe": "pick",
+  "dwarvish mattock": "mattock",
+  "broad pick": "mattock",
+  "unicorn horn": "unicorn_horn",
+  "sling": null,
+  "arrow": null,
+  "elven arrow": null,
+  "orcish arrow": null,
+  "silver arrow": null,
+  "ya": null,
+  "crossbow bolt": null,
+  "dart": null,
+  "shuriken": null,
+  "throwing star": null,
+  "boomerang": null,
+  "runed arrow": null,
+  "crude arrow": null,
+  "bamboo arrow": null,
+  "partisan": "polearm",
+  "ranseur": "polearm",
+  "spetum": "polearm",
+  "glaive": "polearm",
+  "naginata": "polearm",
+  "halberd": "polearm",
+  "bardiche": "polearm",
+  "voulge": "polearm",
+  "fauchard": "polearm",
+  "guisarme": "polearm",
+  "bill-guisarme": "polearm",
+  "lucern hammer": "polearm",
+  "bec de corbin": "polearm",
+  "vulgar polearm": "polearm",
+  "hilted polearm": "polearm",
+  "forked polearm": "polearm",
+  "single-edged polearm": "polearm",
+  "angled poleaxe": "polearm",
+  "long poleaxe": "polearm",
+  "pole cleaver": "polearm",
+  "pole sickle": "polearm",
+  "pruning hook": "polearm",
+  "hooked polearm": "polearm",
+  "pronged polearm": "polearm",
+  "beaked polearm": "polearm"
+ },
+ "artifacts": {
+  "excalibur": "long sword",
+  "stormbringer": "runesword",
+  "mjollnir": "war hammer",
+  "cleaver": "battle-axe",
+  "grimtooth": "orcish dagger",
+  "orcrist": "elven broadsword",
+  "sting": "elven dagger",
+  "magicbane": "athame",
+  "frost brand": "long sword",
+  "fire brand": "long sword",
+  "dragonbane": "broadsword",
+  "demonbane": "mace",
+  "werebane": "silver saber",
+  "grayswandir": "silver saber",
+  "giantslayer": "long sword",
+  "ogresmasher": "war hammer",
+  "trollsbane": "morning star",
+  "vorpal blade": "long sword",
+  "snickersnee": "katana",
+  "sunsword": "long sword",
+  "the staff of aesculapius": "quarterstaff",
+  "the longbow of diana": "bow",
+  "the tsurugi of muramasa": "tsurugi",
+  "the sceptre of might": "mace",
+  "the mitre of holiness": "helm of brilliance",
+  "the orb of fate": null,
+  "the heart of ahriman": null
+ },
+ "keywords": {
+  "head": [
+   [
+    "pot",
+    "dented_pot"
+   ],
+   [
+    "hat",
+    "fedora"
+   ],
+   [
+    "cap",
+    "iron_skull_cap"
+   ],
+   [
+    "cone",
+    "conical_hat"
+   ],
+   [
+    "helm",
+    "helmet"
+   ]
+  ],
+  "body": [
+   [
+    "dragon",
+    "dsm_gray"
+   ],
+   [
+    "plate",
+    "plate_mail"
+   ],
+   [
+    "mithril",
+    "elven_mithril_coat"
+   ],
+   [
+    "chain",
+    "chain_mail"
+   ],
+   [
+    "ring",
+    "ring_mail"
+   ],
+   [
+    "scale",
+    "scale_mail"
+   ],
+   [
+    "splint",
+    "splint_mail"
+   ],
+   [
+    "band",
+    "banded_mail"
+   ],
+   [
+    "studded",
+    "studded_leather_armor"
+   ],
+   [
+    "jacket",
+    "leather_jacket"
+   ],
+   [
+    "leather",
+    "leather_armor"
+   ],
+   [
+    "mail",
+    "chain_mail"
+   ]
+  ],
+  "shirt": [
+   [
+    "hawaiian",
+    "Hawaiian_shirt"
+   ]
+  ],
+  "cloak": [
+   [
+    "robe",
+    "robe"
+   ],
+   [
+    "smock",
+    "apron"
+   ],
+   [
+    "apron",
+    "apron"
+   ],
+   [
+    "wrap",
+    "mummy_wrapping"
+   ],
+   [
+    "hood",
+    "hooded_cloak"
+   ],
+   [
+    "cape",
+    "tattered_cape"
+   ],
+   [
+    "leather",
+    "leather_cloak"
+   ]
+  ],
+  "off": [
+   [
+    "round",
+    "large_round_shield"
+   ],
+   [
+    "silver",
+    "polished_silver_shield"
+   ],
+   [
+    "large",
+    "large_shield"
+   ],
+   [
+    "elven",
+    "elven_shield"
+   ],
+   [
+    "orc",
+    "red_eyed_shield"
+   ],
+   [
+    "uruk",
+    "white_handed_shield"
+   ]
+  ],
+  "hands": [
+   [
+    "gauntlet",
+    "riding_gloves"
+   ]
+  ],
+  "feet": [
+   [
+    "shoe",
+    "walking_shoes"
+   ],
+   [
+    "iron",
+    "hard_shoes"
+   ],
+   [
+    "buckle",
+    "buckled_boots"
+   ],
+   [
+    "snow",
+    "snow_boots"
+   ]
+  ],
+  "main": [
+   [
+    "two-handed",
+    "two_handed"
+   ],
+   [
+    "dagger",
+    "dagger"
+   ],
+   [
+    "knife",
+    "dagger"
+   ],
+   [
+    "short sword",
+    "short_sword"
+   ],
+   [
+    "saber",
+    "scimitar"
+   ],
+   [
+    "katana",
+    "katana"
+   ],
+   [
+    "sword",
+    "long_sword"
+   ],
+   [
+    "blade",
+    "long_sword"
+   ],
+   [
+    "battle",
+    "battle_axe"
+   ],
+   [
+    "axe",
+    "axe"
+   ],
+   [
+    "hammer",
+    "hammer"
+   ],
+   [
+    "mace",
+    "mace"
+   ],
+   [
+    "star",
+    "morning_star"
+   ],
+   [
+    "flail",
+    "flail"
+   ],
+   [
+    "club",
+    "club"
+   ],
+   [
+    "spear",
+    "spear"
+   ],
+   [
+    "lance",
+    "lance"
+   ],
+   [
+    "pole",
+    "polearm"
+   ],
+   [
+    "halberd",
+    "polearm"
+   ],
+   [
+    "trident",
+    "trident"
+   ],
+   [
+    "crossbow",
+    "crossbow"
+   ],
+   [
+    "bow",
+    "bow"
+   ],
+   [
+    "staff",
+    "staff"
+   ],
+   [
+    "whip",
+    "whip"
+   ],
+   [
+    "pick",
+    "pick"
+   ],
+   [
+    "mattock",
+    "mattock"
+   ],
+   [
+    "horn",
+    "unicorn_horn"
+   ]
+  ]
+ },
+ "fallback": {
+  "head": "helmet",
+  "body": "chain_mail",
+  "shirt": "T_shirt",
+  "cloak": "cloak",
+  "off": "wooden_shield",
+  "hands": "old_gloves",
+  "feet": "jackboots",
+  "main": "short_sword"
+ }
+}

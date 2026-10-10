@@ -97,6 +97,7 @@ async function boot() {
     }
     document.getElementById('start').hidden = true;
     game.started = true;
+    ui.playerName = name; ui.quickbar.load(); ui.quickbar.show(true);
     runGame(mod, `OPTIONS=${opts.join(',')}\n`);
   }
 }

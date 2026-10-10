@@ -2,6 +2,7 @@
 import { BL, CONDITIONS, badConditions } from './game.js';
 import { isInventoryMenu, inventoryMenu } from './inventory.js';
 import { isSpellMenu, spellCards } from './spells.js';
+import { Quickbar } from './quickbar.js';
 import { openSettings } from './settings.js';
 import { spriteBounds } from './render.js';
 import { ModernControls, mountActionBar } from './controls.js';
@@ -43,6 +44,7 @@ export class UI {
     $('#help-btn').addEventListener('click', () => this.pushKey('?'.charCodeAt(0)));
     this.controls = new ModernControls(this);
     mountActionBar(this);
+    new Quickbar(this);   // sets this.quickbar
   }
 
   // ------------------------------------------------------------------ input queue
@@ -334,10 +336,20 @@ export class UI {
   answerNext(list) { this.answers = list.slice(); }
   takeAnswer(query) {
     const a = this.answers && this.answers[0];
-    if (!a) return null;
+    if (!a || a.menu) return null;   // a menu answer waits for its menu
     if (!a.re.test(query)) { this.answers = []; return null; }
     this.answers.shift();
     return a.key.charCodeAt(0);
+  }
+
+  // the same for a menu (the quickbar casting a spell answers "Choose which spell to cast")
+  takeMenuAnswer(menu) {
+    const a = this.answers && this.answers[0];
+    if (!a || !a.menu) return null;
+    if (!a.re.test(menu.prompt || '')) { this.answers = []; return null; }
+    this.answers.shift();
+    const it = menu.items.find((x) => !x.header && x.ch === a.key.charCodeAt(0));
+    return it ? [{ ident: it.ident, count: -1 }] : null;
   }
 
   yn(query, resp, def) {
