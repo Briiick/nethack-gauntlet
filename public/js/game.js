@@ -1,6 +1,7 @@
 // The window port: turns NetHack's window calls into map/status state and UI requests.
 import { epitaph } from './epitaph.js';
 import { readGlyphInfo, readExtCommands, writeMenuSelection, persistSaves } from './engine.js';
+import { equipmentOf } from './inventory.js';
 
 export const COLNO = 80, ROWNO = 21;
 const NHW = { MESSAGE: 1, STATUS: 2, MAP: 3, MENU: 4, TEXT: 5 };
@@ -43,6 +44,7 @@ export class Game {
   shim_init_nhwindows() {
     try { globalThis.nethackGlobal.globals.iflags.window_inited = true; } catch (e) { console.warn('window_inited', e); }
   }
+  invWin() { try { return globalThis.nethackGlobal.globals.WIN_INVEN; } catch (e) { return -1; } }
   shim_player_selection_or_tty() { return true; }   // NetHack's own role/race menus, via our menu UI
   shim_askname() {}
   shim_get_nh_event() {}
@@ -231,6 +233,15 @@ export class Game {
 
   async shim_select_menu(win, how, listPtr) {
     const w = this.windows.get(win);
+    // NetHack's permanent-inventory window: it refreshes after every inventory change. Nothing is
+    // shown (the inventory opens when you ask); it keeps what you wear and wield up to date.
+    if (win === this.invWin() && how === PICK.NONE && w && w.menu) {
+      this.inventory = w.menu.items;
+      this.equipment = equipmentOf(w.menu.items);
+      this.renderer.setEquipment?.(this.equipment);
+      this.mod.setValue(listPtr, 0, '*');
+      return 0;
+    }
     this.renderer.commit();
     if (!w || !w.menu) { this.mod.setValue(listPtr, 0, '*'); return how === PICK.NONE ? 0 : -1; }
     // "What do you want to drop? [abc or ?*]" then "?" lists the items: the list belongs to that question

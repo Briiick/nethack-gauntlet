@@ -103,6 +103,19 @@ function slotOf(it, cat) {
   return null;
 }
 
+// What the hero has on, from an inventory listing: { main, off, alt, quiver, head, neck, cloak,
+// body, shirt, hands, feet, eyes, ringL, ringR } -> { name, text, glyph, cat }.
+export function equipmentOf(items) {
+  const eq = {};
+  let cat = 'Items';
+  for (const it of items) {
+    if (it.header || it.ident === 0) { cat = it.text.trim(); continue; }
+    const e = parseItem(it, cat);
+    if (e.slot && !eq[e.slot]) eq[e.slot] = { name: e.name, text: it.text, glyph: it.glyph, cat };
+  }
+  return eq;
+}
+
 function parseItem(it, cat) {
   const t = it.text;
   const qty = (t.match(/^(\d+) /) || [])[1];
