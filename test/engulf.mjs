@@ -9,7 +9,7 @@ const errs = []; page.on('pageerror', (e) => errs.push(e.message)); page.on('con
 const H = harness(page);
 await page.goto(`${url}?e=${Date.now()}#wizard`);
 await page.waitForSelector('#start-go:not([disabled])');
-await page.uncheck('#start-tutorial'); await page.click('#start-go'); await H.settle({ maxSteps: 25 });
+await page.selectOption('#start-controls', 'classic'); await page.uncheck('#start-tutorial'); await page.click('#start-go'); await H.settle({ maxSteps: 25 });
 const pol = { line: () => 'fog cloud' };
 let engulfed = false, tries = 0;
 while (!engulfed && tries++ < 6) {

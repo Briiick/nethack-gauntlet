@@ -8,7 +8,7 @@ const errs = []; page.on('pageerror', (e) => errs.push(e.message));
 const H = harness(page);
 await page.goto(url + '?d=' + Date.now() + '#wizard');
 await page.waitForSelector('#start-go:not([disabled])');
-await page.uncheck('#start-tutorial'); await page.click('#start-go'); await H.settle({ maxSteps: 25 });
+await page.selectOption('#start-controls', 'classic'); await page.uncheck('#start-tutorial'); await page.click('#start-go'); await H.settle({ maxSteps: 25 });
 await H.key('Control+w'); await H.wait(200); await page.keyboard.type('cockatrice corpse'); await H.key('Enter'); await H.settle();
 // a bare-handed wish drops it on the floor: eat it from there
 const pol = { yn: (p) => (/here; eat/i.test(p) ? 'y' : /die\?/i.test(p) ? 'y' : /do you want/i.test(p) ? 'y' : null) };
