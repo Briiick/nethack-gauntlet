@@ -90,6 +90,117 @@ ROLES = {
 }
 
 
+GOLEMS = {   # body, dark/trim, detail, detail colour, thickness, metal
+    'straw golem': ('#d8b850', '#a88a34', 'straw', '#f0d878', 0.85, False),
+    'paper golem': ('#ecebe4', '#b8b6aa', 'pages', '#d8d4c4', 0.85, False),
+    'rope golem': ('#a0784a', '#6a4a2a', 'rope', '#c89a62', 0.85, False),
+    'gold golem': ('#e0aa3a', '#a8761e', 'rivets', '#f8d878', 1.0, True),
+    'leather golem': ('#8a5a34', '#5a3a20', 'stitch', '#2a1a10', 1.0, False),
+    'wood golem': ('#8a6238', '#5a3e22', 'cracks', '#3a2614', 1.05, False),
+    'flesh golem': ('#c88a7a', '#9a5a50', 'stitch', '#3a1a1a', 1.05, False),
+    'clay golem': ('#b07a4a', '#7a5030', 'cracks', '#4a2e1a', 1.15, False),
+    'stone golem': ('#8a8a90', '#5e5e66', 'cracks', '#34343c', 1.2, False),
+    'glass golem': ('#8ad8e8', '#4aa0b8', 'cracks', '#e8fcff', 1.05, False),
+    'iron golem': ('#6a7488', '#454c5c', 'rivets', '#9aa2b4', 1.2, True),
+}
+
+
+def _special(n, c, col, s, mats, hum):
+    """Monsters whose body plan differs from their class default. Returns (rig, g, mats) or None."""
+    if c == 'S_CENTAUR':
+        horse = {'plains centaur': ('#a07446', '#d8c09a'), 'forest centaur': ('#5a3c24', '#3f8a3c'), 'mountain centaur': ('#4a8a96', '#2a6a7a')}[n]
+        mats.update(body=horse[0], legs=shade(horse[0], .8), belly=mix(horse[0], '#e8dcc0', .3), vest=horse[1], hair={'plains centaur': '#6a4422', 'forest centaur': '#2a1a10', 'mountain centaur': '#d8d8e0'}[n],
+                    hoof='#2a2020', skin='#d09670' if n != 'mountain centaur' else '#c8a090', beard='#d8d8e0')
+        g = dict(body='body', legs='legs', belly='belly', scale=1.5 * s, length=1.05, leg=6.2, leg_r=1.25, girth=1.3, tail=5.0, tail_hang=True, hooves='hoof',
+                 tail_mat='hair', tail_tip='hair', torso='vest' if n != 'plains centaur' else 'skin', arms='skin', hair='hair', belt='leather', big=True,
+                 beard='beard' if n == 'mountain centaur' else None)
+        return 'centaur', g, mats
+    if c == 'S_NAGA':
+        hatch = 'hatchling' in n
+        face = {'red': '#d89070', 'black': '#a07a6a', 'golden': '#e0a878', 'guardian': '#c8a070'}[n.split()[0]]
+        mats.update(body=col if n.split()[0] != 'black' else '#2a2630', bands=shade(col, .7) if n.split()[0] != 'black' else '#4a4450',
+                    belly=mix(col, '#f0e6c8', .5), face=face, crest=shade(col, .85) if n.split()[0] != 'black' else '#3a3444')
+        if n.startswith('golden'): mats.update(crest=Material('#e0aa3a', metal=True))
+        g = dict(body='body', bands='bands', belly='belly', face='face', crest='crest', glow=True,
+                 scale=(1.5 if hatch else 2.0), girth=1.0, rise=(6.5 if hatch else 8.5), big=not hatch)
+        return 'naga', g, mats
+    if c == 'S_GREMLIN':
+        if n == 'gremlin':
+            g = hum(scale=1.05, hunch=0.8, ears=True, glow_eyes=True, hair=None, claws='horn_dark', weapon=None, no_belt=True, head=1.15, thin=0.8)
+            mats.update(skin='#4a8a3c', torso='#3e7a34', legs='#356a2c', arms='#4a8a3c', boots='#356a2c')
+            return 'humanoid', g, mats
+        winged = n == 'winged gargoyle'
+        stone = '#7a7a86' if not winged else '#7a7088'
+        g = hum(scale=1.55, hunch=1.6, stocky=1.15, horns='horns', horn_len=1.3, glow_eyes=True, hair=None, claws='horn_dark', weapon=None,
+                no_belt=True, tail='skin', head_fwd=1.8, arm_len=1.15)
+        mats.update(skin=Material(stone, step=0.1), torso=stone, legs=shade(stone, .85), arms=stone, boots=shade(stone, .75), horns='#3a3440',
+                    hands=stone)
+        if winged:
+            g.update(wings='wings', wing_style='bat', wing_span=1.15, membrane='membrane')
+            mats.update(wings=shade(stone, .7), membrane='#5a4a6a')
+        return 'humanoid', g, mats
+    if n in ('mind flayer', 'master mind flayer'):
+        master = n.startswith('master')
+        g = hum(scale=1.5, head_kind='flayer', head=1.0, robe='robe', hair=None, weapon=None, thin=0.85, cape='cape' if master else None,
+                tentacle='tentacle', hands='skin')
+        mats.update(skin='#c070c0', tentacle='#a04ea8', robe='#3a2448' if not master else '#5a1a4a', torso='#4a2e5a' if not master else '#6a2a5a',
+                    arms='#4a2e5a' if not master else '#6a2a5a', cape='#2a1030')
+        return 'humanoid', g, mats
+    if n == 'Wizard of Yendor':
+        g = hum(scale=1.55, robe='robe', helmet='hood', hood_peak=True, helm='hood', cape='cape', weapon='staff', orb='orb', hair=None,
+                glow_eyes=True, beard='beard', thin=0.9)
+        mats.update(robe='#8a2a9a', torso='#8a2a9a', arms='#7a2488', hood='#6a1a7a', cape='#3a0e44', skin='#c8b0a0', beard='#e0e0e8',
+                    orb=Material('#ff5a3a', glow=True))
+        return 'humanoid', g, mats
+    if n == 'Juiblex':
+        g = dict(body='body', scale=2.55, eye_ring=11, big=True, core='core')
+        mats.update(body=Material('#5ab83a', step=0.1), core='#2a6a1a')
+        return 'blob', g, mats
+    if n in ('marilith', 'Geryon'):
+        mar = n == 'marilith'
+        up = hum(scale=1.25 if mar else 1.45, horns='horns', glow_eyes=True, hair='hair' if mar else None, weapon='longsword', extra_arms=2 if mar else 0,
+                 wings='wings' if not mar else None, wing_style='bat', wing_span=1.1, membrane='membrane', no_belt=True, thin=0.85 if mar else 1.0,
+                 beard='beard' if not mar else None)
+        if mar:
+            mats.update(skin='#c8604a', torso='#8a2a22', arms='#c8604a', legs='#8a2a22', hair='#2a1418', horns='#2a2024', body='#8a3424', bands='#5a2018', belly='#d8a070')
+        else:
+            mats.update(skin='#9a5a8a', torso='#5a2a5a', arms='#9a5a8a', legs='#5a2a5a', horns='#2a2024', wings='#4a1e4a', membrane='#6a2a5a', beard='#2a1a2a',
+                        body='#5a3a6a', bands='#3a2448', belly='#a888a8')
+        g = dict(body='body', bands='bands', belly='belly', scale=1.2 if mar else 1.5, girth=1.1, rise=8.0, upper=up, big=True)
+        return 'naga', g, mats
+    if n == 'kraken':
+        mats.update(body='#b8442c', body2='#9a3424', suckers='#f0c8a8')
+        return 'tentacled', dict(body='body', body2='body2', suckers='suckers', scale=1.65, big=True), mats
+    if c == 'S_COCKATRICE':
+        if n == 'chickatrice':
+            mats.update(body='#f0d040', wingc='#e0b828')
+            return 'bird', dict(body='body', wings='wingc', scale=1.1, leg=2.0, head=2.0, plump=1.15), mats
+        mats.update(body=col if n == 'cockatrice' else '#c84a2a', wingc=shade(col if n == 'cockatrice' else '#c84a2a', .8), comb='#d02a2a', tail='#6a8a3a' if n == 'cockatrice' else '#8a2a1a')
+        return 'bird', dict(body='body', wings='wingc', comb='comb', serpent_tail='tail', scale=1.5, leg=3.2, eyes='eye_glow' if n == 'pyrolisk' else 'eye'), mats
+    if c == 'S_PIERCER':
+        mats.update(body=Material(col if n != 'rock piercer' else '#8a8a92', metal=n == 'iron piercer', glow=False), ridge=shade(col, .75))
+        if n == 'glass piercer': mats['body'] = Material('#c8f0f8', glow=False, step=0.1)
+        return 'blob', dict(body='body', ridge='ridge', piercer=True, scale=1.5 * s), mats
+    if c == 'S_GOLEM':
+        body, dk, det, dcol, th, metal = GOLEMS.get(n, (col, shade(col, .7), None, col, 1.0, False))
+        mats.update(body=Material(body, metal=metal), dark=Material(dk, metal=metal), detail=dcol)
+        if n == 'glass golem':
+            mats.update(body=Material(body, step=0.1), dark=Material(dk, step=0.1), detail=Material(dcol, glow=True))
+        return 'golem', dict(body='body', dark='dark', detail=det, detail_mat='detail', thick=th, scale=1.5 * s * (0.95 if th < 1 else 1.0), big=True), mats
+    if c == 'S_YETI':
+        fur, face, chest = {'monkey': ('#8a6a4a', '#d8b08a', '#b89068'), 'ape': ('#6a4a30', '#8a6a52', '#4a3428'), 'owlbear': ('#7a5434', '#c8a878', '#9a7450'),
+                            'yeti': ('#e8e8ec', '#7a8aa8', '#d0d4dc'), 'carnivorous ape': ('#2e2a30', '#6a5a5a', '#3a3438'), 'sasquatch': ('#7a6a5a', '#4a3a30', '#6a5a4a')}[n]
+        mats.update(fur=fur, face=face, chest=chest, beakc='#d8c070', claw='#2a2024')
+        g = dict(body='fur', face='face', chest='chest', hands='face', scale=1.5 * s * (0.8 if n == 'monkey' else 0.88), big=s > 1)
+        if n == 'owlbear': g.update(beak='beakc', claws='claw', hands='fur')
+        if n in ('yeti', 'sasquatch'): g.update(claws='claw', eyes='eye_glow' if n == 'yeti' else 'eye')
+        if n == 'carnivorous ape': g.update(eyes='eye_glow')
+        return 'gorilla', g, mats
+    if n == 'kitten' or n == 'housecat' or n == 'large cat':
+        return None
+    return None
+
+
 def spec(mon, idx):
     """Return (rig name, gear dict, extra materials dict) for one monster."""
     n, c, col = mon['name'], mon['cls'], mon['color']
@@ -106,6 +217,9 @@ def spec(mon, idx):
     base_skin = SKIN[idx % len(SKIN)]
     mats.update(legs=shade(col, 0.6), torso=col, arms=shade(col, 0.8), boots='#4a3020', hair='#5a3a22', helm='#8a90a0',
                 shield='#6a3a2a', skin=base_skin)
+    special = _special(n, c, col, s, mats, hum)
+    if special:
+        return special
     role = next((r for r in ROLES if n.startswith(r) or n.replace('woman', 'man') == r or n in ('cavewoman', 'priestess') and r in ('caveman', 'priest')), None)
     if c == 'S_HUMAN' and role:
         g = hum(scale=1.5)
@@ -197,10 +311,41 @@ def spec(mon, idx):
             g.update(helmet='cap', weapon='spear', shield='kite'); mats.update(helm='#7a8070', torso='#5a6a4a')
         if 'shopkeeper' in n or 'guard' in n or 'oracle' in n:
             g.update(robe='robe' if 'oracle' in n else None, weapon=None if 'shopkeeper' in n else 'staff')
-        if 'ettin' in n:
-            g['head'] = 1.1
+        if 'ettin' in n:                          # two heads on broad shoulders
+            g.update(head=0.95, two_heads=True, stocky=1.35)
+            if n == 'ettin': mats.update(torso='#3a58c0', legs='#2a3a7a', skin='#7a8ad0', arms='#7a8ad0'); g.update(beard=None, hair=None, ears=True, tusks=True)
         if 'skeleton' in n:
-            g.update(thin=0.55, glow_eyes=True); mats.update(skin='#e0d6bc', torso='#e0d6bc', legs='#e0d6bc', arms='#e0d6bc')
+            g.update(thin=0.55, glow_eyes=True, head_kind='skull', hair=None); mats.update(skin='#e0d6bc', torso='#e0d6bc', legs='#e0d6bc', arms='#e0d6bc')
+        if c == 'S_MUMMY':
+            g.update(head_kind='mummy', hair=None, beard=None, helmet=None); mats.update(skin='#c8bc9a', hands='#c8bc9a', boots='#a89c7a')
+            g['hands'] = 'skin'
+        if c == 'S_ZOMBIE' and 'skeleton' not in n:
+            mats.update(skin=Material(mix(col, '#8aa078', .7), step=0.085, hue=0.5), hair='#2a2a20', torso=mix('#5a5a4a', col, .25), boots='#3a3428')
+            g.update(glow_eyes=True, beard=None)
+            if n == 'ghoul':
+                g.update(hair=None, thin=0.8, head_kind='skull', hunch=1.3); mats.update(skin='#8a8a8e', torso='#3a3440', legs='#2a2630', arms='#8a8a8e')
+        if c == 'S_LICH':
+            g.update(head_kind='skull', hair=None, helmet='crown' if n in ('master lich', 'arch-lich') else 'hood', hood_peak=n == 'lich')
+            mats.update(helm='#e8c840' if n in ('master lich', 'arch-lich') else shade(col, .6), hands='#e0d6bc', robe=shade(col, .8), torso=shade(col, .65))
+            g['hands'] = 'hands'
+            if n == 'demilich': g.update(helmet=None)
+        if c == 'S_WRAITH' and n == 'barrow wight':
+            g.update(head_kind='skull', hair=None, helmet=None, weapon='longsword')
+        if n == 'minotaur':
+            g.update(head_kind='bull', hair=None, beard=None, weapon='axe', head=1.05, hunch=0.6, stocky=1.3)
+            mats.update(skin='#6a4428', torso='#6a4428', arms='#6a4428', legs='#3a2618', boots='#2a1c14', muzzle='#8a6a50')
+            g['muzzle'] = 'muzzle'
+        if n == 'bugbear':                        # big, furry, hunched goblinoid
+            g.update(scale=1.7, hunch=1.4, fur_ruff='fur', ears='round', snout=1.0, glow_eyes=True, hair=None, weapon='staff', orb='steel', arm_len=1.15, no_belt=True)
+            mats.update(skin='#8a5e34', torso='#7a5230', fur='#6a4628', legs='#5a3a22', arms='#7a5230', boots='#4a3020')
+        if n == 'zruty':                          # huge hulking monstrosity
+            g.update(scale=1.95, big=True, stocky=1.4, hunch=1.6, belly=1.3, arm_len=1.35, snout=1.4, tusks=True, glow_eyes=True, hair=None, claws='horn_dark',
+                     no_belt=True, horns='horns', head=0.95, fur_ruff='fur')
+            mats.update(skin='#5a4030', torso='#4a3424', fur='#3a2a1e', legs='#3a2a1e', arms='#5a4030', boots='#2a1e16', horns='#d8ccb0')
+        if n == 'shade':
+            g.update(alpha=0.7, hair=None); mats.update(robe='#16141c', helm='#100e14', skin='#16141c')
+        if n == 'stalker':
+            g.update(alpha=0.45, stocky=1.1, glow_eyes=True, hair=None); mats.update(skin=Material('#c8e0f0', glow=False, step=0.12), torso='#b8d0e8', legs='#a8c0e0', arms='#c8e0f0', boots='#a8c0e0')
         g.setdefault('weapon', None)
         return 'humanoid', g, mats
 
@@ -212,29 +357,55 @@ def spec(mon, idx):
             if 'jackal' in n or 'coyote' in n: mats.update(body='#9a6a3a', legs='#5e3e22', tip='#5e3e22', belly='#d6bc8c')
             if 'fox' in n: mats.update(body='#c0602a', belly='#f0e0c8', tip='#f0e0c8')
             if 'wolf' in n or 'warg' in n: g.update(girth=1.5, head=3.0)
+            if n == 'werewolf': mats.update(body='#7a5434', legs='#5a3c24', tip='#3e2a1a', belly='#a88a64')
             if 'hell hound' in n: g.update(eyes='eye_glow'); mats.update(body='#7a1a14')
         elif c == 'S_FELINE':
             g.update(length=0.9, girth=1.15, head=2.6, snout=0.9, leg=3.6, tail=6.0)
-            if 'kitten' in n or 'housecat' in n or n == 'large cat': mats.update(body='#d07a34', belly='#f4e8d4', legs='#b8622a')
+            if 'kitten' in n or 'housecat' in n or n == 'large cat':
+                mats.update(body='#ece8e0', belly='#fbf8f2', legs='#d4cfc6', tip='#bdb6ac', nose='#d87a8a')
+                g['nose'] = 'nose'
             if 'tiger' in n: mats.update(body='#e08a2a')
         elif c == 'S_RODENT':
             g.update(scale=1.5 * s, length=0.85, girth=1.2, leg=2.4, head=2.5, snout=1.6, ears='round', tail=5.0)
         elif c in ('S_LIZARD', 'S_CROCODILE'):
-            g.update(leg=1.8, girth=1.0, length=1.2, head=2.2, snout=2.6, ears=None, tail=8.0, head_up=1.4)
-        elif c == 'S_COCKATRICE':
-            g.update(leg=3.6, girth=1.0, length=0.7, head=2.0, snout=1.0, ears=None, tail=3.0, muzzle='beak'); mats['beak'] = '#e8b040'
+            g.update(leg=1.7, sprawl=1.1, hip_w=1.2, girth=1.2, length=1.15, head=2.0, snout=2.4, ears=None, tail=9.0, head_up=1.0, tail_drag=True,
+                     eyes='eye_glow' if n == 'salamander' else 'eye')
+            if 'crocodile' in n: g.update(snout=4.2, snout_r=0.95, girth=1.35, length=1.4)
+            if n in ('newt', 'gecko'): g.update(girth=1.0)
+            mats.update(belly=mix(col, '#e8dcc0', .3))
         elif c in ('S_DRAGON', 'S_JABBERWOCK'):
-            g.update(scale=1.45, girth=1.5, length=1.25, head=2.6, snout=3.0, ears='horn', tail=9.0, wings='wings', eyes='eye_glow')
-            mats.update(wings=shade(col, .7))
+            adult = 'baby' not in n
+            g.update(scale=(2.2 if adult else 1.45), girth=1.5, length=1.25, head=2.6, snout=3.0, ears=None, horns='swept', tail=9.0, wings='wings', eyes='eye_glow',
+                     neck=1.0 if adult else 0.0, head_up=4.2 if adult else 3.2, wing_span=1.2 if adult else 1.0)
+            if adult: g.update(tail=6.5, membrane='membrane'); mats['membrane'] = shade(col, .55)
+            if adult: g.update(big=True)
+            if c == 'S_JABBERWOCK': g.update(scale=2.3, big=True, neck=2.0, head_up=5.5, snout=2.4, horns=None, ears='pointed')
+            mats.update(wings=shade(col, .7), horn='#e8dcc4')
+            g['horn_mat'] = 'horn'
         elif c == 'S_UNICORN':
-            g.update(leg=6.0, girth=1.2, length=1.1, head=2.2, snout=2.0, ears='pointed', tail=5.0, horn=True)
+            g.update(leg=6.5, leg_r=1.25, girth=1.3, length=1.15, head=1.7, snout=3.0, snout_drop=1.4, snout_r=0.95, head_up=5.6, neck=0.4,
+                     ears='pointed', tail=5.0, horn=True, mane='mane', tail_hang=True, hooves='hoof', tail_mat='mane', tail_tip='mane')
+            mats.update(mane=shade(col, .55) if col != '#3a3444' else '#1a1820', hoof='#3a2a20')
+            if n in ('pony', 'horse', 'warhorse'):
+                g['horn'] = False
+                mats.update(body={'pony': '#9a6a3a', 'horse': '#7a4a2a', 'warhorse': '#5a3a24'}[n], legs={'pony': '#8a5a30', 'horse': '#6a3e22', 'warhorse': '#4a2e1c'}[n],
+                            mane='#2a1a14', belly={'pony': '#b88a5a', 'horse': '#94623a', 'warhorse': '#6a4a30'}[n])
+            if n == 'pony': g.update(leg=5.2, girth=1.3, head_up=4.6)
+            if n == 'white unicorn': mats.update(mane='#e8dcc0')
         elif c == 'S_RUSTMONST':
             g.update(leg=3.4, girth=1.4, head=2.4, snout=1.2, antennae=True)
         elif c == 'S_QUADRUPED':
             g.update(leg=4.8, girth=1.5, length=1.1, head=2.8, snout=2.4, ears='round', tail=3.0)
-            if 'horse' in n or 'pony' in n or 'warhorse' in n: g.update(leg=6.0, girth=1.2, ears='pointed', snout=2.8, tail=5.0)
-        if 'pony' in n or 'horse' in n:
-            g.update(leg=6.0, girth=1.2, ears='pointed', snout=2.8, tail=5.0)
+            if n == 'rothe':     # shaggy musk-ox: low head, hooked horns, shoulder hump
+                g.update(leg=3.6, leg_r=1.3, girth=1.7, length=1.0, head=2.3, snout=1.5, snout_r=1.25, snout_drop=0.6, head_up=0.6, ears=None,
+                         horns='ox', hump=True, hump_mat='shag', tail=1.5, hooves='hoof', eyes='eye_glow')
+                mats.update(body='#6a4628', legs='#4a301c', shag='#4a3220', belly='#7a5634', hoof='#2a1e18', horn='#d8ccb0')
+                g['horn_mat'] = 'horn'
+            if n == 'wumpus':    # big squat round beast with a broad snout
+                g.update(leg=2.6, leg_r=1.6, girth=2.2, length=1.0, head=3.2, snout=1.4, snout_r=1.6, head_up=1.4, ears='round', hump=True, tail=2.0, eyes='eye_glow')
+                mats.update(body='#3a9aa8', legs='#2a7480', belly='#7ac8c8')
+            if n == 'mumak':     # trunk, big ears
+                g.update(snout=4.2, snout_drop=3.4, snout_r=0.85, head=3.0, head_up=3.6, leg_r=1.6, ears='round')
         return 'quadruped', g, mats
 
     if c in ('S_ANT', 'S_SPIDER', 'S_XAN'):
@@ -260,20 +431,33 @@ def spec(mon, idx):
             return 'floating_eye', dict(body='body', sclera='sclera', iris='iris'), dict(body='#6a9ad8', sclera='#eef2ff', iris='#2a7ae0')
         g = dict(body='body', sclera='sclera', iris='iris')
         mats.update(body=Material(col, glow=c == 'S_LIGHT'), sclera='#f0f0f4', iris=shade(col, .6))
+        if n == 'flaming sphere':
+            g.update(flames='flame', flames2='flame2'); mats.update(body=Material('#d8401c', glow=True), flame=Material('#ff9a1a', glow=True), flame2=Material('#ffe048', glow=True), iris='#6a0a04')
         return 'floating_eye', g, mats
 
     if c in ('S_SNAKE', 'S_WORM', 'S_EEL', 'S_NAGA', 'S_WORM_TAIL'):
         g = dict(body='body', bands='bands', scale=1.4 * s, girth=1.0 if c != 'S_WORM' else 1.5, naga=c == 'S_NAGA', glow=c == 'S_NAGA')
         mats.update(body=col, bands=shade(col, .7), torso=col, face='#c89a6a')
+        if n == 'cobra':
+            g.update(hood=True, hood_mat='hoodc', belly='bellyc', scale=1.7); mats.update(hoodc=shade(col, .85), bellyc='#e8d8a8')
         return 'serpent', g, mats
 
     if c == 'S_BAT':
-        g = dict(body='body', wings='wings', scale=1.3 * s, ears='bat' in n, beak=None if 'bat' in n else 'beak', glow='vampire' in n)
-        mats.update(body=col, wings=shade(col, .7), beak='#e8b040')
+        g = dict(body='body', wings='wings', scale=1.55 * s, ears='bat' in n, beak=None if 'bat' in n else 'beak', glow='vampire' in n)
+        mats.update(body=col, wings=shade(col, .7), beak='#e8b040', membrane=shade(col, .5) if col != '#3a3444' else '#5a2a3a')
+        g['membrane'] = 'membrane'
+        if n == 'raven': mats.update(membrane='#2a2632', wings='#3a3444')
         return 'winged', g, mats
 
     if c == 'S_VORTEX':
-        return 'vortex', dict(body='body', body2='body2', scale=1.2 * s), dict(body=Material(col, glow='fire' in n or 'energy' in n), body2=mix(col, '#ffffff', .35))
+        if n == 'fog cloud':
+            return 'blob', dict(body='body', scale=1.3, eyes=False), dict(mats, body=Material('#b8bcc8', step=0.08))
+        glow = 'fire' in n or 'energy' in n
+        band = {'dust vortex': '#5a3a1e', 'ice vortex': '#ffffff', 'energy vortex': '#e8f4ff', 'steam vortex': '#ffffff', 'fire vortex': '#ff5a1a'}.get(n, mix(col, '#ffffff', .6))
+        fleck = {'dust vortex': '#4a3220', 'ice vortex': '#a8e8ff', 'energy vortex': '#ffffff', 'fire vortex': '#ff4a1a'}.get(n, band)
+        if n == 'fire vortex': col = '#f0a020'
+        return 'vortex', dict(body='body', body2='body2', band='band', fleck='fleck', scale=1.2 * s), dict(
+            body=Material(col, glow=glow), body2=Material(mix(col, '#ffffff', .35), glow=glow), band=Material(band, glow=glow or n == 'ice vortex'), fleck=Material(fleck, glow=glow))
 
     # anything else: a humanoid in the monster's colour
     return 'humanoid', hum(scale=1.5 * s, weapon=None), mats

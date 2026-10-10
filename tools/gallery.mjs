@@ -25,6 +25,8 @@ const sheets = {
   features: { names: (n, c) => ['feature', 'trap', 'engraving', 'tree', 'bars', 'cloud', 'statue'].includes(c) && !/^swallow/.test(n) && (c !== 'statue' || /^statue of (a |an )?(newt|soldier ant|dragon|human|dwarf)/.test(n)), cols: 7, gap: 3 },
   objects: { names: (n, c, g, T) => c === 'obj' && T.gobj[g] >= 0 && g % 7 === 0, cols: 8, gap: 3, limit: 160 },
   monsters: { names: (n, c, g) => c === 'mon' && /^male /.test(n) && g % 3 === 0, cols: 8, gap: 3, limit: 130 },
+  // MONSTERS="centaur|naga" picks monsters by name instead of a sample
+  picked: { names: new Function('n', 'c', `return c === 'mon' && /^male /.test(n) && /${(process.env.MONSTERS || '^$').replace(/[`$\\]/g, '')}/.test(n)`), cols: 8, gap: 3, limit: 64 },
   effects: { names: (n, c) => ['zap', 'explosion', 'warning'].includes(c) && !/(top|bottom|middle) (left|right)|top center|bottom center/.test(n), cols: 8, gap: 3 },
 };
 
