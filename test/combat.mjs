@@ -8,7 +8,7 @@ page.on('pageerror', (e) => errs.push(e.message));
 page.on('console', (m) => { if (m.type() === 'error') errs.push(m.text()); });
 await page.goto(url + '#wizard');
 await page.waitForSelector('#start-go:not([disabled])');
-await page.click('#start-go');
+await page.uncheck('#start-tutorial'); await page.click('#start-go');
 await page.waitForTimeout(2000);
 const key = async (k, w = 250) => { await page.keyboard.press(k); await page.waitForTimeout(w); };
 await key('Space'); await key('Space');

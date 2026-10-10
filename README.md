@@ -61,8 +61,8 @@ npm start            # serves on http://127.0.0.1:8080 and opens your browser
 `npm start -- 9000` (or `PORT=9000 npm start`) picks another port, and `NO_OPEN=1` skips opening
 the browser. The page must be served over http: opening `index.html` as a file won't load the
 WebAssembly. Without Node, any static server works, e.g. `python3 -m http.server -d public 8080`.
-In the browser, saves live in the browser's storage; save with `Ctrl+S` (modern controls) or `S`
-(classic) before closing the tab.
+In the browser, saves live in the browser's storage; save with `Ctrl+S` (or `S` with classic
+controls) before closing the tab.
 
 No internet connection is needed at any point, including the first launch.
 
@@ -76,15 +76,16 @@ any time. Both send NetHack's own commands, so the game plays the same either wa
 | | |
 |---|---|
 | Move | `W` `A` `S` `D` or the arrow keys. Hold two for a diagonal (`W`+`D` = up-right). Shift runs |
-| Attack | walk into a monster |
+| Action | `Space`: attack the monster next to you (the one you're facing first); with none, take the stairs or pick up what's here; otherwise wait a turn and search |
+| Attack | `Space`, or walk into a monster |
 | Interact | `E` or `Enter`: take the stairs you're standing on, otherwise pick up what's here |
-| Inventory | `I`. Click an item to see everything you can do with it |
-| Wait / rest | `Space` waits a turn (and searches), `R` rests 20 turns |
+| Inventory | `I` opens and closes it. Click an item to see everything you can do with it, or drag it onto your character to wield, wear or put it on (drag worn things back to the pack to take them off); the inventory stays up so you see the result |
+| Wait / rest | `.` waits a turn (and searches), `R` rests 20 turns |
 | Examine | `X` then pick a spot, or right-click anything on the map |
 | Fire / throw / cast | `F` / `T` / `Z` |
 | Character / dungeon map | `C` / `M` |
 | Every other action | `Tab` opens a searchable list (pray, eat, wear, read, kick, loot…) |
-| Save and quit | `Ctrl+S` |
+| Save and quit | `Ctrl+S` (`Cmd+S` on a Mac); works with classic controls too |
 | Travel | click a spot on the map |
 | Cancel | `Esc` always backs out without doing anything |
 
@@ -99,8 +100,13 @@ appears: move it, then press `E`/`Space`/`Enter` (modern) or `.`/`,` (classic), 
 
 **Finding your way out of a room.** Doorways and open doors glow and show a pulsing arrow, so the
 exits from a room are easy to spot (Settings → Display → *Exit markers*). Many rooms have exits
-you haven't found yet: NetHack hides some doors and corridors, and `Space` (search) next to a
-wall reveals them.
+you haven't found yet: NetHack hides some doors and corridors, and searching (`Space` or `.`)
+next to a wall reveals them.
+
+**The tutorial.** NetHack's tutorial level puts your own equipment away while you practise with
+the items it hands you; you get it all back when you leave through a magic portal. With modern
+controls, the tutorial's engraved instructions are reworded for these keys (NetHack writes them
+for its classic keys, e.g. `M-u` means Alt+U).
 
 **Menus say what they're for.** When a command asks you to choose an item ("What do you want to
 drop?"), the inventory opens with that verb in its title and an orange banner saying what a click
@@ -179,8 +185,11 @@ CHROME=/path/to/chrome npm test
   `test/death.mjs` and `test/epitaph.test.mjs` check the game-over screen names the cause of death.
 - `test/official.mjs` plays with the official tileset: map, inventory, targeting, the appearance
   shuffle, and switching back.
-- `test/modern.mjs` checks the modern controls (WASD and diagonals, interact, wait, Tab list,
-  action bar, right-click, Ctrl+S) and switching to classic; `test/inventory-actions.mjs` checks
+- `test/hotkeys.test.mjs` (part of `npm test`) audits the modern key map: no key does two things,
+  the action bar and help show the real bindings, NetHack's movement keys are never rebound.
+- `test/modern.mjs` checks the modern controls (WASD and diagonals, Space attacks, interact, wait,
+  Tab list, action bar, right-click, Ctrl+S) and switching to classic; `test/drag-equip.mjs` wields,
+  wears, takes off and puts on rings by dragging in the inventory; `test/inventory-actions.mjs` checks
   the inventory names the action and `Esc` cancels.
 - `test/desktop.mjs` (`npm run test:desktop`; on Linux without a display, `xvfb-run -a npm run test:desktop`)
   launches the desktop app, plays, closes the window with the inventory open, checks the save file

@@ -11,7 +11,7 @@ const H = harness(page);
 await page.goto(`${url}?o=${Date.now()}`);
 await page.waitForSelector('#start-go:not([disabled])');
 await page.selectOption('#start-role', 'Wizard');
-await page.click('#start-go'); await H.settle({ maxSteps: 30 });
+await page.uncheck('#start-tutorial'); await page.click('#start-go'); await H.settle({ maxSteps: 30 });
 await H.key('Escape'); await H.wait(600);
 await page.screenshot({ path: `${out}/official-map.png` });
 // shuffle: a potion glyph's official tile must be the tile of its shuffled appearance

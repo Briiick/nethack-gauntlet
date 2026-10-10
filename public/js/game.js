@@ -38,7 +38,11 @@ export class Game {
   }
 
   // ---------------------------------------------------------------- lifecycle
-  shim_init_nhwindows() {}
+  // A window port must say its windows are up (tty does); until then NetHack sends every message
+  // through raw_print instead of the message window, which skips the combat effects and --More--.
+  shim_init_nhwindows() {
+    try { globalThis.nethackGlobal.globals.iflags.window_inited = true; } catch (e) { console.warn('window_inited', e); }
+  }
   shim_player_selection_or_tty() { return true; }   // NetHack's own role/race menus, via our menu UI
   shim_askname() {}
   shim_get_nh_event() {}
@@ -104,7 +108,9 @@ export class Game {
     this.autoSaving = true;
     let sentAt = 0;
     while (!this.over && Date.now() < end) {
-      if (ui.modal || ui.isTargeting || ui.dirFinish) {
+      if (!document.getElementById('more').hidden) {
+        ui.pushKey(13);
+      } else if (ui.modal || ui.isTargeting || ui.dirFinish) {
         dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', code: 'Escape' }));   // back out of whatever is open
       } else if (ui.waiter && Date.now() - sentAt > 1000) {
         ui.pushKey('S'.charCodeAt(0)); sentAt = Date.now();
@@ -143,7 +149,9 @@ export class Game {
     if (!w) return;
     if (win === this.mapWin) { this.renderer.commit(); return; }
     if (win === this.msgWin) {
-      if (blocking && this.messagesSinceInput > 0) {
+      // NetHack pauses here (--More--) so messages aren't missed. The feed keeps the last few on
+      // screen, so only pause when more arrived at once than the feed can show.
+      if (blocking && this.messagesSinceInput > (+this.ui.settings.feedLines || 6)) {
         this.renderer.commit();
         await this.ui.more();
         this.messagesSinceInput = 0;
@@ -164,9 +172,7 @@ export class Game {
   shim_putstr(win, attr, str) {
     const w = this.windows.get(win);
     if (win === this.msgWin || !w) {
-      this.messagesSinceInput++;
-      this.ui.message(str, attr);
-      this.renderer.onMessage(str);
+      if (this.say(str, attr)) { this.messagesSinceInput++; this.renderer.onMessage(str); }
       return;
     }
     if (w.type === NHW.STATUS) return;      // status arrives via status_update
@@ -174,8 +180,18 @@ export class Game {
     this.recentText.push(str); if (this.recentText.length > 80) this.recentText.shift();   // tombstone, "Goodbye..."
   }
 
-  shim_raw_print(str) { if (str) { this.ui.message(str, 0); this.recentText.push(str); } }
-  shim_raw_print_bold(str) { if (str) { this.ui.message(str, 1); } }
+  // (messages printed while changing level, e.g. entering the tutorial, come through raw_print)
+  shim_raw_print(str) { if (str) this.say(str, 0); }
+  shim_raw_print_bold(str) { if (str) { this.say(str, 1); } }
+
+  // One message for the feed; false if it's left out.
+  say(str, attr) {
+    if (this.ui.controls.on && /^Count: \d+$/.test(str)) return false;   // the modern R key types "20s"; don't echo it
+    if (str === 'Entering the tutorial.') this.ui.tutorialNote();
+    this.ui.message(this.ui.controls.explain(str), attr);
+    this.recentText.push(str); if (this.recentText.length > 80) this.recentText.shift();   // for the epitaph
+    return true;
+  }
 
   async shim_display_file(name) {
     await this.ui.textWindow([{ text: `(${name} is not shown in this interface yet.)`, attr: 0 }], { blocking: true });
@@ -217,9 +233,16 @@ export class Game {
     const w = this.windows.get(win);
     this.renderer.commit();
     if (!w || !w.menu) { this.mod.setValue(listPtr, 0, '*'); return how === PICK.NONE ? 0 : -1; }
-    if (!w.menu.prompt && this.lastQuery) w.menu.context = this.lastQuery;
+    // "What do you want to drop? [abc or ?*]" then "?" lists the items: the list belongs to that question
+    if (!w.menu.prompt && /\bor \?\*?\]\s*$/.test(this.lastQuery || '')) w.menu.context = this.lastQuery;
+    this.lastQuery = '';
     const result = await this.ui.menu(w.menu, how);
     this.messagesSinceInput = 0;
+    // equipping from the inventory's "Do what with ...?" menu: show the inventory again afterwards
+    if (result && result.length && /^Do what with /.test(w.menu.prompt || '')) {
+      const chosen = w.menu.items.find((it) => it.ident === result[0].ident);
+      if (chosen && /^(wield|wear|put|take off|remove this|quiver)\b/i.test(chosen.text)) this.ui.reopenInventory = true;
+    }
     if (result === null) { this.mod.setValue(listPtr, 0, '*'); return -1; }
     return writeMenuSelection(this.mod, listPtr, result);
   }
@@ -267,6 +290,10 @@ export class Game {
   async shim_nh_poskey(xp, yp, modp) {
     this.renderer.commit();
     this.lastQuery = '';   // back at the command prompt
+    if (!this.ui.keyQueue.length) {
+      this.ui.answers = [];   // pre-answered questions belong to the command just typed
+      if (this.ui.reopenInventory) { this.ui.reopenInventory = false; this.ui.pushKey(105); }   // 'i'
+    }
     const s = this.engineState();   // picking a spot starts with the cursor on the hero: say so right away
     if (s.picking !== null) {
       if (s.picking && !this.renderer.cursor) this.renderer.cursor = { ...(this.cursorAt || { x: s.x, y: s.y }) };

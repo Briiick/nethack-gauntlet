@@ -11,7 +11,7 @@ await page.waitForSelector('#start-go:not([disabled])');
 await page.click('#start-settings'); await page.waitForTimeout(300);
 await page.screenshot({ path: `${out}/set-start.png` });
 await page.keyboard.press('Escape');
-await page.click('#start-go');
+await page.uncheck('#start-tutorial'); await page.click('#start-go');
 for (let i = 0; i < 12; i++) { await page.waitForTimeout(500); if (await page.$('.bg-inv')) { await page.keyboard.press('Escape'); break; } await page.keyboard.press('Escape'); }
 await page.waitForTimeout(500);
 await page.keyboard.press('F1'); await page.waitForTimeout(300);

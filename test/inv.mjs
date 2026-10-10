@@ -9,7 +9,7 @@ page.on('pageerror', (e) => errs.push('PAGEERROR ' + e.message));
 await page.goto(url);
 await page.waitForSelector('#start-go:not([disabled])', { timeout: 30000 });
 await page.selectOption('#start-role', 'Valkyrie').catch(() => {});
-await page.click('#start-go');
+await page.uncheck('#start-tutorial'); await page.click('#start-go');
 for (let i = 0; i < 12; i++) {
   await page.waitForTimeout(700);
   if (await page.$('.bg-inv')) break;

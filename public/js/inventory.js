@@ -55,6 +55,40 @@ const catKey = (c) => (/^coins/i.test(c) ? 'Coins' : /weapon/i.test(c) ? 'Weapon
   : /scroll/i.test(c) ? 'Scrolls' : /spellbook/i.test(c) ? 'Spellbooks' : /potion/i.test(c) ? 'Potions' : /ring/i.test(c) ? 'Rings'
     : /wand/i.test(c) ? 'Wands' : /tool/i.test(c) ? 'Tools' : /gem|stone/i.test(c) ? 'Gems' : /amulet/i.test(c) ? 'Amulets' : 'All');
 
+// Where an item belongs on the body, by what it is (for armour, from its name).
+function wearSlot(t, cat) {
+  if (/amulet/.test(cat) || /amulet/.test(t)) return 'neck';
+  if (/blindfold|towel|lenses|sunglasses/.test(t)) return 'eyes';
+  if (/helm|hat|cap\b|hood|cornuthaum|fedora|dunce|visor|kabuto/.test(t)) return 'head';
+  if (/cloak|robe|apron|mantle|alchemy smock|leather jacket/.test(t)) return 'cloak';
+  if (/shield|buckler/.test(t)) return 'off';
+  if (/glove|gauntlet/.test(t)) return 'hands';
+  if (/boot|shoes/.test(t)) return 'feet';
+  if (/shirt/.test(t)) return 'shirt';
+  return 'body';
+}
+
+// Dragging an item onto the character (or a slot) does what a player means by it, as the real
+// NetHack command: [command key, slots that light up as targets].
+function equipAction(e) {
+  const t = e.it.text.toLowerCase(), k = catKey(e.cat);
+  if (k === 'Weapons') return { key: 'w', slots: ['main'] };
+  if (k === 'Armor') return { key: 'W', slots: [wearSlot(t, k.toLowerCase())] };
+  if (k === 'Rings') return { key: 'P', slots: ['ringL', 'ringR'] };
+  if (k === 'Amulets') return { key: 'P', slots: ['neck'] };
+  if (k === 'Tools' && /blindfold|towel|lenses|sunglasses/.test(t)) return { key: 'P', slots: ['eyes'] };
+  if (k === 'Tools' && /pick-axe|mattock|unicorn horn|grappling hook|bullwhip/.test(t)) return { key: 'w', slots: ['main'] };
+  return null;
+}
+// ...and dragging something you're wearing or wielding back into the pack takes it off.
+function unequipKeys(slot) {
+  if (slot === 'main') return ['w', '-'];           // wield nothing: bare hands
+  if (slot === 'quiver') return ['Q', '-'];          // empty the quiver
+  if (/^(ring[LR]|neck|eyes)$/.test(slot)) return ['R'];
+  if (slot === 'alt') return null;
+  return ['T'];
+}
+
 function slotOf(it, cat) {
   const t = it.text.toLowerCase();
   if (/\(weapon in (right |left )?hands?\)|\(wielded\)|\(weapon in hand/.test(t)) return 'main';
@@ -64,15 +98,7 @@ function slotOf(it, cat) {
   if (/on left hand/.test(t)) return 'ringL';
   if (/on right hand/.test(t)) return 'ringR';
   if (/\(being worn\)|\(embedded in your skin\)/.test(t) || /\(on your eyes|\(over your eyes/.test(t)) {
-    if (/amulet/.test(cat) || /amulet/.test(t)) return 'neck';
-    if (/blindfold|towel|lenses|sunglasses/.test(t) || /eyes/.test(t)) return 'eyes';
-    if (/helm|hat|cap\b|hood|cornuthaum|fedora|dunce|visor|kabuto/.test(t)) return 'head';
-    if (/cloak|robe|apron|mantle|alchemy smock|leather jacket/.test(t)) return 'cloak';
-    if (/shield|buckler/.test(t)) return 'off';
-    if (/glove|gauntlet/.test(t)) return 'hands';
-    if (/boot|shoes/.test(t)) return 'feet';
-    if (/shirt/.test(t)) return 'shirt';
-    return 'body';
+    return /eyes/.test(t) && !/amulet/.test(t) ? 'eyes' : wearSlot(t, cat);
   }
   return null;
 }
@@ -197,7 +223,7 @@ export function inventoryMenu(ui, menu, how) {
           </section>
           <div class="info" aria-live="polite"><div class="desc"></div><div class="hint">${prompt && !verb ? `<span class="ask">${esc(prompt)}</span>` : ''}${
             pickNone ? '<span><kbd>Esc</kbd> close</span>' : pickAny ? '<span><kbd>letter</kbd> mark · <kbd>,</kbd> all · <kbd>Enter</kbd> confirm</span>'
-              : acting ? '<span><kbd>letter</kbd> or click</span>' : '<span>Click an item to see what you can do with it · <kbd>Esc</kbd> close</span>'}${
+              : acting ? '<span><kbd>letter</kbd> or click</span>' : `<span>Click an item for what you can do with it · drag it onto yourself to equip · ${ui.controls.on ? '<kbd>I</kbd> or ' : ''}<kbd>Esc</kbd> close</span>`}${
             pickAny ? '<button type="button" class="confirm">Confirm</button>' : ''}</div></div>
           <section class="pack">
             <div class="bag" title="Inventory letters in use"><span class="sack" aria-hidden="true"></span><b>${entries.filter((e) => !/gold piece/.test(e.it.text)).length}</b><small>of 52</small></div>
@@ -365,7 +391,7 @@ export function inventoryMenu(ui, menu, how) {
       focus = Math.min(focus, Math.max(0, nav.length - 1));
       const cells = list.map((e) => {
         const idx = entries.indexOf(e);
-        return `<button type="button" class="slot ${e.buc}${e.it.selected ? ' sel' : ''}${nav[focus] === e ? ' focus' : ''}" data-i="${idx}" role="option" aria-selected="${!!e.it.selected}" aria-label="${esc(e.it.text)}">
+        return `<button type="button" class="slot ${e.buc}${e.it.selected ? ' sel' : ''}${nav[focus] === e ? ' focus' : ''}" data-i="${idx}" ${!acting && !pickAny ? 'draggable="true"' : ''} role="option" aria-selected="${!!e.it.selected}" aria-label="${esc(e.it.text)}">
           ${icon(e, 48)}<span class="acc">${esc(String.fromCharCode(e.it.ch || 32))}</span>${e.qty ? `<span class="qty">${esc(e.qty)}</span>` : ''}</button>`;
       });
       const total = Math.max(26, Math.ceil(cells.length / 13) * 13);
@@ -402,10 +428,73 @@ export function inventoryMenu(ui, menu, how) {
       showDesc(entries[+b.dataset.i]);
       if (b.closest('.quick, .quiver') && swingT < 0) swingT = performance.now();
     });
+    // ---- drag to equip: pack item onto the character or a slot; worn item back onto the pack
+    const plain = !acting && !pickAny;
+    const run = (keys, answers) => {   // leave this screen, then type the command; NetHack's questions are pre-answered
+      finish(pickNone ? [] : null);
+      ui.reopenInventory = true;          // ...and come back here to see the result
+      ui.answerNext(answers);
+      for (const k of keys) ui.pushKey(k.charCodeAt(0));
+    };
+    let drag = null;
+    const targets = () => [...el.querySelectorAll('.eq, .figure, .grid')];
+    const clearDrop = () => targets().forEach((t) => t.classList.remove('droptarget', 'dropover'));
+    el.addEventListener('dragstart', (ev) => {
+      const b = ev.target.closest('[data-i]');
+      if (!plain || !b) { ev.preventDefault(); return; }
+      const e = entries[+b.dataset.i];
+      const fromSlot = b.classList.contains('eq') ? b.dataset.slot : null;
+      const act = fromSlot ? null : equipAction(e);
+      if (!fromSlot && !act && !b.closest('.grid')) { ev.preventDefault(); return; }
+      drag = { e, fromSlot, act };
+      ev.dataTransfer.effectAllowed = 'move';
+      ev.dataTransfer.setData('text/plain', String(e.it.ch));
+      requestAnimationFrame(() => {
+        if (fromSlot) el.querySelector('.grid').classList.add('droptarget');
+        else {
+          el.querySelector('.s-quiver').classList.add('droptarget');
+          if (act) { el.querySelector('.figure').classList.add('droptarget'); act.slots.forEach((k) => el.querySelector('.s-' + k)?.classList.add('droptarget')); }
+        }
+      });
+    });
+    const dropZone = (ev) => {
+      if (!drag) return null;
+      const z = ev.target.closest('.eq, .figure, .grid');
+      return z && z.classList.contains('droptarget') ? z : null;
+    };
+    el.addEventListener('dragover', (ev) => {
+      const z = dropZone(ev);
+      el.querySelectorAll('.dropover').forEach((x) => { if (x !== z) x.classList.remove('dropover'); });
+      if (!z) return;
+      ev.preventDefault(); ev.dataTransfer.dropEffect = 'move'; z.classList.add('dropover');
+    });
+    el.addEventListener('dragend', () => { drag = null; clearDrop(); });
+    el.addEventListener('drop', (ev) => {
+      const z = dropZone(ev), d = drag;
+      drag = null; clearDrop();
+      if (!z || !d) return;
+      ev.preventDefault();
+      const letter = String.fromCharCode(d.e.it.ch);
+      if (d.fromSlot) {   // take it off / unwield / empty the quiver
+        const keys = unequipKeys(d.fromSlot);
+        if (keys) run(keys, keys.length > 1 ? [] : [{ re: /take off|remove/i, key: letter }]);
+        return;
+      }
+      if (z.dataset.slot === 'quiver') { run(['Q'], [{ re: /ready|quiver/i, key: letter }]); return; }
+      const hand = z.dataset.slot === 'ringL' ? 'l' : z.dataset.slot === 'ringR' ? 'r' : null;
+      run([d.act.key], [{ re: /wield|wear|put on/i, key: letter }, ...(hand ? [{ re: /ring-finger|which hand/i, key: hand }] : [])]);
+    });
+    if (plain) {
+      el.querySelectorAll('.eq[data-i]').forEach((b) => { if (unequipKeys(b.dataset.slot)) b.draggable = true; });
+      el.classList.add('can-drag');
+    }
+
     window.addEventListener('resize', fit);
     render();
     ui.openModal(el, (ev) => {
       if (ev.key === 'Escape') return finish(pickNone ? [] : null);
+      // modern controls: I toggles the inventory like in other games (the item lettered i is a click away)
+      if (!acting && !pickAny && ui.controls.on && (ev.key === 'i' || ev.key === 'I')) return finish(pickNone ? [] : null);
       const nav = navList();
       const move = { ArrowLeft: -1, ArrowRight: 1, ArrowUp: -13, ArrowDown: 13 }[ev.key];
       if (move) { focus = Math.max(0, Math.min(nav.length - 1, focus + move)); render(); return; }

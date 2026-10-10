@@ -10,7 +10,7 @@ const errs = []; page.on('pageerror', (e) => errs.push(e.message)); page.on('con
 const H = harness(page);
 await page.goto(`${url}?m=${Date.now()}#wizard`);
 await page.waitForSelector('#start-go:not([disabled])');
-await page.click('#start-go'); await H.settle({ maxSteps: 25 });
+await page.uncheck('#start-tutorial'); await page.click('#start-go'); await H.settle({ maxSteps: 25 });
 await H.key('#'); await H.wait(150); await page.keyboard.type('wizmap'); await H.key('Enter'); await H.settle();
 // record what the controls send to NetHack (without changing what they do)
 await page.evaluate(() => { const ui = window.__nhg.ui, orig = ui.pushKey.bind(ui); ui.sent = []; ui.pushKey = (c) => { ui.sent.push(c); orig(c); }; });
@@ -26,7 +26,8 @@ await expect('Shift+D runs east', () => H.key('Shift+D'), 'L');
 await expect('W+D together: north-east', async () => { await page.keyboard.down('w'); await page.keyboard.down('d'); await H.wait(20); await page.keyboard.up('d'); await page.keyboard.up('w'); }, 'u');
 await expect('S+A together: south-west', async () => { await page.keyboard.down('s'); await page.keyboard.down('a'); await H.wait(20); await page.keyboard.up('a'); await page.keyboard.up('s'); }, 'b');
 await expect('Numpad 9', () => H.key('Numpad9'), 'u');
-await expect('Space waits', () => H.key(' '), 's');
+await expect('Space with nothing next to you waits', () => H.key(' '), 's');
+await expect('. waits', () => H.key('.'), 's');
 await expect('R rests', () => H.key('r'), '20s');
 await expect('E interacts (nothing here: pick up)', () => H.key('e'), ',');
 await expect('G picks up', () => H.key('g'), ',');
@@ -38,6 +39,9 @@ await expect('Z cast', () => H.key('z'), 'Z');
 await expect('F fire', () => H.key('f'), 'f');
 await expect('T throw', () => H.key('t'), 't');
 await expect('< still goes up stairs', () => H.key('<'), '<');
+// Space attacks the monster next to you
+await H.key('Control+g'); await H.wait(200); await page.keyboard.type('lichen'); await H.key('Enter'); await H.settle();
+await expect('Space attacks an adjacent monster', () => H.key(' '), 'F');
 // direction prompt with WASD: kick (Ctrl+D) then W
 await page.evaluate(() => { window.__nhg.ui.sent = []; });
 await H.key('Control+d'); await H.wait(300);

@@ -122,6 +122,7 @@ export class Renderer {
     this.lightC = document.createElement('canvas'); this.lctx = this.lightC.getContext('2d');
     this.actors = new Map(); this.nextActor = 1;
     this.heroCell = { x: -1, y: -1 };
+    this.objMem = new Int32Array(COLNO * ROWNO).fill(-1);
     this.particles = []; this.arcs = []; this.flashes = []; this.ghosts = []; this.pillars = [];
     this.pendingKills = []; this.levelTheme = 'main'; this.torches = []; this.lightSources = [];
     this.cam = { x: 0, y: 0, init: false }; this.shake = 0; this.hitstop = 0;
@@ -170,6 +171,9 @@ export class Renderer {
     if (TERRAIN_CLASSES.has(gc) && gc !== 'void') this.terrMem[i] = gi.glyph;
     else if (this.bk[i] >= 0 && !['stone', 'void'].includes(this.cls[this.bk[i]])) this.terrMem[i] = this.bk[i];
     if (gc === 'wall') this.levelTheme = this.theme[gi.glyph] || 'main';
+    // objects last seen here (the hero or a monster standing on them hides them)
+    if (gc === 'obj') this.objMem[i] = gi.glyph;
+    else if (TERRAIN_CLASSES.has(gc)) this.objMem[i] = -1;
     this.markDirty(x, y);
   }
   markDirty(x, y) {
@@ -180,7 +184,7 @@ export class Renderer {
     this.anyDirty = true;
   }
   clearMap() {
-    this.glyph.fill(-1); this.bk.fill(-1); this.gflags.fill(0); this.dirty.fill(1); this.terrMem.fill(-1); this.anyDirty = true;
+    this.glyph.fill(-1); this.bk.fill(-1); this.gflags.fill(0); this.dirty.fill(1); this.terrMem.fill(-1); this.objMem.fill(-1); this.anyDirty = true;
   }
   newLevel() {
     this.dctx.clearRect(0, 0, W, H);
@@ -587,6 +591,22 @@ export class Renderer {
     return a;
   }
 
+  // The monster to hit with the action key: the one the hero faces, else the nearest (straight before diagonal).
+  // Pets and the obviously peaceful are left alone (moving into them still works as in NetHack).
+  attackTarget() {
+    const h = this.heroCell, hero = this.heroActor();
+    const facing = hero ? [[0, 1], [1, 0], [0, -1], [-1, 0]][hero.dir] : null;
+    let best = null, bestScore = 9;
+    for (const a of this.actors.values()) {
+      if (a.hero || (a.f & MG.PET)) continue;
+      const dx = a.x - h.x, dy = a.y - h.y;
+      if (Math.max(Math.abs(dx), Math.abs(dy)) !== 1) continue;
+      if (/shopkeeper|priest|watch|guard|oracle|aligned/.test(this.monsterName(a))) continue;
+      const score = facing && dx === facing[0] && dy === facing[1] ? 0 : (dx && dy ? 2 : 1);
+      if (score < bestScore) { best = { dx, dy, a }; bestScore = score; }
+    }
+    return best;
+  }
   heroActor() { for (const a of this.actors.values()) if (a.hero) return a; return null; }
   monsterName(a) { return this.tiles.gname[a.g].replace(/^(pet |detected |ridden )+/, '').replace(/^(male|female) /, ''); }
 

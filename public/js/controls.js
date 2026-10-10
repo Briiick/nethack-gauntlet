@@ -8,31 +8,33 @@ const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&l
 const ESC = 27;
 
 // direction keys -> compass point
-const DIR_KEYS = { w: 'N', a: 'W', s: 'S', d: 'E', ArrowUp: 'N', ArrowLeft: 'W', ArrowDown: 'S', ArrowRight: 'E' };
+export const DIR_KEYS = { w: 'N', a: 'W', s: 'S', d: 'E', ArrowUp: 'N', ArrowLeft: 'W', ArrowDown: 'S', ArrowRight: 'E' };
 const NUMPAD = { Numpad8: 'k', Numpad2: 'j', Numpad4: 'h', Numpad6: 'l', Numpad7: 'y', Numpad9: 'u', Numpad1: 'b', Numpad3: 'n' };
 const VI = { N: 'k', S: 'j', W: 'h', E: 'l', NW: 'y', NE: 'u', SW: 'b', SE: 'n' };
 const DIAG = { 'N+E': 'NE', 'E+N': 'NE', 'N+W': 'NW', 'W+N': 'NW', 'S+E': 'SE', 'E+S': 'SE', 'S+W': 'SW', 'W+S': 'SW' };
+const VI_OF = { '0,-1': 'k', '0,1': 'j', '-1,0': 'h', '1,0': 'l', '-1,-1': 'y', '1,-1': 'u', '-1,1': 'b', '1,1': 'n' };
 const perpendicular = (a, b) => ('NS'.includes(a) && 'EW'.includes(b)) || ('EW'.includes(a) && 'NS'.includes(b));
 const CHORD_MS = 70;   // how long a direction waits for a second key to make a diagonal
 
 // The modern actions: [id, label, key shown, what it does]
 export const ACTIONS = [
-  ['inventory', 'Inventory', 'I'], ['interact', 'Use / stairs / pick up', 'E'], ['wait', 'Wait a turn', 'Space'],
+  ['action', 'Attack / act', 'Space'], ['inventory', 'Inventory', 'I'], ['interact', 'Stairs / pick up', 'E'], ['wait', 'Wait / search', '.'],
   ['rest', 'Rest 20 turns', 'R'], ['examine', 'Examine', 'X'], ['fire', 'Fire', 'F'], ['throw', 'Throw', 'T'],
   ['cast', 'Cast a spell', 'Z'], ['character', 'Character', 'C'], ['overview', 'Dungeon overview', 'M'],
   ['commands', 'All actions', 'Tab'], ['save', 'Save and quit', 'Ctrl+S'], ['help', 'Help', '?'],
 ];
-const KEY_ACTION = { i: 'inventory', e: 'interact', Enter: 'interact', ' ': 'wait', r: 'rest', x: 'examine', f: 'fire', t: 'throw',
+export const KEY_ACTION = { i: 'inventory', e: 'interact', Enter: 'interact', ' ': 'action', '.': 'wait', r: 'rest', x: 'examine', f: 'fire', t: 'throw',
   z: 'cast', c: 'character', m: 'overview', Tab: 'commands', g: 'pickup' };
 
 export const MODERN_HELP = [
   ['Move', '<kbd>W</kbd> <kbd>A</kbd> <kbd>S</kbd> <kbd>D</kbd> or the arrow keys'],
   ['Diagonals', 'Hold two at once, e.g. <kbd>W</kbd>+<kbd>D</kbd> for up-right (or the numpad, Home/PgUp/End/PgDn)'],
   ['Run', 'Shift + direction'],
-  ['Attack', 'Move into a monster, or click it'],
+  ['Action', '<kbd>Space</kbd>: attack the monster next to you (the one you\'re facing), else take the stairs or pick up what\'s here, else wait a turn and search'],
+  ['Attack', '<kbd>Space</kbd>, or move into a monster, or click it'],
   ['Interact', '<kbd>E</kbd> or <kbd>Enter</kbd>: take the stairs, or pick up what you\'re standing on'],
   ['Inventory', '<kbd>I</kbd>; click an item to see everything you can do with it'],
-  ['Wait / rest', '<kbd>Space</kbd> waits a turn (and searches); <kbd>R</kbd> rests 20 turns'],
+  ['Wait / rest', '<kbd>.</kbd> waits a turn and searches (so does <kbd>Space</kbd> with nothing to do); <kbd>R</kbd> rests 20 turns'],
   ['Pick up', '<kbd>G</kbd> (or <kbd>E</kbd>)'],
   ['Examine', '<kbd>X</kbd> then pick a spot, or right-click anything'],
   ['Fire / throw', '<kbd>F</kbd> fires what\'s in your quiver, <kbd>T</kbd> throws'],
@@ -47,6 +49,55 @@ export const MODERN_HELP = [
   ['Settings', '<kbd>F1</kbd> or the gear button'],
 ];
 
+// NetHack's tutorial and a few hints name classic keys ("Use 's' to search", "'M-u'" for Alt+U).
+// With modern controls those keys do something else, so say how to do it with these controls.
+const inv = (verb) => `open the inventory (I), click the item, then ${verb}`;
+const tab = (cmd) => `Tab, then "${cmd}"`;
+const MODERN_HINTS = [
+  [/^Move around with .*/, 'Move around with W A S D or the arrow keys'],
+  [/^Move diagonally with .*/, 'Move diagonally by holding two keys together, like W+D (or use the numpad)'],
+  [/^Knights can jump with '[^']*'/, `Knights can jump: ${tab('jump')}`],
+  [/^Close the door with '[^']*'/, `Close the door: ${tab('close')}`],
+  [/^This door is locked\. Kick it with '[^']*'/, `This door is locked. Kick it: ${tab('kick')}`],
+  [/^Look around the map with '[^']*', press ESC when you're done/, 'Look around the map with X (or right-click a spot); Esc when you\'re done'],
+  [/^Use '[^']*' to search for secret doors/, 'Press Space next to a wall to search for secret doors'],
+  [/^Some traps can be disabled with '[^']*'/, `Some traps can be disabled: ${tab('untrap')}`],
+  [/^Pick up items with '[^']*'/, 'Pick up items with E (or G)'],
+  [/^Wear armor with '[^']*'/, `Wear armor: ${inv('Wear')}`],
+  [/^Wield weapons with '[^']*'/, `Wield weapons: ${inv('Wield')}`],
+  [/^Take off armor with '[^']*'/, `Take off armor: ${inv('Take off')}`],
+  [/^Pick up this scroll, read it with '[^']*', and try to remove the armor again/, 'Pick up this scroll (E), read it (I, click it, Read), and try to remove the armor again'],
+  [/^Drop items with '[^']*'/, `Drop items: ${inv('Drop')}`],
+  [/^You can drop partial stacks by prefixing the item slot letter with a number/, `You can drop part of a stack: ${tab('drop')}, then type a number before the item's letter`],
+  [/^Throw items with '[^']*'/, 'Throw items with T'],
+  [/^Use '[^']*' to fire missiles with the wielded launcher/, 'Press F to fire missiles with the wielded launcher'],
+  [/^Firing launches items from your quiver; Use '[^']*' to put items in it/, `Firing launches items from your quiver; to fill it, ${inv('Quiver')}`],
+  [/^You can wait a turn with '[^']*'/, 'You can wait a turn with . (or Space, when nothing is next to you)'],
+  [/^You loot containers with '[^']*'/, `You loot containers: stand on one, then ${tab('loot')}`],
+  [/^Containers can also be emptied with '[^']*'/, `Containers can also be emptied: ${tab('tip')}`],
+  [/^Magic wands are used with '[^']*'/, `Magic wands are used: ${inv('Zap')}`],
+  [/^You can run by prefixing a movement key with '[^']*'/, 'You can run by holding Shift with a direction'],
+  [/^Travel across the level with '[^']*'/, 'Travel across the level by clicking where you want to go'],
+  [/^Use '[^']*' to eat edible things/, `Eat edible things: ${inv('Eat')}`],
+  [/^Comestibles are eaten with '[^']*'/, `Comestibles are eaten: ${inv('Eat')}`],
+  [/^Use '[^']*' to use two weapons at once/, `Use two weapons at once: ${tab('twoweapon')}`],
+  [/^Swap weapons quickly with '[^']*'/, `Swap weapons quickly: ${tab('swap')}`],
+  [/^Put on accessories with '[^']*'/, `Put on accessories: ${inv('Put on')}`],
+  [/^Remove accessories with '[^']*'/, `Remove accessories: ${inv('Remove')}`],
+  [/^Use '[^']*' to go down the stairs/, 'Stand on the stairs and press E to go down'],
+  [/^Use '[^']*' to go up the stairs/, 'Stand on the stairs and press E to go up'],
+  [/^Pick up the spellbook with '[^']*'/, 'Pick up the spellbook with E'],
+  [/^Read the spellbook with '[^']*'/, `Read the spellbook: ${inv('Read')}`],
+  [/^Use '[^']*' to cast a spell/, 'Press Z to cast a spell'],
+  [/^You "quaff" potions with '[^']*'/, `You "quaff" (drink) potions: ${inv('Quaff')}`],
+  [/^Note: Outside the tutorial, Ctrl-key combinations are shown prefixed with a caret.*/, 'Note: NetHack writes Ctrl+X as ^X and Alt+X as M-X'],
+];
+
+export function modernHint(text) {
+  for (const [re, say] of MODERN_HINTS) if (re.test(text)) return say;
+  return null;
+}
+
 export class ModernControls {
   constructor(ui) {
     this.ui = ui;
@@ -57,6 +108,15 @@ export class ModernControls {
   }
 
   get on() { return this.ui.settings.controls !== 'classic'; }
+
+  // A message as the player should read it with these controls: engraved tutorial hints and
+  // "Comestibles are eaten with 'e'" say how to do it here instead of naming a classic key.
+  explain(msg) {
+    if (!this.on || !msg) return msg;
+    const read = msg.match(/^(You read: ")(.*)("\.?)$/);
+    if (read) { const h = modernHint(read[2]); return h ? read[1] + h + read[3] : msg; }
+    return modernHint(msg) || msg;
+  }
 
   // A direction key went down: emit(viKey) once we know whether it's straight or diagonal.
   direction(e, emit) {
@@ -90,7 +150,6 @@ export class ModernControls {
   // Keys while NetHack waits for a command. Returns true if handled.
   command(e) {
     const ui = this.ui;
-    if (e.ctrlKey && !e.altKey && e.key.toLowerCase() === 's') { this.act('save'); return true; }
     if (e.ctrlKey || e.altKey || e.metaKey) return false;
     if (this.direction(e, (k) => ui.pushKey(k.charCodeAt(0)))) return true;
     const k = e.key.length === 1 ? e.key.toLowerCase() : e.key;
@@ -117,6 +176,14 @@ export class ModernControls {
     return false;
   }
 
+  // What's under the hero: stairs to take ('<' or '>'), and whether objects were seen here.
+  here() {
+    const r = this.ui.renderer, h = this.ui.game?.hero || r.heroCell, i = h.y * 80 + h.x;
+    const tg = r.terrMem[i] >= 0 ? r.terrMem[i] : r.glyph[i];
+    const n = tg >= 0 ? r.tiles.gname[tg] : '';
+    return { stairs: /(staircase|ladder) down/.test(n) ? '>' : /(staircase|ladder) up/.test(n) ? '<' : '', items: r.objMem[i] >= 0 };
+  }
+
   act(name) {
     const ui = this.ui, push = (s) => [...s].forEach((c) => ui.pushKey(c.charCodeAt(0)));
     switch (name) {
@@ -133,12 +200,18 @@ export class ModernControls {
       case 'help': push('?'); break;
       case 'save': push('S'); break;   // NetHack asks "Really save?"
       case 'commands': openCommandPalette(ui); break;
+      case 'action': {
+        // attack whatever is next to you, else the same as interact, else wait (and search)
+        const t = ui.renderer.attackTarget();
+        if (t) { push('F' + VI_OF[`${t.dx},${t.dy}`]); break; }   // F: fight in that direction
+        const here = this.here();
+        push(here.stairs || (here.items ? ',' : 's'));
+        break;
+      }
       case 'interact': {
         // stairs if you're on them, otherwise pick up whatever is here
-        const r = ui.renderer, h = ui.game?.hero || r.heroCell, i = h.y * 80 + h.x;
-        const tg = r.terrMem[i] >= 0 ? r.terrMem[i] : r.glyph[i];
-        const n = tg >= 0 ? r.tiles.gname[tg] : '';
-        push(/(staircase|ladder) down/.test(n) ? '>' : /(staircase|ladder) up/.test(n) ? '<' : ',');
+        const here = this.here();
+        push(here.stairs || ',');
         break;
       }
       default: break;
@@ -148,6 +221,7 @@ export class ModernControls {
 
 // 24x24 stroke icons for the action bar
 const ICON = {
+  action: 'M14 4h6v6L9 21l-3-3L17 7M5 14l5 5M3 21l3-3',
   inventory: 'M7 8c0-3 2-5 5-5s5 2 5 5M5 8h14l-1 13H6L5 8zm4 4h6',
   interact: 'M4 20h4v-4h4v-4h4V8h4M14 4l6 0 0 6',
   wait: 'M7 3h10M7 21h10M8 3c0 6 8 6 8 9s-8 3-8 9M16 3c0 6-8 6-8 9s8 3 8 9',
@@ -179,6 +253,7 @@ export function mountActionBar(ui) {
     document.getElementById('stage').appendChild(bar);
   }
   bar.hidden = !(ui.settings.actionBar !== false && ui.controls.on);
+  document.body.classList.toggle('has-actionbar', !bar.hidden);   // the message feed keeps clear of it
 }
 
 // ---- Tab: every action, searchable; Enter or click runs it

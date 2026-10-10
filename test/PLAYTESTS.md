@@ -54,3 +54,25 @@ doesn't offer it in this build. `test/keys.mjs` additionally checks all 30 ways 
 9. **Being engulfed broke the UI.** It showed a false "choose a spot" hint and stock tiles. The
    engine now reports the hero's real position, and engulfing draws as a churning wall.
 10. **The targeting hint covered the status plate.** It moved to the top of the screen.
+
+## Bugs found by playing it on a laptop, and fixed
+
+11. **Every message went through NetHack's emergency output.** The window port never told NetHack
+    its windows were ready (`iflags.window_inited`), so messages bypassed the message window. The
+    visible symptom: no attack animations at all (no swing, hit flash, blood or kill effect),
+    since those follow the combat messages. Now set when the windows open; `--More--` pauses only
+    when more messages arrive at once than the feed can show.
+12. **"Esc drops my gear" at the start of the tutorial.** The engine's built-in config turned on
+    `perm_invent` (meant for an always-visible inventory panel), so every inventory change popped
+    up a full inventory screen. Entering the tutorial puts your kit away one item at a time, so each
+    Esc showed one item fewer. Now off; the inventory opens when you ask for it. A note in the
+    message feed explains that the tutorial stores your kit and returns it at the portal.
+13. **The tutorial named classic keys** ("Use 's' to search", "'M-u'") that do something else with
+    modern controls. All 34 key hints are reworded for the modern keys (checked against the
+    tutorial's source).
+14. **"Count: 20" spam** from the rest key. Hidden with modern controls.
+15. **The inventory banner showed a stale question** ("Shall I pick your Valkyrie's race...").
+    Only an item question ("What do you want to drop? [abc or ?*]") is carried over now, once.
+16. **The message feed ran under the action bar.** It now keeps clear of it.
+17. **Pressing I to close the inventory picked the item lettered i.** With modern controls I now
+    toggles the inventory. `test/hotkeys.test.mjs` audits the whole modern key map for clashes.

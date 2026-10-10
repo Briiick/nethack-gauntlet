@@ -347,6 +347,7 @@ kbd { font-family: var(--ui); font-weight: 700; color: var(--bone); border: 1px 
 #actionbar { position: absolute; right: calc(env(safe-area-inset-right, 0px) + 12px); top: 50%; transform: translateY(-50%); z-index: 5;
   display: flex; flex-direction: column; gap: 4px; padding: 5px; background: rgba(10,16,40,.82); border: 1px solid var(--brass-dim); border-radius: 8px; }
 #actionbar[hidden] { display: none; }
+.has-actionbar #feed { right: calc(env(safe-area-inset-right, 0px) + 84px); }
 #actionbar button { position: relative; width: 46px; height: 42px; display: grid; place-items: center; padding: 0; background: rgba(255,255,255,.03);
   border: 1px solid #2a3458; border-radius: 5px; color: var(--steel); cursor: pointer; }
 #actionbar button:hover, #actionbar button:focus-visible { border-color: var(--brass); color: var(--bone); background: rgba(200,160,80,.14); }
@@ -378,3 +379,11 @@ kbd { font-family: var(--ui); font-weight: 700; color: var(--bone); border: 1px 
 .bg-inv.acting .plaque { border-color: #e2763a; }
 .bg-inv.acting .plaque h2 { background: linear-gradient(180deg, #fff1c0 10%, #ff9a50 55%, #b84a1a 80%); -webkit-background-clip: text; background-clip: text; }
 .bg-inv.acting .page > .actbar { position: absolute; }   /* beats the page's "children are position: relative" rule */
+
+/* drag to equip */
+.bg-inv.can-drag .grid .slot[data-i], .bg-inv.can-drag .eq[draggable="true"] { cursor: grab; }
+.bg-inv .droptarget { outline: 2px dashed rgba(240, 200, 110, .75); outline-offset: 2px; }
+.bg-inv .figure.droptarget { outline: none; }
+.bg-inv .figure.droptarget .pool { box-shadow: 0 0 0 2px rgba(240, 200, 110, .55), 0 0 40px rgba(240, 190, 90, .45); }
+.bg-inv .dropover { outline: 2px solid #ffd27a; box-shadow: 0 0 18px rgba(255, 200, 100, .6); }
+.bg-inv .figure.dropover .pool { box-shadow: 0 0 0 3px #ffd27a, 0 0 60px rgba(255, 200, 100, .7); }

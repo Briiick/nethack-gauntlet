@@ -7,7 +7,7 @@ const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
 const H = harness(page);
 await page.goto(url);
 await page.waitForSelector('#start-go:not([disabled])');
-await page.click('#start-go'); await H.settle({ maxSteps: 25 });
+await page.uncheck('#start-tutorial'); await page.click('#start-go'); await H.settle({ maxSteps: 25 });
 await H.key(';'); await H.wait(300);
 for (const k of ['l', 'l', 'l', 'j']) await H.key(k);
 await H.wait(500);

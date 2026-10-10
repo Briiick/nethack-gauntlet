@@ -40,7 +40,7 @@ try {
   const H = harness(page);
   await page.fill('#start-name', 'Closer');
   await page.selectOption('#start-role', 'Valkyrie');
-  await page.click('#start-go');
+  await page.uncheck('#start-tutorial'); await page.click('#start-go');
   await H.settle({ maxSteps: 60 });
   for (const k of ['Space', 'Space', 'Space', 'Space', 'Space']) { await H.key(k); await H.settle(); }
   const before = await turn(page);

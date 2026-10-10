@@ -27,7 +27,7 @@ async function newGame(name = 'Tester', wizard = true) {
   await page.fill('#start-name', name);
   await page.selectOption('#start-role', 'Valkyrie');
   await page.selectOption('#start-controls', 'classic');   // every command by NetHack's own key
-  await page.click('#start-go');
+  await page.uncheck('#start-tutorial'); await page.click('#start-go');
   await settle(30);
   if (!wizard) return;
   for (const w of ['pick-axe', 'magic marker', 'unicorn horn', 'bag of holding', 'wand of digging', '3 potions of water', 'blindfold',
@@ -61,7 +61,7 @@ for (const c of cmds) {
     await key('S'); const r1 = await settleL({ maxSteps: 30, log: [], policy: endPolicy });
     await page.goto(`${url}?r=${Date.now()}`); await page.waitForSelector('#start-go:not([disabled])');
     const listed = await page.$$eval('#saves .resume', (b) => b.map((x) => x.dataset.name));
-    await page.fill('#start-name', 'Saver'); await page.click('#start-go'); await settle(20);
+    await page.fill('#start-name', 'Saver'); await page.uncheck('#start-tutorial'); await page.click('#start-go'); await settle(20);
     const back = await page.evaluate(() => ({ t: window.__nhg.game.status[16]?.val, msgs: window.__nhg.ui.historyLog.slice(-8).join(' ') }));
     const ok = r1 === 'over' && listed.includes('Saver') && back.t === t0;
     report.push({ ...c, via: 'key', result: ok ? 'ok' : 'SAVE-FAILED', flow: `saved (${r1}), listed=${listed}, turn ${t0} -> ${back.t}`, msgs: [back.msgs.slice(-120)], errors: [...errs] });

@@ -84,7 +84,11 @@ async function boot() {
     settings.game.tutorial = document.getElementById('start-tutorial').checked;
     saveSettings();
     // display-only options, then gameplay options only where you changed NetHack's defaults
-    const opts = [`name:${name}`, 'number_pad:0', 'color', 'hilite_pet', 'lit_corridor', 'dark_room', 'pile_limit:3', ...gameOptions(settings.game)];
+    // display-only: perm_invent is for interfaces with an always-open inventory panel; this one opens
+    // the inventory when you ask, so NetHack mustn't push a full inventory screen at every change
+    const opts = [`name:${name}`, 'number_pad:0', 'color', 'hilite_pet', 'lit_corridor', 'dark_room', 'pile_limit:3', '!perm_invent', ...gameOptions(settings.game)];
+    // the start screen already asked about the tutorial, so NetHack doesn't ask again
+    if (!opts.some((o) => /^!?tutorial$/.test(o))) opts.push(settings.game.tutorial ? 'tutorial' : '!tutorial');
     if (role === 'random') opts.push('role:random', 'race:random', 'gender:random', 'align:random');
     else if (role !== 'ask') opts.push(`role:${role}`);   // NetHack asks about race, gender and alignment
     if (location.hash === '#wizard') {   // developer mode: NetHack's debug ("wizard") mode

@@ -7,7 +7,7 @@ page.on('pageerror', (e) => console.log('PAGEERROR', e.message));
 await page.addInitScript(() => { globalThis.__nhgDebug = true; });
 await page.goto(url);
 await page.waitForSelector('#start-go:not([disabled])');
-await page.click('#start-go');
+await page.uncheck('#start-tutorial'); await page.click('#start-go');
 await page.waitForTimeout(2000);
 for (const k of keys) { console.log('--- key', k); await page.keyboard.press(k); await page.waitForTimeout(400); }
 await browser.close();

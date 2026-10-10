@@ -9,7 +9,7 @@ page.on('pageerror', (e) => errs.push('PAGEERROR ' + e.message));
 await page.goto(url + '#wizard');
 await page.waitForSelector('#start-go:not([disabled])', { timeout: 30000 });
 await page.selectOption('#start-role', 'Valkyrie').catch(() => {});
-await page.click('#start-go');
+await page.uncheck('#start-tutorial'); await page.click('#start-go');
 const wait = (ms) => page.waitForTimeout(ms);
 const key = async (k, ms = 160) => { await page.keyboard.press(k); await wait(ms); };
 const settle = async () => { for (let i = 0; i < 6; i++) { if (await page.$('#modal:not([hidden])') || await page.$('#more:not([hidden])')) await key('Escape', 200); else break; } };

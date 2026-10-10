@@ -52,6 +52,13 @@ export class UI {
     if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT')) return;
     if (['Shift', 'Control', 'Alt', 'Meta', 'CapsLock'].includes(e.key)) return;
     if (e.key === 'F1') { e.preventDefault(); this.openSettings(); return; }
+    // Ctrl+S (Cmd+S on a Mac) saves in either control scheme, like any other game
+    if ((e.ctrlKey || e.metaKey) && !e.altKey && e.key.toLowerCase() === 's') {
+      e.preventDefault();   // never the browser's "save page"
+      // only when NetHack is waiting for a command (not on the start screen, in a prompt, or picking a spot)
+      if (this.waiter && !this.modal && !this.isTargeting && !(this.game && this.game.over)) this.pushKey(83);   // S: "Really save?"
+      return;
+    }
     if (e.metaKey) return;
     if (this.controls.on && !this.modal && !(this.game && this.game.over)) {
       if (this.isTargeting ? this.controls.targeting(e) : this.controls.command(e)) { e.preventDefault(); return; }
@@ -117,6 +124,11 @@ export class UI {
       .replace(/^(You (?:kill|destroy) )(the |your )?([^!.]+)/, '$1$2<b class="kill">$3</b>')
       .replace(/^(The |Your )?([a-z][a-z -]+?) (bites|hits|misses|touches|stings|butts|kicks|claws)/, '$1<b>$2</b> $3')
       .replace(/(You hit |You miss )(the |your )?([^!.]+)/, '$1$2<b>$3</b>');
+  }
+  // NetHack's tutorial puts your own kit away while you practise with its items, and hands it back
+  // when you leave through a magic portal. NetHack doesn't say so; without this it looks like a bug.
+  tutorialNote() {
+    this.message('Tutorial: your own equipment is put away for now and comes back, untouched, when you leave through a magic portal.', 1);
   }
   bell() { $('#stage').classList.remove('bell'); void $('#stage').offsetWidth; $('#stage').classList.add('bell'); }
 
@@ -314,7 +326,21 @@ export class UI {
     });
   }
 
+  // Answers for the questions a command is about to ask (drag-to-equip types "W" and answers
+  // "What do you want to wear?" with the item). Each answers only a question that matches it;
+  // anything unexpected drops the rest and asks the player as usual.
+  answerNext(list) { this.answers = list.slice(); }
+  takeAnswer(query) {
+    const a = this.answers && this.answers[0];
+    if (!a) return null;
+    if (!a.re.test(query)) { this.answers = []; return null; }
+    this.answers.shift();
+    return a.key.charCodeAt(0);
+  }
+
   yn(query, resp, def) {
+    const pre = this.takeAnswer(query);
+    if (pre !== null) return Promise.resolve(pre);
     return new Promise((resolve) => {
       const isDir = /direction/i.test(query) && !resp;
       const opts = resp ? resp.split('\x1b')[0].replace(/[^ -~]/g, '') : '';

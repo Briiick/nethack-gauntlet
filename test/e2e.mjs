@@ -9,7 +9,7 @@ page.on('pageerror', (e) => errs.push('PAGEERROR ' + e.message));
 await page.goto(url);
 await page.waitForSelector('#start-go:not([disabled])', { timeout: 30000 });
 await page.screenshot({ path: `${outDir}/0-start.png` });
-await page.click('#start-go');
+await page.uncheck('#start-tutorial'); await page.click('#start-go');
 await page.waitForTimeout(2500);
 await page.screenshot({ path: `${outDir}/1-intro.png` });
 let n = 2;

@@ -8,7 +8,7 @@ const H = harness(page);
 await page.addInitScript(() => { try { localStorage.setItem('nhg-settings', JSON.stringify({ version: 2, controls: 'classic' })); } catch (e) { /* */ } });
 await page.goto(`${url}?a=${Date.now()}`);
 await page.waitForSelector('#start-go:not([disabled])');
-await page.click('#start-go');
+await page.uncheck('#start-tutorial'); await page.click('#start-go');
 for (let i = 0; i < 8; i++) { await H.wait(600); const s = await H.state(); if (s.waiting === 'shim_nh_poskey' && !s.inv && !s.menu && !s.prompt) break; await H.key(s.prompt ? 'y' : 'Escape'); }
 const look = () => page.$eval('.bg-inv', (e) => ({ acting: e.classList.contains('acting'), title: e.querySelector('h2').innerText, banner: e.querySelector('.actbar')?.innerText.replace(/\s+/g, ' ') || '' }));
 const results = [];
