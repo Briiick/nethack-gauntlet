@@ -75,7 +75,7 @@ any time. Both send NetHack's own commands, so the game plays the same either wa
 
 | | |
 |---|---|
-| Move | `W` `A` `S` `D` or the arrow keys. Hold two for a diagonal (`W`+`D` = up-right). Shift runs |
+| Move | `W` `A` `S` `D` or the arrow keys. Hold two for a diagonal (`W`+`D` = up-right). Hold to keep walking at a steady pace (it stops when something happens); Shift runs |
 | Action | `Space`: attack the monster next to you (the one you're facing first); with none, take the stairs or pick up what's here; otherwise wait a turn and search |
 | Attack | `Space`, or walk into a monster |
 | Interact | `E` or `Enter`: take the stairs you're standing on, otherwise pick up what's here |
@@ -84,6 +84,7 @@ any time. Both send NetHack's own commands, so the game plays the same either wa
 | Examine | `X` then pick a spot, or right-click anything on the map |
 | Fire / throw / cast | `F` / `T` / `Z` |
 | Character / dungeon map | `C` / `M` |
+| Quickbar | `1`–`9`: in the inventory, point at an item (or at a spell card) and press a number; the number then drinks, reads, zaps, eats, wears, wields or casts it |
 | Every other action | `Tab` opens a searchable list (pray, eat, wear, read, kick, loot…) |
 | Save and quit | `Ctrl+S` (`Cmd+S` on a Mac); works with classic controls too |
 | Travel | click a spot on the map |
@@ -107,6 +108,18 @@ next to a wall reveals them.
 the items it hands you; you get it all back when you leave through a magic portal. With modern
 controls, the tutorial's engraved instructions are reworded for these keys (NetHack writes them
 for its classic keys, e.g. `M-u` means Alt+U).
+
+**No letters to type.** When NetHack asks which item to use ("What do you want to eat?"), the
+item picker opens straight away with the items that fit; click one (or press its letter). You
+can still choose something it didn't suggest: type its letter or press *Any item…*. In the
+inventory, double-click an item to use it the natural way (drink, wear, zap…), click for every
+action, drag it onto your character to equip it. Pick-up lists have *Take all*. Casting (`Z`)
+shows your spells as cards with their failure chance.
+
+**You see what you do.** Your character is drawn in the armour and weapons they actually wear
+and wield. Swords swing at what you hit, spears thrust, wands charge up and fire, spells draw a
+circle in their school's colour, arrows and daggers fly, potions shatter. All of these are
+switchable in Settings.
 
 **Menus say what they're for.** When a command asks you to choose an item ("What do you want to
 drop?"), the inventory opens with that verb in its title and an orange banner saying what a click
