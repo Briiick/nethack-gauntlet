@@ -117,7 +117,10 @@ def classify_other(name):
     n = name.lower()
     if 'walls' in n:
         return 'wall', n.split(' walls')[0].split()[-1]
+    # engulf and explosion glyphs first: their names contain terrain words ("swallow ... cockatrice"
+    # has "ice", "explosion wet ..." etc.), which must not make them water/ice/stone
     table = [
+        ('swallow', 'swallow'), ('explosion', 'explosion'),
         ('dark part of a room', 'darkfloor'), ('floor of a room', 'floor'), ('lit corridor', 'litcorr'),
         ('corridor', 'corr'), ('doorway', 'doorway'), ('open door', 'opendoor'), ('closed door', 'closeddoor'),
         ('engraving', 'engraving'), ('stone', 'stone'), ('unexplored', 'void'), ('nothing', 'void'),

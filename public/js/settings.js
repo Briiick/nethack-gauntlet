@@ -91,7 +91,7 @@ export function openSettings(ui, startTab = 'display') {
 
   const panes = {
     display: () => `<div class="grid">
-      ${sel('set-graphics', 'Graphics', [['redrawn', 'Redrawn NetHack sprites (animated)'], ['official', 'Official NetHack tiles']], s.graphics, 'The official 16×16 tileset that ships with NetHack')}
+      ${sel('set-graphics', 'Graphics', [['redrawn', 'Redrawn NetHack sprites (animated)'], ['official', 'Official NetHack tiles']], s.graphics, 'Redrawn: animated pixel art. Official: the 16×16 tiles that ship with NetHack')}
       ${sel('set-zoom', 'Zoom', [['auto', 'Auto (fit the window)'], [2, '2×'], [3, '3×'], [4, '4×'], [5, '5×']], s.zoom)}
       ${sel('set-bright', 'Brightness', [['dim', 'Dim'], ['normal', 'Normal'], ['bright', 'Bright']], s.brightness, 'How dark unlit areas are')}
       ${sel('set-anim', 'Animation speed', [['smooth', 'Smooth'], ['snappy', 'Snappy'], ['instant', 'Instant']], s.animSpeed)}
@@ -147,10 +147,10 @@ export function openSettings(ui, startTab = 'display') {
     saves: () => {
       const saves = ui.mod ? listSaves(ui.mod) : [];
       return `${desktop ? `<p class="note">Saved games are files in your saves folder. Closing the window saves the game
-        in progress automatically, and you can also save during play with <kbd>S</kbd>. Export a save to keep a copy, or import one back.</p>
+        in progress automatically, and you can also save during play with <kbd>Ctrl</kbd>+<kbd>S</kbd>. Export a save to keep a copy, or import one back.</p>
         <p class="saves-dir"><code>${esc(savesPath || '…')}</code><button type="button" class="ghostbtn" data-open-saves>Open saves folder</button></p>`
         : `<p class="note">Saved games live in this browser's storage on this computer. Export one to keep a copy
-        or move it to another browser; import puts it back. Save during play with <kbd>S</kbd>.</p>`}
+        or move it to another browser; import puts it back. Save during play with <kbd>Ctrl</kbd>+<kbd>S</kbd>${s.controls === 'classic' ? ' or <kbd>S</kbd>' : ''}.</p>`}
         <ul class="saves">${saves.length ? saves.map((f) => `<li><span>${esc(f.replace(/^\d+/, '').replace(/\.gz$|\.Z$/, ''))}</span><small>${esc(f)}</small>
           <button type="button" class="ghostbtn" data-export="${esc(f)}">Export</button>
           <button type="button" class="ghostbtn danger" data-delete="${esc(f)}">Delete</button></li>`).join('') : '<li class="none">No saved games yet.</li>'}</ul>
@@ -171,7 +171,11 @@ export function openSettings(ui, startTab = 'display') {
     const f = el.querySelector('.filter');
     if (f) f.addEventListener('input', () => {
       const q = f.value.trim().toLowerCase();
-      el.querySelectorAll('.cmd').forEach((b) => { b.hidden = !!q && !b.textContent.toLowerCase().includes(q); });
+      let shown = 0;
+      el.querySelectorAll('.cmd').forEach((b) => { b.hidden = !!q && !(b.textContent + ' ' + b.dataset.cmd).toLowerCase().includes(q); if (!b.hidden) shown++; });
+      let none = el.querySelector('.cmdlist .nomatch');
+      if (!none) { none = document.createElement('p'); none.className = 'nomatch'; el.querySelector('.cmdlist').prepend(none); }
+      none.textContent = shown ? '' : `No command matches "${f.value.trim()}".`;
       el.querySelectorAll('.cmdlist h4').forEach((h) => {
         let n = h.nextElementSibling, any = false;
         while (n && n.tagName !== 'H4') { if (!n.hidden) any = true; n = n.nextElementSibling; }

@@ -239,7 +239,7 @@ kbd { font-family: var(--ui); font-weight: 700; color: var(--bone); border: 1px 
 .bg-inv .eq[data-i]:hover, .bg-inv .slot:not(.empty):hover, .bg-inv .eq.focus, .bg-inv .slot.focus { border-color: #f2d68c #8a6a2a #8a6a2a #f2d68c; box-shadow: inset 0 0 10px #000, 0 0 14px rgba(242,214,140,.35); }
 .bg-inv .eq.sel, .bg-inv .slot.sel { border-color: #7ae07a #1e5a1e #1e5a1e #7ae07a; background: radial-gradient(circle at 50% 40%, rgba(60,120,60,.5), rgba(4,7,6,.8)); }
 .bg-inv .eq.dim { opacity: .35; }
-.bg-inv .slot .acc { position: absolute; top: 1px; left: 4px; font: 700 13px/1 var(--serif); color: #b8c4b4; text-shadow: 1px 1px 0 #000; }
+.bg-inv .slot .acc { position: absolute; top: 1px; left: 4px; font: 700 14px/1 var(--serif); color: #eef2e6; text-shadow: 1px 1px 0 #000; }
 .bg-inv .qty { position: absolute; bottom: 1px; right: 4px; font: 700 14px/1 var(--ui); color: #fff; text-shadow: 1px 1px 0 #000, 0 0 3px #000; }
 .bg-inv .icon { image-rendering: pixelated; filter: drop-shadow(1px 2px 0 rgba(0,0,0,.6)); }
 
@@ -321,6 +321,8 @@ kbd { font-family: var(--ui); font-weight: 700; color: var(--bone); border: 1px 
 .panel.settings .cmdlist { columns: 2 260px; column-gap: 16px; }
 .panel.settings .cmdlist h4 { margin: 10px 0 4px; font: 700 13px var(--display); letter-spacing: .1em; text-transform: uppercase; color: var(--gilt); break-after: avoid; }
 .panel.settings .cmd { display: flex; width: 100%; gap: 8px; align-items: baseline; padding: 3px 4px; background: none; border: 1px solid transparent; color: var(--parch); text-align: left; cursor: pointer; break-inside: avoid; font-size: 15px; }
+.panel.settings .cmd[hidden], .panel.settings .cmdlist h4[hidden] { display: none; }
+.panel.settings .cmdlist .nomatch { color: #a8957a; font-style: italic; }
 .panel.settings .cmd:hover, .panel.settings .cmd:focus-visible { border-color: var(--gilt-lo); background: rgba(201,163,90,.08); }
 .panel.settings .cmd kbd { flex: none; min-width: 52px; text-align: center; color: var(--gilt-hi); }
 .panel.settings .cmd kbd.ext { color: #a8957a; font-weight: 500; }
@@ -351,7 +353,7 @@ kbd { font-family: var(--ui); font-weight: 700; color: var(--bone); border: 1px 
 #actionbar button { position: relative; width: 46px; height: 42px; display: grid; place-items: center; padding: 0; background: rgba(255,255,255,.03);
   border: 1px solid #2a3458; border-radius: 5px; color: var(--steel); cursor: pointer; }
 #actionbar button:hover, #actionbar button:focus-visible { border-color: var(--brass); color: var(--bone); background: rgba(200,160,80,.14); }
-#actionbar kbd { position: absolute; right: 1px; bottom: 1px; font: 700 10px/1 var(--ui); padding: 1px 3px; border-width: 1px; border-radius: 2px; }
+#actionbar kbd { position: absolute; right: 1px; bottom: 1px; font: 700 11px/1 var(--ui); padding: 2px 3px; background: rgba(6,8,18,.92); color: #f2e6c8; border-width: 1px; border-radius: 2px; }
 #actionbar .lbl { position: absolute; right: calc(100% + 10px); top: 50%; transform: translateY(-50%); white-space: nowrap; padding: 4px 9px;
   background: rgba(10,16,40,.95); border: 1px solid var(--brass-dim); border-radius: 3px; color: var(--bone); font: 600 15px var(--ui); opacity: 0; pointer-events: none; transition: opacity .12s; }
 #actionbar button:hover .lbl, #actionbar button:focus-visible .lbl { opacity: 1; }

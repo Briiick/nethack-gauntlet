@@ -46,7 +46,7 @@ async function boot() {
   try { last = localStorage.getItem('nhg-last-name') || ''; } catch (e) { /* ignore */ }
   nameInput.value = last || NAMES[Math.floor(Math.random() * NAMES.length)];
 
-  if (globalThis.nhgDesktop) document.getElementById('start-fine').innerHTML = 'Closing the window saves your game; it resumes when you start again with the same name. You can also save with <kbd>S</kbd>.';
+  if (globalThis.nhgDesktop) document.getElementById('start-fine').innerHTML = 'Closing the window saves your game; it resumes when you start again with the same name. You can also save with <kbd>Ctrl</kbd>+<kbd>S</kbd>.';
 
   const saves = listSaves(mod).map((f) => ({ file: f, name: f.replace(/^\d+/, '') }));
   const savesEl = document.getElementById('saves');
