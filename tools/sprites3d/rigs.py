@@ -10,6 +10,21 @@ def _rotate_about(p, pivot, R):
     return pivot + R @ (np.asarray(p, float) - pivot)
 
 
+class FlatEllipse(Ellipsoid):
+    """A thin elliptical plate (wing membranes, fins). Distance is the exact plate formula
+    around an approximate in-plane ellipse, so it stays solid when seen at a glancing angle
+    (a very flat Ellipsoid's distance bound lets rays slip through)."""
+    def _d(self, p):
+        q = (p - self.c) @ self.R
+        a, b, t = self.rad
+        xy = q[:, :2]
+        k0 = np.linalg.norm(xy / [a, b], axis=1)
+        k1 = np.linalg.norm(xy / [a * a, b * b], axis=1)
+        dx = k0 * (k0 - 1.0) / np.maximum(k1, 1e-6)
+        dy = np.abs(q[:, 2]) - t
+        return np.minimum(np.maximum(dx, dy), 0) + np.hypot(np.maximum(dx, 0), np.maximum(dy, 0))
+
+
 def limb(shoulder, upper_dir, lower_dir, l1, l2, r1, r2, r3, mat, blend=0.6):
     """Two-segment limb from a joint, with direction vectors for each segment."""
     s = np.asarray(shoulder, float)
@@ -34,7 +49,7 @@ def bat_wing(P, root, sgn, ws, flap, mat, membrane, s, back_len=4.2, drop=0.6):
         nrm = np.cross(u, v); nrm /= np.linalg.norm(nrm)
         x = u / np.linalg.norm(u); y = np.cross(nrm, x)
         ext = np.array([np.linalg.norm(u) * 0.62, max(abs(v @ y), 1.0) * 0.62, 0.25 * s])
-        P.append(Ellipsoid(ctr, ext, membrane, R=np.stack([x, y, nrm], axis=1)))
+        P.append(FlatEllipse(ctr, ext, membrane, R=np.stack([x, y, nrm], axis=1)))
 
 
 def _head(P, g, s, head_c, hr):
@@ -80,6 +95,8 @@ def _head(P, g, s, head_c, hr):
             P.append(Capsule(b, m1, 0.9 * s, 0.65 * s, mat='bone'))
             P.append(Capsule(m1, m1 + [0.9 * sgn * s, 2.3 * s, 0.6 * s], 0.65 * s, 0.15 * s, mat='bone'))
             P.append(Capsule(head_c + [hr * 0.9 * sgn, 0.2 * s, -0.4 * s], head_c + [(hr + 1.6 * s) * sgn, -0.4 * s, -0.6 * s], 0.7 * s, 0.3 * s, mat=skin))
+    elif kind in ('gnoll', 'fly', 'baboon', 'vulture', 'toad', 'boar'):
+        _beast_head(P, g, s, head_c, hr, kind, skin)
     else:
         P.append(Sphere(head_c, hr, skin, blend=0.4))
         for sgn in (1, -1):
@@ -124,11 +141,32 @@ def _head(P, g, s, head_c, hr):
         P.append(Disc(head_c + [0, 1.4 * s, 0], [0, 1, 0], 5.0 * s, 0.35 * s, g['helm']))
         P.append(Capsule(head_c + [0, 1.5 * s, 0], head_c + [0.6, 7.5 * s, -1.4], 3.0 * s, 0.25 * s, mat=g['helm']))
     elif hat == 'crown':
-        P.append(Ellipsoid(head_c + [0, 1.7 * s, 0], np.array([hr * 0.95, 0.9 * s, hr * 0.95]), g['helm']))
-        for k in range(5):
-            a = k / 5 * 2 * math.pi
-            P.append(Capsule(head_c + [math.sin(a) * hr * 0.85, 1.9 * s, math.cos(a) * hr * 0.85], head_c + [math.sin(a) * hr * 0.9, 3.2 * s, math.cos(a) * hr * 0.9], 0.45 * s, 0.1 * s, mat=g['helm']))
-    if g.get('horns'):
+        # a broad gold band with tall points and a front jewel, so it reads at sprite size
+        cy = head_c[1] + 1.9 * s
+        P.append(Torus([head_c[0], cy, head_c[2] - 0.1 * s], hr * 0.86, 0.75 * s, g['helm']))
+        for k in range(6):
+            a = (k + 0.5) / 6 * 2 * math.pi
+            b = np.array([head_c[0] + math.sin(a) * hr * 0.86, cy + 0.4 * s, head_c[2] - 0.1 * s + math.cos(a) * hr * 0.86])
+            P.append(Capsule(b, b + [math.sin(a) * 0.35 * s, 2.3 * s, math.cos(a) * 0.35 * s], 0.75 * s, 0.15 * s, mat=g['helm']))
+            P.append(Sphere(b + [math.sin(a) * 0.4 * s, 2.5 * s, math.cos(a) * 0.4 * s], 0.42 * s, g['helm']))
+        P.append(Sphere([head_c[0], cy + 0.1 * s, head_c[2] + hr * 0.88], 0.6 * s, g.get('crown_gem', 'gem')))
+    if g.get('flame_crest'):                     # balrogs, fire elementals: flames licking up from the head
+        ph = g.get('_ph', 0.0)
+        for k, (xx, zz, hh) in enumerate(((0, -0.4, 4.2), (-1.6, -0.8, 3.0), (1.6, -0.8, 3.2), (-0.8, -1.8, 3.4), (0.9, -1.6, 3.6))):
+            b = head_c + np.array([xx * s, hr * 0.55, zz * s])
+            h = hh * (1 + 0.18 * math.sin(ph + k * 1.9))
+            P.append(Capsule(b, b + np.array([xx * 0.35 + 0.4 * math.sin(ph + k), h, -0.9]) * s, 1.25 * s, 0.15 * s,
+                             mat=g['flame_crest'] if k % 2 == 0 else g.get('flame_crest2', g['flame_crest']), blend=0.4))
+    if g.get('horns') and g.get('horn_style') == 'ram':     # thick horns curling back and down around the ears
+        for sgn in (1, -1):
+            prev = head_c + np.array([hr * 0.55 * sgn, hr * 0.75, -0.3 * s])
+            for k in range(7):
+                a = 0.9 * k
+                rr = (2.4 - 0.18 * k) * s * g.get('horn_len', 1.0)
+                nxt = head_c + np.array([(hr * 0.85 + 0.35 * k * s) * sgn, hr * 0.35 + math.cos(a) * rr * 0.9, -0.8 * s - math.sin(a) * rr * 0.9 + k * 0.25 * s])
+                P.append(Capsule(prev, nxt, (1.05 - 0.1 * k) * s, (0.95 - 0.1 * k) * s, mat=g['horns']))
+                prev = nxt
+    elif g.get('horns'):
         hl = g.get('horn_len', 1.0)
         for sgn in (1, -1):
             b = head_c + [hr * 0.6 * sgn, hr * 0.7, -0.3 * s]
@@ -137,6 +175,87 @@ def _head(P, g, s, head_c, hr):
         for sgn in (1, -1):
             b = head_c + [1.0 * sgn * s, -1.7 * s, hr * 0.85]
             P.append(Capsule(b, b + [0.3 * sgn * s, 1.0 * s, 0.4 * s], 0.35 * s, 0.1 * s, mat='bone'))
+
+
+def _beast_head(P, g, s, hc, hr, kind, skin):
+    """Animal heads on humanoid demons: gnoll (Yeenoghu), fly (Baalzebub), baboon (Demogorgon),
+    vulture (vrock), toad (hezrou), boar (nalfeshnee)."""
+    eyes = g.get('eyes', 'eye_glow') if g.get('glow_eyes') else g.get('eyes', 'eye')
+    muz = g.get('muzzle', skin)
+    if kind == 'gnoll':                          # hyena: long dark muzzle, tall round ears, a bristling mane
+        P.append(Sphere(hc, hr * 0.9, skin, blend=0.4))
+        tip = hc + [0, -1.6 * s, hr + 3.0 * s]
+        P.append(Capsule(hc + [0, -0.5 * s, hr * 0.5], tip, 1.7 * s, 1.0 * s, mat=skin, blend=0.6))
+        P.append(Sphere(tip + [0, 0.3 * s, 0.4 * s], 0.8 * s, 'nose'))
+        P.append(Capsule(hc + [0, -1.8 * s, hr * 0.7], tip + [0, -0.9 * s, -0.6 * s], 0.5 * s, 0.3 * s, mat=muz))
+        for sgn in (1, -1):
+            P.append(Sphere(hc + [1.2 * sgn * s, 0.6 * s, hr * 0.78], 0.55 * s, 'eye_glow'))
+            P.append(Ellipsoid(hc + [2.0 * sgn * s, hr * 0.95, -0.6 * s], np.array([1.0, 1.7, 0.45]) * s, skin, R=rot_z(-0.35 * sgn)))
+        for k in range(5):
+            P.append(Sphere(hc + [0, hr * 0.8 - k * 1.3 * s, -hr * 0.7 - k * 0.5 * s], (1.2 - k * 0.1) * s, g.get('mane', 'hair')))
+    elif kind == 'fly':                          # housefly: dark dome, huge red compound eyes, a proboscis
+        P.append(Sphere(hc, hr * 0.85, skin, blend=0.4))
+        for sgn in (1, -1):
+            P.append(Ellipsoid(hc + [1.9 * sgn * s, 0.5 * s, hr * 0.35], np.array([1.9, 2.3, 1.9]) * s, g.get('fly_eyes', 'eye_glow')))
+            P.append(Capsule(hc + [0.6 * sgn * s, hr * 0.8, 0.6 * s], hc + [1.6 * sgn * s, hr + 2.4 * s, 1.6 * s], 0.25 * s, 0.12 * s, mat=skin))
+        P.append(Capsule(hc + [0, -1.4 * s, hr * 0.6], hc + [0, -4.0 * s, hr * 0.9], 0.75 * s, 0.5 * s, mat=muz))
+        P.append(Ellipsoid(hc + [0, -4.2 * s, hr * 0.95], np.array([1.1, 0.5, 1.1]) * s, muz))
+    elif kind == 'baboon':                       # mandrill-like: jutting muzzle, heavy brow, fangs
+        P.append(Sphere(hc, hr * 0.92, skin, blend=0.4))
+        P.append(Ellipsoid(hc + [0, -1.0 * s, hr * 0.85], np.array([1.7, 1.5, 2.2]) * s, muz, blend=0.4))
+        P.append(Ellipsoid(hc + [0, 0.9 * s, hr * 0.7], np.array([2.6, 0.7, 1.0]) * s, skin, blend=0.3))
+        for sgn in (1, -1):
+            P.append(Sphere(hc + [1.1 * sgn * s, 0.3 * s, hr * 0.88], 0.5 * s, 'eye_glow'))
+            P.append(Sphere(hc + [0.5 * sgn * s, -0.6 * s, hr + 1.9 * s], 0.32 * s, 'nose'))
+            P.append(Capsule(hc + [0.7 * sgn * s, -1.9 * s, hr + 1.0 * s], hc + [0.75 * sgn * s, -3.0 * s, hr + 1.0 * s], 0.3 * s, 0.08 * s, mat='bone'))
+            P.append(Sphere(hc + [2.6 * sgn * s, 0.4 * s, -0.2 * s], 0.9 * s, skin))
+    elif kind == 'vulture':                      # bald wrinkled head, hooked beak, feather ruff at the neck
+        P.append(Sphere(hc + [0, -0.3 * s, 0.3 * s], hr * 0.7, skin, blend=0.4))
+        P.append(Capsule(hc + [0, 0.1 * s, hr * 0.5], hc + [0, -0.5 * s, hr + 2.4 * s], 1.0 * s, 0.6 * s, mat=g.get('beak_mat', 'beak')))
+        P.append(Capsule(hc + [0, -0.5 * s, hr + 2.4 * s], hc + [0, -1.9 * s, hr + 2.7 * s], 0.6 * s, 0.15 * s, mat=g.get('beak_mat', 'beak')))
+        for sgn in (1, -1):
+            P.append(Sphere(hc + [1.1 * sgn * s, 0.4 * s, hr * 0.5], 0.5 * s, 'eye_glow'))
+        P.append(Torus(hc + [0, -3.0 * s, -0.4 * s], 2.6 * s, 1.3 * s, g.get('ruff', 'hair')))
+    elif kind == 'toad':                         # broad flat head, wide lipped mouth, eyes bulging on top
+        P.append(Ellipsoid(hc + [0, -0.8 * s, 0.6 * s], np.array([hr * 1.45, hr * 0.7, hr * 1.1]), skin, blend=0.6))
+        P.append(Ellipsoid(hc + [0, -1.6 * s, hr * 1.0], np.array([hr * 1.25, 0.45 * s, hr * 0.45]), muz))
+        for sgn in (1, -1):
+            P.append(Sphere(hc + [2.2 * sgn * s, 1.0 * s, hr * 0.55], 1.25 * s, skin, blend=0.3))
+            P.append(Sphere(hc + [2.3 * sgn * s, 1.3 * s, hr * 0.55 + 0.9 * s], 0.6 * s, 'eye_glow'))
+        for k, (xx, yy) in enumerate(((-1.6, 0.8), (1.2, 1.2), (0.0, 1.6), (-2.6, -0.6), (2.6, -0.4))):
+            P.append(Sphere(hc + [xx * s, yy * s - 0.2 * s, hr * 0.3], 0.5 * s, g.get('warts', muz)))
+    elif kind == 'boar':                         # pig snout with a flat disc nose and upcurved tusks
+        P.append(Sphere(hc, hr * 0.95, skin, blend=0.4))
+        P.append(Capsule(hc + [0, -0.8 * s, hr * 0.6], hc + [0, -1.2 * s, hr + 1.6 * s], 1.6 * s, 1.4 * s, mat=muz, blend=0.5))
+        P.append(Disc(hc + [0, -1.2 * s, hr + 2.9 * s], [0, 0, 1], 1.3 * s, 0.3 * s, muz))
+        for sgn in (1, -1):
+            P.append(Sphere(hc + [0.5 * sgn * s, -1.2 * s, hr + 3.2 * s], 0.32 * s, 'nose'))
+            P.append(Sphere(hc + [1.3 * sgn * s, 0.7 * s, hr * 0.8], 0.5 * s, 'eye_glow'))
+            b = hc + [1.3 * sgn * s, -2.0 * s, hr + 0.8 * s]
+            P.append(Capsule(b, b + [0.5 * sgn * s, 2.0 * s, 0.6 * s], 0.45 * s, 0.1 * s, mat='bone'))
+            P.append(Ellipsoid(hc + [2.6 * sgn * s, 1.6 * s, -0.4 * s], np.array([1.0, 1.3, 0.4]) * s, skin, R=rot_z(-0.6 * sgn)))
+
+
+def _frame(x, hint):
+    """Orthonormal basis (as matrix columns) whose first axis is x, the third as close to `hint` as possible."""
+    x = np.asarray(x, float); x = x / np.linalg.norm(x)
+    y = np.cross(np.asarray(hint, float), x); y = y / max(np.linalg.norm(y), 1e-6)
+    return np.stack([x, y, np.cross(x, y)], axis=1)
+
+
+def _tentacle(P, base, direction, length, r0, mat, ph, n=5, curl=1.0, s=1.0):
+    """A tapering curling tentacle; returns its tip."""
+    d = np.asarray(direction, float); d = d / np.linalg.norm(d)
+    side = np.cross(d, [0, 1.0, 0]);
+    side = side / np.linalg.norm(side) if np.linalg.norm(side) > 1e-3 else np.array([1.0, 0, 0])
+    prev = np.asarray(base, float)
+    for k in range(n):
+        t = (k + 1) / n
+        bend = math.sin(ph + t * 2.6) * curl * t
+        nxt = prev + (d * (1 - 0.35 * t) + side * bend * 0.6 + np.array([0, -0.45 * t, 0])) * length / n
+        P.append(Capsule(prev, nxt, r0 * (1 - 0.7 * (k / n)), r0 * (1 - 0.7 * t), mat=mat, blend=0.3))
+        prev = nxt
+    return prev
 
 
 def humanoid(g, pose):
@@ -166,6 +285,8 @@ def humanoid(g, pose):
         knee_bend = max(0.0, -math.sin(walk + (0 if sgn > 0 else math.pi))) * 0.6 if walk is not None else 0.05
         thigh = np.array([0, -1, 0]) @ rot_x(-a).T
         shin = np.array([0, -1, 0]) @ rot_x(-a + knee_bend).T
+        if pose.get('dead'):                     # corpse: legs fallen apart
+            thigh = np.array([0.3 * sgn, -1, 0.0]); shin = np.array([0.2 * sgn, -1, 0.12 + 0.1 * sgn])
         segs, foot = limb(hip, thigh, shin, 4.3 * s * g.get('leg_len', 1.0), 4.0 * s * g.get('leg_len', 1.0), 1.75 * s * stocky * g.get('thin', 1.0), 1.45 * s * stocky * g.get('thin', 1.0), 1.25 * s * stocky * g.get('thin', 1.0), g['legs'])
         P += segs
         P.append(Ellipsoid(foot + np.array([0, 0.1, 0.9]), np.array([1.35, 0.85, 2.0]) * s * stocky, g['boots']))
@@ -207,13 +328,31 @@ def humanoid(g, pose):
                 up = np.array([-0.2, -0.1, 1.0]); lo = np.array([0.3, -0.1, 1.0])
             else:
                 up = np.array([0.4, -0.7, 0.6]); lo = np.array([0.9, -0.5, 0.6])
+        elif pose.get('dead'):                   # corpse: arms flung out to the sides
+            up = np.array([0.95 * sgn, -0.3 - 0.25 * sgn, 0.1]); lo = np.array([0.8 * sgn, 0.25 + 0.3 * sgn, 0.2])
         else:
             a = arm_sw * sgn
             up = np.array([0.12 * sgn, -1, 0]) @ rot_x(-a).T
             lo = np.array([0.05 * sgn, -1, 0.55]) @ rot_x(-a * 1.2).T
-        segs, hand = limb(sh, up, lo, 3.6 * s * g.get('arm_len', 1.0), 3.3 * s * g.get('arm_len', 1.0), 1.35 * s * stocky * g.get('thin', 1.0), 1.2 * s * g.get('thin', 1.0), 1.1 * s * g.get('thin', 1.0), g['arms'])
-        P += segs
-        P.append(Sphere(hand, 1.2 * s, g.get('hands', g['skin'])))
+        if g.get('tentacle_arms'):               # Demogorgon: writhing tentacles where arms should be
+            tph = breath * math.pi * 2 + (walk or 0) * 2 + (0 if sgn > 0 else 1.7) + (atk or 0) * 3
+            tdir = np.array([0.75 * sgn, -0.55 + (0.9 * math.sin((atk or 0) * math.pi) if atk is not None else 0), 0.45])
+            P.append(Sphere(sh, 1.6 * s, g['arms'], blend=0.6))
+            hand = _tentacle(P, sh, tdir, 10.5 * s * g.get('arm_len', 1.0), 1.5 * s, g['arms'], tph, n=6, curl=1.6, s=s)
+            for k in range(3):                   # sucker dots along the underside
+                P.append(Sphere(sh + (hand - sh) * (0.3 + 0.2 * k) + [0, -0.9 * s, 0.6 * s], 0.4 * s, g.get('suckers', 'bone')))
+        else:
+            segs, hand = limb(sh, up, lo, 3.6 * s * g.get('arm_len', 1.0), 3.3 * s * g.get('arm_len', 1.0), 1.35 * s * stocky * g.get('thin', 1.0), 1.2 * s * g.get('thin', 1.0), 1.1 * s * g.get('thin', 1.0), g['arms'])
+            P += segs
+            P.append(Sphere(hand, 1.2 * s, g.get('hands', g['skin'])))
+        if g.get('fingers'):                     # long spidery fingers (mind flayers)
+            fd = lo / np.linalg.norm(lo)
+            for k in (-1, 0, 1):
+                f0 = hand + fd * 0.6 * s + np.array([k * 0.55 * s, 0, 0])
+                f1 = f0 + (fd + np.array([k * 0.35, -0.2, 0.25])) * 1.9 * s
+                f2 = f1 + (fd + np.array([k * 0.2, -0.9, -0.1])) * 1.4 * s
+                P.append(Capsule(f0, f1, 0.42 * s, 0.33 * s, mat=g['fingers']))
+                P.append(Capsule(f1, f2, 0.33 * s, 0.15 * s, mat=g['fingers']))
         if g.get('claws'):
             for k in (-1, 0, 1):
                 P.append(Capsule(hand + [k * 0.5 * s, -0.4 * s, 0.6 * s], hand + [k * 0.6 * s, -1.6 * s, 1.3 * s], 0.3 * s, 0.08 * s, mat=g['claws']))
@@ -244,9 +383,12 @@ def humanoid(g, pose):
     head_c = np.array([0, chest_y + 6.9 * s - hunch * 0.8 * s, 0.35 + hunch * hfwd * s])
     if g.get('head_kind') == 'flayer':
         g = dict(g, _sway=math.sin(breath * math.pi * 2 + (walk or 0) * 2) * 0.5 + (math.sin(atk * math.pi) * 1.2 if atk is not None else 0))
+    if g.get('flame_crest'):
+        g = dict(g, _ph=breath * math.pi * 2 + (walk or 0) * 2 + (atk or 0) * 4)
     heads = [head_c]
     if g.get('two_heads'):
-        heads = [head_c + [3.3 * s, -0.4 * s, 0], head_c + [-3.3 * s, -0.4 * s, 0]]
+        sp = g.get('head_spread', 3.3)
+        heads = [head_c + [sp * s, -0.4 * s, 0], head_c + [-sp * s, -0.4 * s, 0]]
     for hc in heads:
         P.append(Capsule(hc - [0, 3.2 * s, 0.2], hc - [0, 1.5 * s, 0], 1.3 * s * g.get('neck_r', 1.0), mat=g.get('neck_mat', g['skin']), blend=0.5))
         _head(P, g, s, hc, hr)
@@ -300,10 +442,57 @@ def humanoid(g, pose):
             P.append(Capsule(grip - blade_dir * 1.5 * s, grip + blade_dir * 6 * s, 0.4 * s, mat='wood'))
             side = np.cross(blade_dir, [0, 0, 1.0]); side = side / (np.linalg.norm(side) + 1e-6)
             P.append(Capsule(grip + blade_dir * 6 * s - side * 2.6 * s, grip + blade_dir * 6 * s + side * 2.6 * s, 0.5 * s, 0.2 * s, mat='steel'))
+        elif w == 'wand':                        # Orcus: a black rod crowned with a skull
+            tip = grip + blade_dir * 6.5 * s
+            P.append(Capsule(grip - blade_dir * 1.5 * s, tip, 0.45 * s, mat=g.get('wand_mat', 'horn_dark')))
+            P.append(Sphere(tip + blade_dir * 1.0 * s, 1.35 * s, 'bone'))
+            for sgn2 in (1, -1):
+                P.append(Sphere(tip + blade_dir * 1.1 * s + [0.5 * sgn2 * s, 0, 1.1 * s], 0.38 * s, 'socket'))
+        elif w == 'scythe':                      # Death: tall snath with a long curved blade at the top
+            top = grip + blade_dir * 9 * s
+            P.append(Capsule(grip - blade_dir * 5 * s, top, 0.42 * s, mat=g.get('snath', 'wood')))
+            prev = top
+            for k in range(4):
+                nxt = top + np.array([-(1.6 + 1.5 * k) * s, -0.7 * k * k * 0.35 * s, 0.6 * s])
+                P.append(Capsule(prev, nxt, (0.75 - 0.15 * k) * s, (0.6 - 0.15 * k) * s, mat=g.get('blade', 'steel')))
+                prev = nxt
+        elif w == 'whip':                        # balrog: a flaming lash trailing to the ground
+            prev = grip
+            for k in range(6):
+                t = (k + 1) / 6
+                nxt = grip + blade_dir * 3.0 * s * min(t * 2, 1) + np.array([-1.5 * t * s, -9.5 * t * t * s, 3.0 * math.sin(t * 3) * s])
+                P.append(Capsule(prev, nxt, 0.45 * s, 0.35 * s, mat=g.get('whip_mat', 'leather')))
+                prev = nxt
+        elif w == 'flail':                       # Yeenoghu: haft, chain and a spiked head
+            top = grip + blade_dir * 4 * s
+            P.append(Capsule(grip - blade_dir * 1.2 * s, top, 0.45 * s, mat='wood'))
+            ball = top + np.array([0.6 * s, -2.6 * s, 1.0 * s])
+            P.append(Capsule(top, ball, 0.22 * s, mat='steel'))
+            P.append(Sphere(ball, 1.25 * s, 'steel'))
+            for v in ((1, 0, 0), (-1, 0, 0), (0, 1, 0), (0, -1, 0), (0, 0, 1)):
+                P.append(Capsule(ball, ball + np.array(v) * 2.0 * s, 0.35 * s, 0.05 * s, mat='steel'))
     # robes reach the ground; wings, tails and horns for demons, angels and imps
     if g.get('robe') and not g.get('no_legs'):
         P.append(Capsule([0, hip_y + 3.0 * s + bob, 0], [0, 1.2 * s, 0.2], 3.4 * s * stocky, 4.6 * s * stocky, mat=g['robe'], blend=0.8))
-    if g.get('wings') and g.get('wing_style') == 'bat':
+    if g.get('smoke_tail'):                      # djinn and elementals: the body tapers into a swirl to the ground
+        ph = breath * math.pi * 2 + (walk or 0) * 2
+        prev = np.array([0, hip_y + 0.6 + bob, 0.0])
+        for k in range(6):
+            t = (k + 1) / 6
+            nxt = np.array([math.sin(ph + t * 4) * 1.6 * s * t, (hip_y + bob) * (1 - t) + 0.6 * s, math.cos(ph + t * 4) * 1.2 * s * t - 0.6 * s * t])
+            P.append(Capsule(prev, nxt, (3.2 - 1.9 * (k / 6)) * s * stocky, (3.2 - 1.9 * t) * s * stocky,
+                             mat=g['smoke_tail'] if k % 2 == 0 else g.get('smoke_tail2', g['smoke_tail']), blend=0.8))
+            prev = nxt
+    if g.get('wings') and g.get('wing_style') == 'insect':     # Baalzebub: two pairs of veined glassy fly wings
+        flap = math.sin((walk or 0) * 4 + breath * math.pi * 8) * 0.25 + (0.3 if atk is not None else 0)
+        for sgn in (1, -1):
+            for k, (ln, ang) in enumerate(((7.0, 0.35), (5.4, -0.15))):
+                root = np.array([1.2 * sgn * s, chest_y + (1.6 - k * 1.6) * s, -2.4 * s])
+                d = np.array([sgn * math.cos(ang + flap), math.sin(ang + flap), -0.55]); d /= np.linalg.norm(d)
+                P.append(Ellipsoid(root + d * ln * 0.5 * s * g.get('wing_span', 1.0), np.array([ln * 0.55 * g.get('wing_span', 1.0), 1.7, 0.2]) * s,
+                                   g.get('membrane', 'wing_glass'), R=_frame(d, [0, 0, 1.0]) @ rot_x(0.9)))
+                P.append(Capsule(root, root + d * ln * 0.95 * s * g.get('wing_span', 1.0), 0.22 * s, 0.1 * s, mat=g.get('wing_vein', 'horn_dark')))
+    elif g.get('wings') and g.get('wing_style') == 'bat':
         flap = math.sin((walk or 0) * 2 + breath * math.pi * 2) * 0.3 + (math.sin(atk * math.pi) * 0.3 if atk is not None else 0)
         for sgn in (1, -1):
             root = np.array([1.6 * sgn * s, chest_y + 1.8 * s, -1.6 * s + hunch * 0.5 * s])
@@ -524,12 +713,35 @@ def insect(g, pose):
             a = math.sin((walk or 0) + ph) * 0.5 if walk is not None else 0
             knee = np.array([3.3 * sgn * s, y + 2.0 * s, z + a * 1.5 * s])
             foot = np.array([4.8 * sgn * s, 0.3 * s, z + a * 2.5 * s - 0.6 * s])
-            P.append(Capsule([0.8 * sgn * s, y, z], knee, 0.4 * s, 0.3 * s, mat=g['legs']))
-            P.append(Capsule(knee, foot, 0.3 * s, 0.15 * s, mat=g['legs']))
+            if pose.get('dead'):                 # corpse: legs curled in under the belly
+                knee = np.array([3.4 * sgn * s, y - 2.2 * s, z * 1.2 + a * s])
+                foot = np.array([(4.0 + 0.5 * math.sin(i * 2.1 + sgn)) * sgn * s, y - 4.6 * s, z * 1.5 + 0.6 * s])
+            lr = g.get('leg_r', 1.0)
+            P.append(Capsule([0.8 * sgn * s, y, z], knee, 0.4 * s * lr, 0.3 * s * lr, mat=g['legs']))
+            P.append(Capsule(knee, foot, 0.3 * s * lr, 0.15 * s * lr, mat=g['legs']))
     if g.get('wings'):
         flap = math.sin(breath * math.pi * 8 + (walk or 0) * 4) * 0.4
         for sgn in (1, -1):
             P.append(Ellipsoid([2.2 * sgn * s, y + 2.4 * s, -1.0 * s], np.array([2.6, 0.25, 3.4]) * s, 'wing_glass', R=rot_z(0.5 * sgn + flap * sgn)))
+    if g.get('scorpion'):                        # pincers in front and a segmented tail arching over the back
+        snap = math.sin(atk * math.pi) if atk is not None else 0.0
+        for sgn in (1, -1):
+            sh = np.array([1.2 * sgn * s, y, 3.2 * s + lunge * 0.5])
+            el = sh + np.array([1.8 * sgn, 0.6, 1.6]) * s
+            cl = el + np.array([-0.4 * sgn, 0.3, 2.0 + snap]) * s
+            P.append(Capsule(sh, el, 0.45 * s, 0.4 * s, mat=g['legs']))
+            P.append(Capsule(el, cl, 0.5 * s, 0.6 * s, mat=g['legs']))
+            P.append(Ellipsoid(cl + np.array([0, 0, 0.9]) * s, np.array([0.9, 0.6, 1.4]) * s, g.get('claw', g['body'])))
+            P.append(Capsule(cl + np.array([0.5 * sgn, 0, 1.2]) * s, cl + np.array([(0.3 + 0.6 * snap) * sgn, 0, 2.6]) * s, 0.35 * s, 0.1 * s, mat=g.get('claw', g['body'])))
+        prev = np.array([0, y + 0.6 * s, -6.6 * s])
+        sway = math.sin(breath * math.pi * 2 + (walk or 0)) * 0.4
+        for k in range(6):
+            a = 0.35 + k * 0.48 + snap * 0.5
+            nxt = prev + np.array([sway * 0.3, math.sin(a) * 1.8, -math.cos(a) * 1.8]) * s
+            P.append(Sphere(prev, (0.95 - k * 0.08) * s, g['body'], blend=0.5))
+            P.append(Capsule(prev, nxt, (0.9 - k * 0.08) * s, (0.85 - k * 0.08) * s, mat=g['body'], blend=0.5))
+            prev = nxt
+        P.append(Capsule(prev, prev + np.array([0, -0.4, 1.6]) * s, 0.6 * s, 0.1 * s, mat=g.get('sting', 'horn_dark')))
     if g.get('stripes'):
         for k in range(3):
             P.append(Ellipsoid([0, y + 0.6 * s, (-2.6 - k * 1.4) * s], np.array([3.0, 2.5, 0.35]) * s, g['stripes']))
@@ -612,20 +824,59 @@ def serpent(g, pose):
         P.append(Sphere(head + [0.9 * sgn * s, 0.6 * s, 1.4 * s], 0.45 * s, 'eye_glow' if g.get('glow') else 'eye'))
     if atk is not None and atk > 0.3 and not g.get('naga'):
         P.append(Capsule(head + [0, -0.2 * s, 2.2 * s], head + [0.3 * s, -0.4 * s, 3.8 * s], 0.15 * s, mat='mouth'))
+    if g.get('wings'):                           # couatl: feathered wings at the shoulders and a feather crest
+        flap = math.sin(walk * 2 + breath * math.pi * 2) * 0.35 + (0.4 if atk is not None else 0)
+        for sgn in (1, -1):
+            root = np.array([1.0 * sgn * s, 2.6 * s, 2.0 * s])
+            tip = root + np.array([6.5 * sgn * s, (3.2 + flap * 4) * s, -2.0 * s])
+            P.append(Capsule(root, tip, 0.6 * s, 0.25 * s, mat=g['wings']))
+            P.append(FlatEllipse((root + tip) / 2 + np.array([0, -1.6 * s, -0.4 * s]), np.array([3.6, 2.3, 0.25]) * s, g.get('membrane', g['wings']),
+                                 R=rot_z(-0.45 * sgn - flap * sgn) @ rot_x(-0.5)))
+        for k in range(3):
+            P.append(Capsule(head + [0, 0.8 * s, -0.6 * s - k * 0.7 * s], head + [(k - 1) * 0.9 * s, 3.0 * s, -1.6 * s - k * 0.9 * s], 0.45 * s, 0.12 * s,
+                             mat=g.get('crest', g['wings'])))
     return P
+
+
+def membrane_wing(P, root, sgn, ws, flap, mat, membrane, s, tilt=1.7):
+    """A bat wing laid out in its own plane: arm to the wrist, three fingers fanning out and a
+    membrane of flat ellipsoids between them (scalloped trailing edge). The plane is tilted back
+    so the wing faces up toward the pitched camera; `flap` (-1..1) raises and lowers it."""
+    f = 0.25 + flap * 0.55
+    u = np.array([sgn * math.cos(f), math.sin(f), -0.25])
+    v = np.array([0, math.cos(tilt), -math.sin(tilt)])
+    v = v - (v @ u) / (u @ u) * u
+    u = u / np.linalg.norm(u); v = v / np.linalg.norm(v)
+    nrm = np.cross(u, v)
+    W = lambda a, b: root + (u * a + v * b) * ws
+    wrist = W(4.2, 1.8)
+    tips = [W(8.8, 2.6), W(8.6, -1.0), W(6.0, -3.4)]
+    tail = W(0.8, -2.8)
+    P.append(Capsule(root, wrist, 0.6 * s, 0.45 * s, mat=mat))
+    P.append(Sphere(wrist + v * 0.5 * ws, 0.45 * s, mat))                     # thumb claw
+    for t in tips:
+        P.append(Capsule(wrist, t, 0.32 * s, 0.12 * s, mat=mat))
+    R = np.stack([u, v, nrm], axis=1)
+    for a, b, c in ((root, wrist, tips[0]), (wrist, tips[0], tips[1]), (wrist, tips[1], tips[2]), (root, wrist, tips[2]), (root, tips[2], tail)):
+        ctr = (a + b + c) / 3
+        pts = np.stack([a, b, c]) - ctr
+        lu = np.abs(pts @ u).max() * 0.92 + 0.3 * ws; lv = np.abs(pts @ v).max() * 0.92 + 0.3 * ws
+        P.append(FlatEllipse(ctr, np.array([lu, lv, 0.22 * s]), membrane, R=R))
 
 
 def winged(g, pose):
     """Bats and birds: a small body slung between beating wings, hovering."""
     s = g.get('scale', 1.0); walk = pose.get('walk'); breath = pose.get('breath', 0.0); atk = pose.get('attack')
-    flap = math.sin(((walk or 0) * 2) + breath * math.pi * 4)
+    flap = math.sin((walk or 0) + breath * math.pi)       # walk phases 0, 1/4, 1/2, 3/4 give level, up, level, down
     y = 9.0 * s + flap * 0.8 * s
     lunge = math.sin(atk * math.pi) * 2.5 * s if atk is not None else 0.0
     P = [Ellipsoid([0, y, lunge], np.array([2.0, 2.2, 2.6]) * s, g['body'], blend=0.6),
          Sphere([0, y + 1.6 * s, 1.8 * s + lunge], 1.7 * s, g['body'], blend=0.5)]
     for sgn in (1, -1):
         root = np.array([1.2 * sgn * s, y + 0.6 * s, lunge])
-        if g.get('open_wings', True):           # wings spread wide so they read from every side
+        if g.get('bat_wings'):                  # big scalloped membranes stretched over three finger spars
+            membrane_wing(P, root, sgn, g['bat_wings'] * s, flap, g['wings'], g.get('membrane', g['wings']), s, tilt=g.get('wing_tilt', 1.7))
+        elif g.get('open_wings', True):           # wings spread wide so they read from every side
             bat_wing(P, root, sgn, 0.95 * s, flap * 0.9 - 0.6, g['wings'], g.get('membrane', g['wings']), 0.75 * s, back_len=1.4, drop=2.6)
         else:
             tip = root + np.array([6.5 * sgn * s, flap * 3.5 * s, -1.0 * s])
@@ -660,6 +911,9 @@ def vortex(g, pose):
     for k in range(5):                               # flecks flung off the rim
         a = k * 1.256 + spin * 2
         P.append(Sphere([math.cos(a) * 6.4 * s, (9.0 + (k % 3) * 1.6) * s, math.sin(a) * 6.4 * s], 0.5 * s, g.get('fleck', g['body'])))
+    if g.get('eyes'):                                # air elementals: a pair of glowing eyes in the whirl
+        for sgn in (1, -1):
+            P.append(Sphere([1.3 * sgn * s, 9.6 * s, 3.4 * s], 0.6 * s, g['eyes']))
     return P
 
 
@@ -929,4 +1183,77 @@ def tentacled(g, pose):
         for k in range(5):
             P.append(Capsule(pts[k], pts[k + 1], (1.5 - k * 0.27) * s, (1.5 - (k + 1) * 0.27) * s, mat=g['body'] if k % 2 == 0 else g.get('body2', g['body']), blend=0.5))
         P.append(Sphere(pts[2] + [0, -0.5 * s, 0], 0.5 * s, g.get('suckers', 'bone')))
+    return P
+
+
+def jellyfish(g, pose):
+    """A drifting jellyfish: a translucent domed bell with a frilled rim, four ruffled oral arms
+    and long thin tentacles trailing behind and below."""
+    s = g.get('scale', 1.0); walk = pose.get('walk'); atk = pose.get('attack'); breath = pose.get('breath', 0.0)
+    P = []
+    ph = breath * math.pi * 2 + (walk or 0) * 2 + (atk or 0) * 3
+    pulse = math.sin(ph) * 0.08 + (math.sin(atk * math.pi) * 0.15 if atk is not None else 0)
+    bc = np.array([0, 9.0 * s + math.sin(ph) * 0.5 * s, 0])
+    rx, ry = 5.0 * s * (1 + pulse), 3.6 * s * (1 - pulse)
+    P.append(Ellipsoid(bc, np.array([rx, ry, rx]), g['body'], cut=([0, 1, 0], bc[1] - 0.6 * s), blend=0.4))
+    P.append(Ellipsoid(bc + [0, 0.6 * s, 0], np.array([rx * 0.55, ry * 0.6, rx * 0.55]), g.get('inner', g['body'])))
+    for k in range(4):                               # gonad rings showing through the bell
+        a = k / 4 * 2 * math.pi + 0.4
+        P.append(Torus(bc + [math.sin(a) * rx * 0.4, ry * 0.55, math.cos(a) * rx * 0.4], 0.9 * s, 0.3 * s, g.get('spots', g['body']), R=rot_x(0.5)))
+    rim_y = bc[1] - 0.5 * s
+    for k in range(12):                              # frilled scallops around the rim
+        a = k / 12 * 2 * math.pi
+        P.append(Sphere([math.sin(a) * rx * 0.98, rim_y - 0.2 * s * (k % 2), math.cos(a) * rx * 0.98], 0.75 * s, g.get('rim', g['body']), blend=0.3))
+    for k in range(4):                               # oral arms: thick wavy ribbons
+        a = k / 4 * 2 * math.pi + 0.8
+        base = np.array([math.sin(a) * 1.2 * s, rim_y, math.cos(a) * 1.2 * s])
+        prev = base
+        for j in range(5):
+            t = (j + 1) / 5
+            nxt = base + np.array([math.sin(a) * 1.4 * s * t + math.sin(ph + t * 4 + k) * 0.9 * s, -7.0 * s * t, math.cos(a) * 1.4 * s * t - 1.6 * s * t])
+            P.append(Capsule(prev, nxt, (0.9 - 0.35 * t) * s, (0.8 - 0.35 * t) * s, mat=g.get('arms', g['body']), blend=0.4))
+            prev = nxt
+    for k in range(9):                               # trailing stinging tentacles
+        a = k / 9 * 2 * math.pi
+        base = np.array([math.sin(a) * rx * 0.85, rim_y, math.cos(a) * rx * 0.85])
+        prev = base
+        for j in range(4):
+            t = (j + 1) / 4
+            nxt = base + np.array([math.sin(ph + t * 3 + k * 1.3) * 1.2 * s * t + math.sin(a) * 0.8 * s * t, -8.0 * s * t + 0.6 * s * t * t,
+                                   -3.4 * s * t * t + math.cos(a) * 0.8 * s * t])
+            nxt[1] = max(nxt[1], 0.4 * s)
+            P.append(Capsule(prev, nxt, 0.32 * s, 0.22 * s, mat=g.get('tentacles', g['body'])))
+            prev = nxt
+    for sgn in (1, -1):                              # a pair of simple eyespots so it has a face
+        P.append(Sphere(bc + [1.5 * sgn * s, -0.2 * s, rx * 0.86], 0.42 * s, 'eye_glow' if g.get('glow') else 'eye'))
+    return P
+
+
+def fish(g, pose):
+    """Piranhas and sharks: a streamlined body swimming just off the floor, a wagging tail fin,
+    a dorsal fin, side fins and (attacking) a gaping toothy mouth."""
+    s = g.get('scale', 1.0); walk = pose.get('walk'); atk = pose.get('attack'); breath = pose.get('breath', 0.0)
+    P = []
+    wag = math.sin((walk or 0) * 2 + breath * math.pi * 2) * 0.45
+    lunge = math.sin(atk * math.pi) * 2.0 * s if atk is not None else 0.0
+    L = g.get('length', 1.0)
+    c = np.array([0, 4.6 * s + math.sin(breath * math.pi * 2) * 0.3 * s, lunge])
+    P.append(Ellipsoid(c, np.array([1.9 * g.get('girth', 1.0), 2.3 * g.get('depth', 1.0), 4.6 * L]) * s, g['body'], blend=0.8))
+    if g.get('belly'):
+        P.append(Ellipsoid(c + [0, -0.9 * s, 0.4 * s], np.array([1.6, 1.4, 3.8 * L]) * s, g['belly'], blend=0.6))
+    tb = c + [0, 0, -4.2 * L * s]
+    tail = tb + np.array([math.sin(wag) * 2.2, 0, -2.6]) * s
+    P.append(Capsule(c + [0, 0, -2.4 * L * s], tb, 1.3 * s, 0.6 * s, mat=g['body'], blend=0.6))
+    for sgn in (1, -1):                              # forked tail: upper and lower lobes
+        P.append(FlatEllipse(tail + [0, sgn * 1.6 * s * g.get('tail_fin', 1.0), -0.2 * s], np.array([0.7, 2.2 * g.get('tail_fin', 1.0), 0.18]) * s, g.get('fins', g['body']),
+                             R=rot_y(math.pi / 2 + wag) @ rot_x(0) @ rot_z(0.5 * sgn)))
+    P.append(FlatEllipse(c + [0, 2.4 * s * g.get('depth', 1.0), -0.6 * s], np.array([0.25, 1.8 * g.get('dorsal', 1.0), 1.6]) * s, g.get('fins', g['body']), R=rot_x(0.5) @ rot_y(math.pi / 2) @ rot_y(-math.pi / 2)))
+    for sgn in (1, -1):
+        P.append(FlatEllipse(c + [1.9 * sgn * s, -0.9 * s, 1.0 * s], np.array([1.5, 0.8, 0.15]) * s, g.get('fins', g['body']), R=rot_z(-0.5 * sgn) @ rot_y(0.5 * sgn)))
+        P.append(Sphere(c + [1.25 * sgn * s, 0.7 * s, 3.4 * L * s], 0.5 * s, g.get('eyes', 'eye')))
+    gape = 0.8 * s if atk is not None and atk > 0.3 else 0.25 * s
+    P.append(Ellipsoid(c + [0, -0.7 * s - gape * 0.5, 4.1 * L * s], np.array([1.1 * s, 0.25 * s + gape, 0.6 * s]), 'mouth'))
+    if g.get('teeth'):
+        for k in (-1, 0, 1):
+            P.append(Capsule(c + [k * 0.5 * s, -0.4 * s, 4.4 * L * s], c + [k * 0.5 * s, -0.9 * s - gape * 0.4, 4.5 * L * s], 0.22 * s, 0.05 * s, mat='glint'))
     return P

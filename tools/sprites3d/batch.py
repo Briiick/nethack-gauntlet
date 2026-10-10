@@ -36,7 +36,8 @@ def job(args):
             if rig != 'floating_eye' and 'blink' in pose:
                 pose = {'breath': 0.5}
             try:
-                yaw = g.get('yaw', YAW.get(rig, 0.0)) if r in (0, 2) else 0.0
+                # yaw_side: turn the east/west rows toward the camera too (bats, whose spread wings are edge-on from the side)
+                yaw = g.get('yaw', YAW.get(rig, 0.0)) if r in (0, 2) else -math.copysign(g.get('yaw_side', 0.0), d)
                 img = render(fn(g, pose), mats, size=size + 2 * M, feet=(feet[0] + M, feet[1] + M), facing=d + yaw)
                 if g.get('alpha'):            # ghosts, shades, stalkers: translucent
                     img = img.copy(); img[:, :, 3] = (img[:, :, 3] * g['alpha']).astype(np.uint8)

@@ -2,7 +2,7 @@
 // screenshots it, every item labelled with its NetHack name. For eyeballing the art, by people
 // or by review agents.
 //   node tools/gallery.mjs http://127.0.0.1:8080/ out-dir [sheet...]
-// Sheets: features, terrain, doors, objects, monsters, effects (default: all).
+// Sheets: terrain, features, objects, corpses, monsters, effects, picked (MONSTERS=regex) (default: all but picked).
 import { mkdirSync } from 'node:fs';
 import { chromium } from '../test/node_modules/playwright-core/index.mjs';
 import { CHROME } from '../test/lib.mjs';
@@ -17,7 +17,7 @@ await page.waitForSelector('#start-go:not([disabled])');
 await page.uncheck('#start-tutorial'); await page.click('#start-go');
 await page.waitForFunction(() => window.__nhg?.game?.waiting === 'shim_nh_poskey', null, { timeout: 30000 }).catch(() => {});
 for (let i = 0; i < 6; i++) { await page.keyboard.press('Escape'); await page.waitForTimeout(300); }
-await page.addStyleTag({ content: '#hud,#status,.hud,.plate,#plate,#feed,#actionbar,#banner,#prompt,.topbar,#help-btn,#settings-btn,#target-hint,#modal{display:none!important} .gal{position:fixed;z-index:99;color:#fff;font:600 12px/1.1 system-ui;background:rgba(0,0,0,.72);padding:1px 4px;border-radius:3px;transform:translateX(-50%);white-space:nowrap;pointer-events:none}' });
+await page.addStyleTag({ content: '#hud,#status,.hud,.plate,#plate,#feed,#actionbar,#quickbar,#banner,#prompt,.topbar,#help-btn,#settings-btn,#target-hint,#modal{display:none!important} .gal{position:fixed;z-index:99;color:#fff;font:600 12px/1.1 system-ui;background:rgba(0,0,0,.72);padding:1px 4px;border-radius:3px;transform:translateX(-50%);white-space:nowrap;pointer-events:none}' });
 await page.evaluate(() => { const s = window.__nhg.ui.settings; s.zoom = 3; s.shake = 'off'; window.__nhg.renderer.resize?.(); });
 
 // Each sheet: a list of scenes; a scene paints cells and returns labelled spots.
@@ -27,6 +27,7 @@ const sheets = {
   monsters: { names: (n, c, g) => c === 'mon' && /^male /.test(n) && g % 3 === 0, cols: 8, gap: 3, limit: 130 },
   // MONSTERS="centaur|naga" picks monsters by name instead of a sample
   picked: { names: new Function('n', 'c', `return c === 'mon' && /^male /.test(n) && /${(process.env.MONSTERS || '^$').replace(/[`$\\]/g, '')}/.test(n)`), cols: 8, gap: 3, limit: 64 },
+  corpses: { names: (n, c, g) => c === 'obj' && /^body of /.test(n) && g % 7 === 0, cols: 8, gap: 3, limit: 64 },
   effects: { names: (n, c) => ['zap', 'explosion', 'warning'].includes(c) && !/(top|bottom|middle) (left|right)|top center|bottom center/.test(n), cols: 8, gap: 3 },
 };
 

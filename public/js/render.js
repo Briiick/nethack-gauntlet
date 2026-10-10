@@ -9,6 +9,7 @@ import TRAP_PROPS from './props/traps.js';
 import FX_ART from './props/fx.js';
 import { HERO_ANIM } from './heroanim.js';
 import { heroSheet as composedHeroSheet } from './gear.js';
+import { loadCorpses, corpsesReady, hasCorpse, drawCorpse } from './corpses.js';
 
 // hand-drawn art for features, traps and terrain details, by NetHack glyph name (see props/README.md)
 const PROPS = { ...TERRAIN_PROPS, ...FURNITURE_PROPS, ...TRAP_PROPS };
@@ -119,6 +120,10 @@ export class Renderer {
     this.terrMem = new Int32Array(n).fill(-1);   // last terrain glyph seen at each cell
     this.dirty = new Uint8Array(n);
     this.anyDirty = false;
+    loadCorpses().then((ok) => {   // the real corpse art: redraw any corpse drawn the fallback way
+      if (!ok) return;
+      this.corpseCache.clear(); this.dirty.fill(1); this.anyDirty = true;
+    });
     this.terrain = document.createElement('canvas'); this.terrain.width = W; this.terrain.height = H;
     this.tctx = this.terrain.getContext('2d');
     this.decals = document.createElement('canvas'); this.decals.width = W; this.decals.height = H;
@@ -223,10 +228,19 @@ export class Renderer {
     return { cell: d >= 0 ? d : o };
   }
 
-  // A monster's sprite lying on its side, greyed and bloodied: px x px canvas (null until its sheet loads).
+  // A corpse: the monster rendered lying dead (assets/corpses.png, tools/sprites3d/corpses.py),
+  // or until that loads, its sprite on its side, greyed. px x px canvas (null until art loads).
   corpseCanvas(mnum, px) {
     const key = mnum + ':' + px;
     if (this.corpseCache.has(key)) return this.corpseCache.get(key);
+    if (corpsesReady() && hasCorpse(mnum)) {
+      const cell = document.createElement('canvas'); cell.width = T; cell.height = T;
+      drawCorpse(cell.getContext('2d'), mnum, 0, 0, { clip: true });
+      let c = cell;
+      if (px !== T) { c = document.createElement('canvas'); c.width = px; c.height = px; const x = c.getContext('2d'); x.imageSmoothingEnabled = false; x.drawImage(cell, 0, 0, px, px); }
+      this.corpseCache.set(key, c);
+      return c;
+    }
     const e = this.sheets.get(mnum);
     if (!e) return null;
     const [bx, by, bw, bh] = spriteBounds(e);
