@@ -23,6 +23,10 @@ export const CONDITIONS = [
 ];
 const BAD_CONDITIONS = 0x1000000 | 0x100000 | 0x40000 | 0x200000 | 0x2000 | 0x8000 | 0x80;
 
+// A C `char` argument from the engine: a number whose character may sit in the low or the high
+// byte depending on how the callback packed it (e.g. 0x64000004 is 'd'), or a 1-char string.
+const charArg = (v) => (typeof v === 'string' ? v.charCodeAt(0) || 0 : v > 255 || v < 0 ? (v >>> 24) & 0xff : v & 0xff);
+
 export class Game {
   constructor({ ui, renderer, tiles }) {
     this.recentText = [];
@@ -125,8 +129,9 @@ export class Game {
 
   async shim_delay_output() {
     // NetHack paces thrown objects, zaps and explosions with this
+    const hold = this.autoSaving ? 0 : (this.renderer.onDelay?.() || 0);   // a wand/spell wind-up holds the beam back a moment
     this.renderer.commit();
-    await new Promise((r) => setTimeout(r, this.ui.settings.fastMissiles ? 18 : 40));
+    await new Promise((r) => setTimeout(r, (this.ui.settings.fastMissiles ? 18 : 40) + hold));
   }
 
   // ---------------------------------------------------------------- windows
@@ -239,6 +244,7 @@ export class Game {
       this.inventory = w.menu.items;
       this.equipment = equipmentOf(w.menu.items);
       this.renderer.setEquipment?.(this.equipment);
+      this.renderer.setInventory?.(this.inventory);
       this.mod.setValue(listPtr, 0, '*');
       return 0;
     }
@@ -254,13 +260,30 @@ export class Game {
       const chosen = w.menu.items.find((it) => it.ident === result[0].ident);
       if (chosen && /^(wield|wear|put|take off|remove this|quiver)\b/i.test(chosen.text)) this.ui.reopenInventory = true;
     }
+    if (this.autoPicking) {   // the picker opened for "What do you want to X?"
+      const q = this.autoPicking; this.autoPicking = null;
+      if (!result || !result.length) this.pickCancelled = q;
+      else {
+        const it = w.menu.items.find((x) => x.ident === result[0].ident);
+        try { if (it) this.renderer.onAnswer?.(q, it.ch); } catch (e) { console.warn(e); }   // same visual hooks as a typed letter
+      }
+    }
     if (result === null) { this.mod.setValue(listPtr, 0, '*'); return -1; }
+    try { this.renderer.onMenuPick?.(w.menu, result.map((r) => w.menu.items.find((it) => it.ident === r.ident)).filter(Boolean)); } catch (e) { console.warn(e); }
     return writeMenuSelection(this.mod, listPtr, result);
   }
 
   async shim_message_menu(let_, how, mesg) {
+    if (this.autoPicking) {   // only one item fits "What do you want to X?": still show it in the picker
+      const q = this.autoPicking; this.autoPicking = null;
+      const ch = charArg(let_), inv = (this.inventory || []).find((it) => it.ch === ch);
+      const sel = await this.ui.menu({ prompt: '', context: q, items: [{ ident: ch, ch, gch: 0, text: inv ? inv.text : mesg.replace(/^. - /, ''), glyph: inv ? inv.glyph : -1, selected: false }] }, PICK.ONE);
+      if (!sel || !sel.length) { this.pickCancelled = q; return 27; }
+      try { this.renderer.onAnswer?.(q, ch); } catch (e) { console.warn(e); }
+      return ch;
+    }
     this.ui.message(mesg, 0);
-    const k = await this.ui.yn(mesg, null, let_ & 0xff);
+    const k = await this.ui.yn(mesg, null, charArg(let_));
     return k;
   }
 
@@ -269,9 +292,24 @@ export class Game {
     this.renderer.commit();
     this.lastQuery = query || '';   // "What do you want to drop? [abc or ?*]": the item list that may follow belongs to it
     if (this.autoSaving) return /save/i.test(query || '') ? 121 : 27;   // closing the app: "Really save?" yes, anything else no
-    const k = await this.ui.yn(query || '', resp || null, def & 0xff);
+    // "What do you want to eat? [fg or ?*]": open the item picker straight away instead of asking
+    // for a letter ('?' makes NetHack list the items that fit). Cancelling the picker cancels the command.
+    const pick = this.autoPick(query || '');
+    if (pick !== null) return pick;
+    try { this.renderer.onAsk?.(query || ''); } catch (e) { console.warn(e); }   // aiming poses while a direction is asked
+    const k = await this.ui.yn(query || '', resp || null, charArg(def));
     this.messagesSinceInput = 0;
+    try { this.renderer.onAnswer?.(query || '', k); } catch (e) { console.warn(e); }   // purely visual: zap/throw/quaff poses
     return k;
+  }
+
+  autoPick(query) {
+    if (this.ui.settings.autoPicker === false || (this.ui.answers && this.ui.answers.length)) return null;   // pre-answered (drag, quickbar)
+    const m = query.match(/^(What|Which) .*\[(.*)\]\s*$/);
+    if (!m || !/(^|\s)\?\*$|^\*$/.test(m[2].trim())) return null;
+    if (this.pickCancelled === query) { this.pickCancelled = null; return 27; }   // the picker was closed: cancel
+    this.autoPicking = query;
+    return (/\?\*$/.test(m[2].trim()) ? '?' : '*').charCodeAt(0);
   }
 
   async shim_getlin(query, bufPtr) {
@@ -301,6 +339,7 @@ export class Game {
   async shim_nh_poskey(xp, yp, modp) {
     this.renderer.commit();
     this.lastQuery = '';   // back at the command prompt
+    this.autoPicking = null; this.pickCancelled = null;   // back at the command prompt: no picker pending
     if (!this.ui.keyQueue.length) {
       this.ui.answers = [];   // pre-answered questions belong to the command just typed
       if (this.ui.reopenInventory) { this.ui.reopenInventory = false; this.ui.pushKey(105); }   // 'i'
@@ -313,6 +352,7 @@ export class Game {
     }
     const ev = await this.ui.waitInput({ allowClick: true });
     this.messagesSinceInput = 0;
+    this.renderer.onCommand?.(ev.click ? 0 : ev.key);
     if (ev.click) {
       this.mod.setValue(xp, ev.click.x, 'i16');
       this.mod.setValue(yp, ev.click.y, 'i16');

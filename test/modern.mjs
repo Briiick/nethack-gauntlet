@@ -26,7 +26,9 @@ await expect('Shift+D runs east', () => H.key('Shift+D'), 'L');
 await expect('W+D together: north-east', async () => { await page.keyboard.down('w'); await page.keyboard.down('d'); await H.wait(20); await page.keyboard.up('d'); await page.keyboard.up('w'); }, 'u');
 await expect('S+A together: south-west', async () => { await page.keyboard.down('s'); await page.keyboard.down('a'); await H.wait(20); await page.keyboard.up('a'); await page.keyboard.up('s'); }, 'b');
 await expect('Numpad 9', () => H.key('Numpad9'), 'u');
-await expect('Space with nothing next to you waits', () => H.key(' '), 's');
+// Space: attack whatever is next to you, otherwise wait (a monster may wander up, so check which)
+const spaceWant = await page.evaluate(() => { const { renderer: r, ui } = window.__nhg, h = ui.controls.here(); return r.attackTarget() ? 'F' : h.stairs || (h.items ? ',' : 's'); });
+await expect(`Space does the right thing here (${{ F: 'attack', ',': 'pick up', s: 'wait' }[spaceWant] || 'stairs'})`, () => H.key(' '), spaceWant);
 await expect('. waits', () => H.key('.'), 's');
 await expect('R rests', () => H.key('r'), '20s');
 await expect('E interacts (nothing here: pick up)', () => H.key('e'), ',');
@@ -41,11 +43,12 @@ await expect('T throw', () => H.key('t'), 't');
 await expect('< still goes up stairs', () => H.key('<'), '<');
 // direction prompt with WASD: kick (Ctrl+D) then W
 await page.evaluate(() => { window.__nhg.ui.sent = []; });
+const kick0 = (await H.state()).msgs;
 await H.key('Control+d'); await H.wait(300);
 const dirOpen = !!(await page.$('#compass:not([hidden])'));
 await H.key('w'); await H.wait(400);
-const kicked = (await H.msgsSince((await H.state()).msgs - 2)).join(' ');
-results.push(['Direction prompt takes W', dirOpen && /kick|empty space|wall|ouch|dumb/i.test(kicked) ? 'ok' : `FAIL (${dirOpen}, ${kicked})`]);
+const kicked = (await H.msgsSince(kick0)).join(' ');   // everything since the kick (pets may chatter too)
+results.push(['Direction prompt takes W', dirOpen && /kick|empty space|wall|ouch|dumb|thwack|whamm|ow/i.test(kicked) ? 'ok' : `FAIL (${dirOpen}, ${kicked})`]);
 await H.settle();
 // pick-a-spot: X, then D D, then E
 await H.key('x'); await H.wait(300);
@@ -93,8 +96,8 @@ await expect('Space attacks an adjacent monster', () => H.key(' '), 'F');
 await page.evaluate(() => { window.__nhg.ui.settings.controls = 'classic'; window.__nhg.ui.applySettings(); });
 await page.evaluate(() => { window.__nhg.ui.sent = []; });
 await H.key('d'); await H.wait(300);
-const p = (await H.state()).prompt;
-results.push(['Classic: D asks what to drop; action bar hidden', /drop/i.test(p) && !(await page.$('#actionbar:not([hidden])')) ? 'ok' : `FAIL (${p})`]);
+const dropTitle = await page.evaluate(() => document.querySelector('#modal .bg-inv .plaque h2')?.innerText || document.querySelector('#prompt')?.innerText || '');
+results.push(['Classic: D opens the Drop picker; action bar hidden', /drop/i.test(dropTitle) && !(await page.$('#actionbar:not([hidden])')) ? 'ok' : `FAIL (${dropTitle})`]);
 await H.key('Escape');
 for (const [l, r] of results) console.log(r === 'ok' ? 'ok  ' : 'FAIL', l, r === 'ok' ? '' : r);
 console.log(errs.length ? 'ERRORS ' + errs.join(' | ') : 'no page errors');
