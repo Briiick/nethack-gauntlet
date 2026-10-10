@@ -39,9 +39,6 @@ await expect('Z cast', () => H.key('z'), 'Z');
 await expect('F fire', () => H.key('f'), 'f');
 await expect('T throw', () => H.key('t'), 't');
 await expect('< still goes up stairs', () => H.key('<'), '<');
-// Space attacks the monster next to you
-await H.key('Control+g'); await H.wait(200); await page.keyboard.type('lichen'); await H.key('Enter'); await H.settle();
-await expect('Space attacks an adjacent monster', () => H.key(' '), 'F');
 // direction prompt with WASD: kick (Ctrl+D) then W
 await page.evaluate(() => { window.__nhg.ui.sent = []; });
 await H.key('Control+d'); await H.wait(300);
@@ -89,6 +86,9 @@ results.push(['Ctrl+S asks to save', /save/i.test(sp) ? 'ok' : `FAIL (${sp})`]);
 await H.key('n'); await H.settle();
 const saveBtn = !!(await page.$('#actionbar [data-act="save"]'));
 results.push(['Action bar has Save', saveBtn ? 'ok' : 'FAIL']);
+// last (the lichen and the dog keep fighting): Space attacks the monster next to you
+await H.key('Control+g'); await H.wait(200); await page.keyboard.type('lichen'); await H.key('Enter'); await H.settle();
+await expect('Space attacks an adjacent monster', () => H.key(' '), 'F');
 // classic again: D is drop
 await page.evaluate(() => { window.__nhg.ui.settings.controls = 'classic'; window.__nhg.ui.applySettings(); });
 await page.evaluate(() => { window.__nhg.ui.sent = []; });

@@ -18,7 +18,7 @@ from multiprocessing import Pool
 import numpy as np
 from PIL import Image
 
-from sdf import (PITCH, Box, Capsule, Disc, Ellipsoid, Material, Octahedron, Sphere, Torus,
+from sdf import (PITCH, Box, Capsule, Disc, Ellipsoid, Material, Octahedron, Prim, Sphere, Torus,
                  render, rot_x, rot_y, rot_z)
 
 FLAT = rot_x(PITCH - 0.18)             # model XY plane faces the camera, a little top showing
@@ -33,6 +33,35 @@ def P(t, o=0.0, z=0.0):
 
 def h(s, n):
     return int(hashlib.md5(s.encode()).hexdigest(), 16) % n
+
+
+def shade(hex_color, f):
+    """Lighten (f > 1) or darken (f < 1) a #rrggbb colour."""
+    r, g, b = (int(hex_color[i:i + 2], 16) / 255 for i in (1, 3, 5))
+    hh, l, ss = colorsys.rgb_to_hls(r, g, b)
+    r, g, b = colorsys.hls_to_rgb(hh, min(0.95, max(0.03, l * f)), ss)
+    return '#%02x%02x%02x' % (int(r * 255), int(g * 255), int(b * 255))
+
+
+def chain(pts, r0, r1, mat):
+    """Capsules along a polyline, radius tapering r0 -> r1 (bow limbs, hooks, curls)."""
+    n = len(pts) - 1
+    return [Capsule(pts[i], pts[i + 1], r0 + (r1 - r0) * i / n, r0 + (r1 - r0) * (i + 1) / n, mat=mat) for i in range(n)]
+
+
+class Prism(Prim):
+    """Regular n-sided plate (apothem r, half-thickness t) around the model z axis: hexagons, octagons."""
+    def __init__(self, c, n, r, t, mat, phase=0.0, **k):
+        super().__init__(mat, **k)
+        self.c, self.n, self.r, self.t, self.ph = np.asarray(c, float), n, r, t, phase
+
+    def _d(self, p):
+        q = p - self.c
+        sec = 2 * math.pi / self.n
+        a = (np.arctan2(q[:, 1], q[:, 0]) - self.ph + sec / 2) % sec - sec / 2
+        dx = np.hypot(q[:, 0], q[:, 1]) * np.cos(a) - self.r
+        dz = np.abs(q[:, 2]) - self.t
+        return np.minimum(np.maximum(dx, dz), 0) + np.hypot(np.maximum(dx, 0), np.maximum(dz, 0))
 
 
 # ------------------------------------------------------------------ palette
@@ -161,14 +190,24 @@ def haft(k, a, b, r=0.85, mat=None):
     return Capsule(P(a), P(b), r, mat=mat or k.c(WOOD['wood']))
 
 
+def bit(k, c, side, st, edge, reach=5.2, spread=0.62, n=6):
+    """Axe bit: thin plates fanned out from the haft at c toward side*V, closed by a bright
+    crescent cutting edge, so it reads as a flaring blade rather than a block."""
+    out = []
+    for a in np.linspace(-spread, spread, n):
+        dv = V * side * math.cos(a) + U * math.sin(a)
+        out.append(Ellipsoid(c + dv * reach * 0.5, (reach * 0.55, 0.95, 0.45), st, R=rot_z(math.atan2(dv[1], dv[0]))))
+    arc = [c + (V * side * math.cos(a) + U * math.sin(a) * 1.15) * reach for a in np.linspace(-spread - 0.12, spread + 0.12, 7)]
+    return out + chain(arc, 0.75, 0.75, edge)
+
+
 def axe(k, name, d):
-    st = k.metal('steel')
-    out = [haft(k, -12, 10)]
-    head = Ellipsoid(P(6.5, 3.6), (3.2, 3.8, 0.8), st, R=D45)
-    out += [head, Box(P(6.5, 1.0), (2.2, 1.4, 1.1), st, R=D45, round_=0.4)]
-    if 'battle' in name or 'double' in d:
-        out.append(Ellipsoid(P(6.5, -3.6), (3.2, 3.8, 0.8), st, R=D45))
-    return out
+    st, edge = k.metal('steel'), k.c('#e4e8f0', metal=True, step=0.09)
+    out = [haft(k, -12, 10.5)]
+    if 'battle' in name or 'double' in d:   # two crescent bits either side of a socket
+        return out + bit(k, P(6.5), 1, st, edge, 5.6, 0.7) + bit(k, P(6.5), -1, st, edge, 5.6, 0.7) + \
+            [Box(P(6.5), (2.0, 1.1, 1.1), k.metal('iron'), R=D45, round_=0.4), Capsule(P(8.2), P(11), 0.6, 0.15, mat=st)]
+    return out + bit(k, P(7), 1, st, edge, 4.8, 0.62) + [Box(P(7, -0.4), (1.8, 1.4, 1.1), k.metal('iron'), R=D45, round_=0.4)]
 
 
 def spear(k, name, d, length=12, head=3.6):
@@ -192,7 +231,16 @@ def polearm(k, name, d):
     st = k.metal('steel')
     out = [haft(k, -14, 9, 0.7)]
     v = h(name, 4)
-    if 'halberd' in name or 'poleaxe' in d or 'bardiche' in name or 'voulge' in name or 'cleaver' in d:
+    if 'voulge' in name or 'cleaver' in d:     # long shaft, tall cleaver blade lashed on, spike on top
+        return [haft(k, -17, 12, 0.6), Box(P(8.6, 2.0), (4.6, 1.9, 0.4), st, R=D45, round_=0.35),
+                Capsule(P(4.2, 3.4), P(13.0, 3.6), 0.55, mat=k.c('#e4e8f0', metal=True, step=0.09)),
+                Capsule(P(12.6, 0.3), P(15.8, 0.3), 0.8, 0.1, mat=st),
+                Capsule(P(5.0, -0.8), P(5.0, 0.8), 0.75, mat=k.c('#3a2414')), Capsule(P(11.0, -0.8), P(11.0, 0.8), 0.75, mat=k.c('#3a2414'))]
+    if 'fauchard' in name or 'sickle' in d:      # long shaft ending in a sickle blade that hooks back
+        hook = [P(8.5, 0), P(11.2, 0.4), P(13.4, 1.6), P(14.6, 3.6), P(14.0, 5.6), P(12.2, 6.8), P(10.2, 6.6)]
+        return [haft(k, -16, 9.5, 0.6)] + chain(hook, 1.8, 0.45, st) + \
+            [Capsule(P(8.0, -0.8), P(8.0, 0.8), 0.75, mat=k.metal('iron'))]
+    if 'halberd' in name or 'poleaxe' in d or 'bardiche' in name:
         out += [Ellipsoid(P(8, 3), (2.8, 3.0, 0.7), st, R=D45), Capsule(P(9), P(13), 0.6, 0.2, mat=st)]
     elif 'glaive' in name or 'single-edged' in d or 'fauchard' in name or 'sickle' in d:
         out += blade(k, 8, 14, 1.9, 0.4, st, curve=1.3)
@@ -225,8 +273,13 @@ def blunt(k, name, d):
         out += [Box(P(7.5), (1.8, 4.4, 1.8), st, R=D45, round_=0.5)]
     elif 'flail' in name:
         out = [haft(k, -12, 2, 0.85)] + [Torus(P(3.5 + i * 1.7), 0.8, 0.3, st, R=rot_x(i * 1.5)) for i in range(3)] + [Sphere(P(10), 2.6, st)]
-    else:   # mace
-        out += [Sphere(P(8), 2.6, st)] + [Box(P(8), (3.4, 0.5, 0.5), st, R=rot_z(math.radians(45 + a))) for a in (0, 45, 90, 135)]
+    else:   # mace: short handle, flanged head with spikes
+        st = k.metal('silver' if 'silver' in name else 'steel')
+        out = [haft(k, -9, 3.5, 0.85, k.c('#5a3a22')), Capsule(P(-9), P(-5.5), 1.05, mat=k.c('#2a1a10'))]
+        out += [Ellipsoid(P(6), (3.4, 1.7, 1.7), st, R=D45)]
+        out += [Box(P(6, o * 1.9), (2.8, 1.1, 0.45), st, R=D45, round_=0.35) for o in (-1, 1)]
+        out += [Capsule(P(6, o * 2.6), P(6, o * 4.2), 0.55, 0.1, mat=st) for o in (-1, 1)]
+        out += [Capsule(P(8.6), P(11.2), 0.75, 0.1, mat=st), Capsule(P(3.0), P(3.0, 0, 0.1), 1.3, mat=k.metal('iron'))]
     return out
 
 
@@ -239,12 +292,10 @@ def missile(k, name, d):
         return [Capsule((-9, -4, 0), (0, 4, 0), 1.6, 1.8, mat=w), Capsule((0, 4, 0), (9, -4, 0), 1.8, 1.6, mat=w)]
     shaft = k.c('#b08a5a')
     fl = k.c(['#e0e0e0', '#c02a2a', '#2a4ac0', '#2a8a3a'][h(name, 4)])
-    if 'bolt' in name:
-        out = []
-        for o in (-1.6, 1.6):
-            out += [Capsule(P(-8, o), P(7, o), 0.6, mat=shaft), Ellipsoid(P(8.5, o), (1.8, 0.9, 0.9), st, R=D45),
-                    Ellipsoid(P(-7, o + 0.7), (2.2, 0.8, 0.2), fl, R=D45)]
-        return out
+    if 'bolt' in name:      # one short, thick quarrel: square head, two stiff vanes
+        return [Capsule(P(-5.5), P(4), 0.85, mat=shaft), Octahedron(P(5.4), (2.4, 1.35, 1.35), st, R=D45),
+                Capsule(P(3.6), P(4.2), 1.05, mat=k.metal('iron'))] + \
+               [Ellipsoid(P(-4.2, o * 1.1), (2.2, 0.95, 0.22), fl, R=D45) for o in (-1, 1)]
     if 'dart' in name:
         return [Capsule(P(-5), P(4), 0.6, mat=st), Ellipsoid(P(5.5), (1.6, 0.6, 0.6), st, R=D45),
                 Ellipsoid(P(-5, 1), (2.4, 1.2, 0.2), fl, R=D45), Ellipsoid(P(-5, -1), (2.4, 1.2, 0.2), fl, R=D45)]
@@ -272,9 +323,24 @@ def launcher(k, name, d):
     if 'sling' in name:
         lm = k.c('#6a4428')
         return [Ellipsoid((0, -4, 0), (3, 2, 1.2), lm), Capsule((-2.5, -3.5, 0), (-6, 9, 0), 0.35, mat=lm), Capsule((2.5, -3.5, 0), (6, 9, 0), 0.35, mat=lm)]
-    pts = [(math.sin(a) * 6 - 3, math.cos(a) * 13, 0) for a in np.linspace(-1.2, 1.2, 8)]
-    out = [Capsule(pts[i], pts[i + 1], 0.95 if 2 < i < 5 else 0.7, mat=w) for i in range(7)]
-    out += [Capsule(pts[0], pts[-1], 0.2, mat=k.c('#e8e4d8')), Capsule(pts[3], pts[4], 1.15, mat=k.c('#4a2a18'))]
+    # a bow: curved limb on the diagonal bulging up-left, straight string, wrapped grip
+    long = name == 'yumi' or 'long' in d
+    L, bulge, g = (14, 5.0, -0.3) if long else (11.5, 4.6, 0.0)     # the yumi is long and gripped low
+    if long:
+        w = k.c('#c89a50')
+    pts = []
+    for s in np.linspace(-1, 1, 13):
+        u = (s - g) / ((1 - g) if s > g else (1 + g))
+        o = bulge * (1 - u * u) - (0.9 * (abs(u) - 0.8) / 0.2 if abs(u) > 0.8 else 0)   # tips recurve
+        pts.append(P(s * L, o))
+    out = [Capsule(pts[i], pts[i + 1], 1.0 - 0.45 * abs(i - 6 - g * 6) / 7, 1.0 - 0.45 * abs(i - 5 - g * 6) / 7, mat=w) for i in range(12)]
+    out += [Capsule(pts[0], pts[-1], 0.38, mat=k.c('#f4f0e4', glow=True))]
+    gi = int(round((g + 1) * 6))
+    out += [Capsule(P(g * L - 1.6, bulge), P(g * L + 1.6, bulge), 1.25, mat=k.c('#3a2014' if 'elven' not in name else '#2a6a4a'))]
+    if 'elven' in name or 'runed' in d:
+        out += [Sphere(pts[i], 0.9, k.metal('gold')) for i in (0, 12)]
+    if long:
+        out += [Capsule(pts[i], pts[i + 1], 1.05, mat=k.c('#2a1a14')) for i in (2, 9)]
     return out
 
 
@@ -305,7 +371,7 @@ def whip(k, name, d):
 def weapon(k, name, d):
     if any(w in name for w in ('arrow', 'bolt', 'dart', 'shuriken', 'boomerang')) or name == 'ya':
         return missile(k, name, d), FLAT
-    if 'bow' in name or 'sling' in name:
+    if 'bow' in name or 'bow' in d or 'sling' in name:
         return launcher(k, name, d), FLAT
     if 'axe' in name and 'pick' not in name:
         return axe(k, name, d), FLAT
@@ -403,11 +469,21 @@ def helmet(k, name, d):
 
 
 def body_armor(k, name, d):
-    if 'dragon scales' in name:
+    if 'dragon scales' in name:     # a shield-shaped patch of hide: rows of overlapping scales, each edged darker
         col = DRAGON.get(name.split(' dragon')[0], '#8a8a90')
-        m = k.c(col, metal=True)
-        return [Ellipsoid((x, y, 0), (2.6, 3.2, 0.6), m, R=rot_x(-0.6) @ rot_z(a))
-                for (x, y, a) in ((-4, 0, .3), (0, 1.5, -.2), (4, -.5, .4), (-2, -3.5, .1), (2.5, -3.6, -.3), (-1, 4.2, 0), (3, 3.4, .2))]
+        dark = col == DRAGON['black']
+        m, m2 = k.c(col, metal=True, step=0.1), k.c(shade(col, 1.12 if not dark else 1.5), metal=True, step=0.1)
+        rim = k.c(shade(col, 0.55) if not dark else '#5a5068')
+        out = []
+        rows = ((6.4, (-3.4, 0, 3.4)), (3.4, (-5.1, -1.7, 1.7, 5.1)), (0.4, (-6.8, -3.4, 0, 3.4, 6.8)), (-2.6, (-5.1, -1.7, 1.7, 5.1)),
+                (-5.6, (-3.4, 0, 3.4)), (-8.2, (-1.7, 1.7)))
+        for r, (y, xs) in enumerate(rows):
+            z = -r * 0.7                       # each row overlaps the one below it, like roof tiles
+            for x in xs:
+                out.append(Ellipsoid((x, y, z), (1.8, 2.1, 0.6), m if (r + int(x)) % 2 == 0 else m2))
+                arc = [(x + math.sin(a) * 1.75, y - math.cos(a) * 2.0, z + 0.45) for a in np.linspace(-1.35, 1.35, 6)]
+                out += chain(arc, 0.38, 0.38, rim)
+        return out
     if 'dragon scale mail' in name:
         col = DRAGON.get(name.split(' dragon')[0], '#8a8a90')
         m = k.c(col, metal=True)
@@ -548,13 +624,21 @@ def ring(k, name, d):
     n = (d or name).lower()
     band = k.metal(n) if n in METAL else k.c(WOOD['wooden']) if n == 'wooden' else k.metal('gold')
     out = [Torus((0, 3, 0), 5.2, 1.3, band, R=rot_x(0.35))]
-    if n == 'twisted':
-        out += [Torus((0, 3, 0), 5.2, 1.4, k.metal('silver'), R=rot_x(0.35), squash=(1.03, 0.97))]
+    if n == 'twisted':     # two iron strands wound round each other, one light, one dark
+        Rt = rot_x(0.35)
+        out = []
+        for ph, mat in ((0, k.c('#b4bac8', metal=True, step=0.1)), (math.pi, k.c('#6a6e7a', metal=True, step=0.1))):
+            pts = []
+            for th in np.linspace(0, 2 * math.pi, 41):
+                w = 5 * th + ph
+                rr = 5.2 + 0.75 * math.cos(w)
+                pts.append(Rt @ np.array([rr * math.cos(th), 0.75 * math.sin(w), rr * math.sin(th)]) + np.array([0, 3, 0]))
+            out += chain(pts, 0.85, 0.85, mat)
     if n == 'wire':
         out = [Torus((0, 3, 0), 5.2, 0.6, k.metal('copper'), R=rot_x(0.35))]
     gem = None
     if n in STONE and n not in ('glass', 'crystal'):
-        gem = k.c(STONE[n], metal=True, glow=n in ('opal', 'moonstone', 'diamond', 'sapphire', 'ruby', 'emerald'))
+        gem = k.c(STONE[n], metal=True, glow=n in ('opal', 'moonstone', 'diamond', 'sapphire', 'ruby', 'emerald'), hue=0.25)   # keep blue blue
     if n == 'engagement':
         gem = k.c(STONE['diamond'], metal=True, glow=True)
     if n == 'shiny':
@@ -568,27 +652,35 @@ AMU = {'circular', 'spherical', 'oval', 'triangular', 'pyramidal', 'square', 'co
 
 
 def amulet(k, name, d):
+    """A short chain loop and a big pendant whose outline follows the appearance word."""
     ch = k.metal('gold')
-    out = [Torus((0, 4, -0.5), 5.8, 0.42, ch, R=rot_x(1.2), squash=(1, 1.4))]
+    out = [Torus((0, 4.6, -0.5), 4.4, 0.6, ch, R=rot_x(1.2), squash=(1, 1.4))]
     pm = k.c('#e8b83a', metal=True)
-    gm = k.c(['#2a8ad0', '#c02a4a', '#2ac07a', '#a02ad0'][h(d, 4)], metal=True, glow=True)
-    c = (0, -4, 1)
+    dk = k.c('#b07e22', metal=True)
+    gm = k.c(['#2a8ad0', '#c02a4a', '#2ac07a', '#a02ad0'][h(d, 4)], metal=True, glow=True, hue=0.25)
+    cy = -4.6
+    c = (0, cy, 1)
+    g = Sphere((0, cy, 2.2), 1.7, gm)
+    hole = k.c('#140c10', step=0.02)
     if 'Yendor' in d:
-        return out + [Ellipsoid(c, (4, 5, 1.6), pm), Sphere((0, -4, 2.2), 1.8, k.c('#ff2a3a', glow=True, metal=True))], FLAT
+        return out + [Ellipsoid(c, (4.6, 5.6, 1.6), pm), Sphere((0, cy, 2.2), 2.0, k.c('#ff2a3a', glow=True, metal=True))], FLAT
     shape = {
-        'circular': [Disc(c, (0, 0, 1), 4.4, 0.9, pm), Sphere((0, -4, 1.8), 1.6, gm)],
-        'spherical': [Sphere(c, 3.8, gm)],
-        'oval': [Ellipsoid(c, (3.2, 4.6, 1.2), pm), Ellipsoid((0, -4, 1.6), (1.8, 2.8, 0.9), gm)],
-        'triangular': [Capsule((-4, -1.6, 1), (4, -1.6, 1), 1.0, mat=pm), Capsule((-4, -1.6, 1), (0, -8, 1), 1.0, mat=pm),
-                       Capsule((4, -1.6, 1), (0, -8, 1), 1.0, mat=pm), Sphere((0, -3.8, 1.4), 1.4, gm)],
-        'pyramidal': [Octahedron((0, -4.5, 1), (4, 5, 3.4), pm, cut=((0, -1, 0), 4.5)), Octahedron((0, -4.5, 1.8), (2, 2.4, 1.8), gm)],
-        'square': [Box(c, (3.8, 3.8, 0.9), pm, round_=0.4), Box((0, -4, 1.7), (2, 2, 0.5), gm, round_=0.3)],
-        'concave': [Disc(c, (0, 0, 1), 4.6, 1.0, pm), Sphere((0, -4, 5.6), 4.4, k.c('#a07a2a', metal=True), cut=((0, 0, -1), -1.7))],
-        'hexagonal': [Octahedron(c, (4.8, 4.8, 1.4), pm), Sphere((0, -4, 1.8), 1.5, gm)],
-        'octagonal': [Box(c, (3.8, 3.8, 0.9), pm, round_=1.6), Box(c, (3.8, 3.8, 0.9), pm, R=rot_z(math.pi / 4), round_=1.6), Sphere((0, -4, 1.8), 1.5, gm)],
-        'perforated': [Torus(c, 3.4, 1.2, pm, R=rot_x(math.pi / 2)), Torus(c, 1.2, 0.6, pm, R=rot_x(math.pi / 2))],
-        'cubical': [Box(c, (3.0, 3.0, 3.0), gm, R=rot_y(0.6) @ rot_x(0.5), round_=0.4)],
-    }.get(d, [Disc(c, (0, 0, 1), 4, 1, pm)])
+        'circular': [Disc(c, (0, 0, 1), 5.4, 0.9, pm), Torus((0, cy, 1.8), 4.3, 0.4, dk, R=rot_x(math.pi / 2)), g],
+        'spherical': [Sphere((0, cy - 0.4, 1), 4.6, k.c(['#2a8ad0', '#c02a4a', '#2ac07a', '#a02ad0'][h(d, 4)], metal=True, hue=0.25)),
+                      Torus((0, cy + 3.8, 1), 1.6, 0.5, pm)],
+        'oval': [Ellipsoid(c, (3.8, 6.0, 1.2), pm), Ellipsoid((0, cy, 1.7), (2.0, 3.6, 0.9), gm)],
+        'triangular': [Prism(c, 3, 3.4, 0.9, pm, phase=math.pi / 2), Prism((0, cy, 1.4), 3, 1.8, 0.7, gm, phase=math.pi / 2)],
+        'pyramidal': [Octahedron((0, cy - 5.0, 1), (6.4, 7.0, 6.4), pm, R=rot_y(math.pi / 4), cut=((0, 1, 0), cy - 5.0)),
+                      Box((0, cy - 5.3, 1), (4.8, 0.4, 4.8), dk, R=rot_y(math.pi / 4), round_=0.2)],
+        'square': [Box(c, (4.4, 4.4, 0.9), pm, round_=0.3), Box((0, cy, 1.7), (2.3, 2.3, 0.5), gm, round_=0.3)],
+        'concave': [Disc(c, (0, 0, 1), 5.4, 0.9, pm), Disc((0, cy, 1.25), (0, 0, 1), 4.0, 0.7, dk),
+                    Sphere((1.4, cy - 1.6, 0.4), 2.6, k.c('#f8e0a0', metal=True), cut=((0, 0, 1), 1.6))],
+        'hexagonal': [Prism(c, 6, 4.8, 0.9, pm, phase=math.pi / 6), Prism((0, cy, 1.3), 6, 3.0, 0.6, dk, phase=math.pi / 6), g],
+        'octagonal': [Prism(c, 8, 5.0, 0.9, pm, phase=math.pi / 8), Prism((0, cy, 1.3), 8, 3.2, 0.6, dk, phase=math.pi / 8), g],
+        'perforated': [Disc(c, (0, 0, 1), 5.4, 0.9, pm)] + [Sphere((x * 2.6, cy + y * 2.6, 1.6), 0.85, hole)
+                                                            for x, y in ((-1, -1), (-1, 1), (1, -1), (1, 1), (0, 0))],
+        'cubical': [Box((0, cy - 0.4, 1), (3.4, 3.4, 3.4), pm, R=rot_y(0.65) @ rot_x(0.45), round_=0.25)],
+    }.get(d, [Disc(c, (0, 0, 1), 5, 1, pm), g])
     return out + shape, FLAT
 
 
@@ -662,30 +754,48 @@ def spellbook(k, name, d):
 
 
 WAND_SHAPES = {'hexagonal', 'short', 'runed', 'long', 'curved', 'forked', 'spiked', 'jeweled'}
+# wands are thin, so each appearance gets a flat, fairly light tone that still reads at 18px
+WAND_LOOK = {'oak': '#a87038', 'ebony': '#3e2a22', 'balsa': '#ecd8a0', 'maple': '#cc9858', 'pine': '#e0b070', 'redwood': '#a83a24',
+             'marble': '#ece8e2', 'bone': '#ece2c8', 'glass': '#cfe6ff', 'crystal': '#e8f4ff', 'platinum': '#eef0f8', 'iridium': '#b0b8dc',
+             'uranium': '#8ac050', 'iron': '#8a8e98', 'steel': '#aab2c4', 'tin': '#c4c8cc', 'zinc': '#b4bcc4', 'aluminum': '#d4dce4',
+             # shape-only appearances: their material (iron or wood) in NetHack's object table
+             'hexagonal': '#8a8e98', 'short': '#8a8e98', 'runed': '#7a5a3a', 'long': '#8a8e98', 'curved': '#8a8e98', 'forked': '#8a5a2a',
+             'spiked': '#8a8e98'}
+WAND_WOOD = {'oak', 'ebony', 'balsa', 'maple', 'pine', 'redwood', 'runed', 'forked', 'bone'}
 
 
 def wand(k, name, d):
     n = (d or name).lower()
-    m = k.look(n, '#8a8a90') if n not in WAND_SHAPES else k.c('#2a2a34')
+    if n in WAND_LOOK:
+        metal = n not in WAND_WOOD and n != 'marble'
+        m = k.c(WAND_LOOK[n], metal=metal, step=0.075, glow=n in ('glass', 'crystal'))
+    elif n in METAL:
+        m = k.c(METAL[n], metal=True, step=0.075)
+    else:
+        m = k.look(n, '#9a9aa4')
     tip = k.c('#f0f0ff', glow=True, detail=True)
     length = 9 if n == 'short' else 13 if n == 'long' else 11
     out = []
     if n == 'curved':
-        out += blade(k, -length, length, 1.0, 0.8, m, curve=2.6)
+        out += blade(k, -length, length, 1.2, 1.0, m, curve=2.6)
     elif n == 'hexagonal':
-        out += [Box(P(0), (length, 1.0, 1.0), m, R=D45 @ rot_x(math.pi / 4), round_=0.15)]
+        out += [Box(P(0), (length, 1.2, 1.2), m, R=D45 @ rot_x(math.pi / 4), round_=0.15)]
     else:
-        out += [Capsule(P(-length), P(length), 1.0, 0.85, mat=m)]
-    out += [Capsule(P(-length), P(-length + 4), 1.25, mat=k.c('#2a1a14' if n not in METAL else '#6a5a4a'))]
+        out += [Capsule(P(-length), P(length - 3 if n == 'forked' else length), 1.25, 1.1, mat=m)]
+    if n == 'marble':
+        out += [Capsule(P(t, -0.6, 1.0), P(t + 2.5, 0.5, 1.0), 0.22, mat=k.c('#8a8a98', detail=True)) for t in (-6, 0, 5)]
+    out += [Capsule(P(-length), P(-length + 4), 1.45, mat=k.c('#2a1a14' if n in WAND_WOOD or n not in METAL else '#6a5a4a'))]
     if n == 'forked':
-        out += [Capsule(P(length - 2), P(length + 1.5, 1.6), 0.6, mat=m), Capsule(P(length - 2), P(length + 1.5, -1.6), 0.6, mat=m)]
+        out += [Capsule(P(length - 3), P(length + 2.5, 2.2), 0.8, 0.55, mat=m), Capsule(P(length - 3), P(length + 2.5, -2.2), 0.8, 0.55, mat=m)]
     elif n == 'spiked':
-        out += [Capsule(P(t, 0), P(t + 1, o), 0.45, 0.1, mat=k.metal('steel')) for t, o in ((-4, 2), (0, -2), (4, 2), (8, -2))]
+        out += [Capsule(P(t, 0), P(t + 1.2, o), 0.75, 0.15, mat=k.c('#d0d6e2', metal=True, step=0.08)) for t, o in ((-5, 3), (-1, -3), (3, 3), (7, -3))]
     elif n == 'jeweled':
         out = [Capsule(P(-length), P(length), 1.0, mat=k.metal('gold'))] + [Octahedron(P(length + 1.4), (1.8, 1.8, 1.8), k.c('#ff3a6a', metal=True, glow=True))]
     elif n == 'runed':
         out += [Sphere(P(t, 0, 0.8), 0.45, k.c('#7ad0ff', glow=True, detail=True)) for t in (-4, -1, 2, 5)]
-    if n != 'jeweled':
+    if n == 'forked':
+        out += [Sphere(P(length + 2.9, o), 0.9, tip) for o in (2.4, -2.4)]
+    elif n != 'jeweled':
         out.append(Sphere(P(length + 0.6), 1.1, tip))
     return out, FLAT
 
@@ -702,7 +812,7 @@ def gem(k, name, d):
     col = COL.get(n, '#e0e0f0')
     if n == 'white':
         col = '#eef4ff'
-    g = k.c(col, metal=True, glow=n in ('white', 'violet', 'red', 'blue', 'green'))
+    g = k.c(col, metal=True, glow=n in ('white', 'violet', 'red', 'blue', 'green'), hue=0.25)
     return [Octahedron((0, 6, 0), (5, 6.4, 5), g, R=rot_y(0.4)), Box((0, 6, 0), (3.6, 1.0, 3.6), g, R=rot_y(1.2), round_=0.2)], None
 
 
@@ -729,13 +839,22 @@ def heavy(k, name, d):
     if 'ball' in name:
         im = k.c('#3a3a42', metal=True)
         return [Sphere((0, 6, 0), 6, im), Torus((5, 10.5, 0), 1.6, 0.6, im, R=rot_z(0.8))], None
-    if 'chain' in name:
-        im = k.c('#5a5a62', metal=True)
-        return [Torus((x, 3, z), 2.2, 0.65, im, R=rot_z(math.pi / 2) if i % 2 else rot_x(math.pi / 2) @ rot_y(0.5))
-                for i, (x, z) in enumerate(((-6, 1), (-2.8, 0), (0.4, -0.6), (3.6, 0), (6.8, 1)))], None
-    if 'venom' in name or 'venom' in d:
-        v = k.c('#a0e040' if 'acid' in name else '#e0e0a0', glow=True)
-        return [Ellipsoid((0, 1, 0), (6, 1.3, 4.6), v), Sphere((-3, 1.5, 3), 1.6, v), Sphere((4, 1.3, -2), 1.4, v)], None
+    if 'chain' in name or 'chain' in d:     # three fat links in a slight sag, alternately face-on and turned
+        im, im2 = k.c('#8a8e98', metal=True, step=0.11), k.c('#6a6e78', metal=True, step=0.11)
+        out = []
+        for i, t in enumerate((-5.5, 0, 5.5)):
+            R = D45 @ rot_x(math.pi / 2 + (0 if i % 2 == 0 else 1.15))
+            out.append(Torus(P(t, 0.8 * (1 - abs(t) / 5.5)), 2.2, 1.0, im if i % 2 == 0 else im2, R=R, squash=(1.45, 1)))
+        return out, FLAT
+    if 'venom' in name or 'venom' in d:     # a splash: puddle, a crown of spikes, flying drops
+        col = '#a0e040' if 'acid' in name else '#e0e0a0' if 'blinding' in name else '#c8e050'
+        v = k.c(col, glow=True)
+        out = [Ellipsoid((0, 0.8, 0), (5.6, 0.9, 4.4), v)]
+        for j, a in enumerate(np.linspace(0, 2 * math.pi, 8)[:-1]):
+            c, s_ = math.cos(a), math.sin(a)
+            out.append(Capsule((c * 3.0, 1.0, s_ * 2.4), (c * (5.0 + j % 2), 3.6 + (j % 3), s_ * 4.0), 0.9, 0.35, mat=v))
+        out += [Sphere(p, r, v) for p, r in (((-2.6, 8.4, 1), 0.9), ((2.4, 9.6, 0), 0.8), ((0.2, 7.0, 2), 1.1), ((4.6, 6.4, 1), 0.7))]
+        return out, None
     return [Box((0, 4, 0), (4, 4, 4), k.c('#8a8a90'))], None
 
 
@@ -791,9 +910,13 @@ def food(k, name, d):
         return [Box((0, 0, 0), (9, 3.2, 1.6), k.c('#c02a2a'), R=rot_z(0.3), round_=0.8), Box((-1, 0.3, 1.0), (4, 2.6, 1.2), k.c('#f0f0e0'), R=rot_z(0.3), round_=0.4)], FLAT
     if 'fortune' in n:
         return [Torus((0, 3, 0), 3.2, 2.0, k.c('#d8a050'), R=rot_z(0.4), squash=(1.4, 0.8), cut=((0, 1, 0), 2.0))], None
-    if 'pancake' in n:
-        p = k.c('#d8a050')
-        return [Disc((0, 1 + i * 1.3, 0), (0, 1, 0), 6.5 - i * 0.2, 0.6, p) for i in range(4)] + [Box((0, 6.6, 0), (1.4, 0.5, 1.4), k.c('#f8e070'))], None
+    if 'pancake' in n:      # two wide, thin discs: golden-brown top, pale edge, a pat of butter
+        top, edge = k.c('#c88a3a', step=0.09), k.c('#ecd09a', step=0.08)
+        out = []
+        for i, (x, z) in enumerate(((0, 0), (0.6, -0.4))):
+            y = 0.6 + i * 1.15
+            out += [Disc((x, y, z), (0, 1, 0), 7.2 - i * 0.3, 0.5, edge), Disc((x, y + 0.42, z), (0, 1, 0), 6.7 - i * 0.3, 0.14, top)]
+        return out + [Box((0.9, 2.65, -0.2), (1.5, 0.4, 1.5), k.c('#f8e070'), R=rot_y(0.5), round_=0.25)], None
     if 'lembas' in n:
         return [Box((0, 2, 0), (5.5, 1.4, 4.0), k.c('#f0e0b0'), round_=0.8), Ellipsoid((0, 2.6, 0), (6.6, 1.0, 4.8), k.c('#5a9a4a'), cut=((1, 0, 0), 0.5))], None
     if 'tin' == n:
@@ -844,9 +967,14 @@ def tool(k, name, d):
         wax = k.c('#f0e8d0' if 'wax' in n else '#e0c890', step=0.07)
         return [Capsule((0, 0, 0), (0, 9, 0), 2.2, mat=wax), Capsule((0, 9.5, 0), (0, 11, 0), 0.3, mat=k.c('#2a2020')),
                 Ellipsoid((0, 12.6, 0), (1.1, 2.0, 1.1), k.c('#ffd060', glow=True)), Disc((0, 0.4, 0), (0, 1, 0), 3.8, 0.4, brass)], None
-    if 'lantern' in n:
-        return [Box((0, 5, 0), (3.6, 4.6, 3.6), brass, round_=0.6), Capsule((0, 3, 0), (0, 7, 0), 2.6, mat=k.c('#ffd060', glow=True)),
-                Torus((0, 11.4, 0), 2.0, 0.5, brass, R=rot_x(math.pi / 2))], None
+    if 'lantern' in n:      # brass frame (base, corner posts, roof), glowing glass pane, wire bail on top
+        glass = k.c('#ffe080', glow=True)
+        out = [Box((0, 5.4, 0), (2.7, 3.5, 2.7), glass, round_=0.3), Disc((0, 1.0, 0), (0, 1, 0), 4.0, 0.9, brass),
+               Capsule((0, 9.4, 0), (0, 11.4, 0), 4.0, 1.2, mat=brass), Sphere((0, 12.4, 0), 1.0, brass),
+               Capsule((-2.9, 5.4, 2.9), (2.9, 5.4, 2.9), 0.4, mat=brass)]
+        out += [Capsule((x, 1.4, z), (x, 9.4, z), 0.55, mat=brass) for x in (-3, 3) for z in (-3, 3)]
+        out += [Torus((0, 12.0, 0), 3.0, 0.5, brass, R=rot_x(math.pi / 2), cut=((0, 1, 0), 12.0))]
+        return out, FLAT
     if 'lamp' in d or 'lamp' in n:
         return [Ellipsoid((0, 3, 0), (6, 2.8, 3.6), brass), Capsule((5, 3.4, 0), (10, 5.6, 0), 1.4, 0.7, mat=brass),
                 Torus((-6.4, 3.4, 0), 2.0, 0.6, brass), Sphere((0, 6.2, 0), 1.4, brass), Ellipsoid((10.4, 7.2, 0), (0.8, 1.4, 0.8), k.c('#ffd060', glow=True))], None
@@ -862,10 +990,21 @@ def tool(k, name, d):
         return [Torus((x, 0, 0), 3.0, 0.6, k.metal('steel'), R=rot_x(math.pi / 2)) for x in (-4, 4)] + \
                [Disc((x, 0, 0), (0, 0, 1), 2.6, 0.2, k.c('#a0d0ff', metal=True, glow=True)) for x in (-4, 4)] + \
                [Capsule((-1.2, 0.6, 0), (1.2, 0.6, 0), 0.5, mat=k.metal('steel'))], FLAT
-    if 'blindfold' in n:
-        return [Torus((0, 3, 0), 6, 1.2, k.c('#1a1a22'), squash=(1, 0.5))], None
-    if 'towel' in n:
-        return [Box((0, 2, 0), (7, 2, 5), k.c('#e05a8a'), round_=1.2), Box((0, 2, 0), (7.1, 0.5, 5.1), k.c('#f0f0f0'), round_=0.2)], None
+    if 'blindfold' in n:    # a dark cloth band, gently curved, knotted at one end with two trailing ties
+        cl, tie = k.c('#4a4462', step=0.1), k.c('#383248', step=0.1)
+        out = [Box((x, 3.0 - 0.06 * x * x, 0), (2.3, 2.0, 0.5), cl, R=rot_z(-0.12 * x), round_=0.45) for x in (-6, -3, 0, 3, 6)]
+        out += [Box((x, 3.2 - 0.06 * x * x, 0.5), (1.2, 0.18, 0.12), k.c('#6a6080'), R=rot_z(-0.12 * x), round_=0.1) for x in (-4.5, 0, 4.5)]
+        out += [Sphere((8.6, -0.6, 0.4), 1.6, tie)]
+        out += chain([(8.6, -0.6, 0.6), (9.8, -4, 0.8), (9.0, -7.6, 0.8)], 0.95, 0.7, tie)
+        out += chain([(8.6, -0.6, 0.6), (11.6, -2.6, 0.2), (13.0, -5.8, 0)], 0.95, 0.7, tie)
+        return out, FLAT
+    if 'towel' in n:        # folded in thirds: thin layers, a rounded fold on the right, a white stripe across
+        tm, fold = k.c('#c8508c', step=0.1), k.c('#a83e74', step=0.1)
+        out = [Box((-0.4 - i * 0.9, 0.5 + i * 0.95, 0), (7.0 - i * 0.4, 0.42, 5.0), tm if i % 2 == 0 else fold, round_=0.4) for i in range(3)]
+        out += [Capsule((6.6 - i * 1.3, 0.97 + i * 0.95, -4.9), (6.6 - i * 1.3, 0.97 + i * 0.95, 4.9), 0.5, mat=fold) for i in range(2)]
+        out += [Box((x, 2.75, 0), (0.75, 0.2, 5.02), k.c('#f8f4f4'), round_=0.1) for x in (-4.6, -1.6)]
+        out += [Capsule((-8.7, 2.4, z), (-9.8, 2.2, z), 0.3, mat=tm) for z in (-4, -2, 0, 2, 4)]
+        return out, None
     if 'saddle' in n:
         lm = k.c('#6a3a1e')
         return [Ellipsoid((0, 4, 0), (8, 3, 5), lm, cut=((0, 1, 0), 3)), Capsule((-6, 6.5, 0), (-7.4, 9, 0), 1.6, mat=lm),
@@ -898,9 +1037,10 @@ def tool(k, name, d):
                 for a in np.linspace(0, 2 * math.pi, 11)[:-1]], None
     if 'whistle' in d or 'whistle' in n:
         return [Capsule((-6, 4, 0), (3, 4, 0), 1.6, mat=k.metal('tin')), Sphere((4, 3.4, 0), 2.6, k.metal('tin')), Torus((-6, 6, 0), 1.2, 0.4, k.metal('tin'))], None
-    if 'flute' in d:
-        w = k.c('#a87a4a')
-        return [Capsule(P(-11), P(11), 1.2, mat=w)] + [Sphere(P(t, 0, 1.0), 0.5, k.c('#1a1010', detail=True)) for t in (-2, 1, 4, 7)], FLAT
+    if 'flute' in d:       # thin, pale wood, banded ends, a row of finger holes
+        w, band, hole = k.c('#e4c890', step=0.07, hue=0.3), k.c('#7a4a22', hue=0.5), k.c('#1a1418', detail=True, step=0.02)
+        return [Capsule(P(-10), P(10), 1.0, mat=w), Capsule(P(-10.4), P(-8.6), 1.15, mat=band), Capsule(P(8.6), P(10.4), 1.15, mat=band),
+                Sphere(P(-6.4, 0, 0.85), 0.42, hole)] + [Sphere(P(t, 0, 0.88), 0.38, hole) for t in (-1.2, 2.2, 5.6)], FLAT
     if 'horn' in d or 'horn of plenty' in n:
         iv = k.c('#e8dcc0', step=0.09)
         pts = [(-9 + i * 3, 2 + 4 * math.sin(i * 0.5), 0) for i in range(7)]
@@ -912,8 +1052,11 @@ def tool(k, name, d):
         return out + [Capsule((-5 + i * 1.8, -7 + i * 1.0, 0.3), (-5 + i * 1.8, 7.5 - i * 0.6, 0.3), 0.2, mat=k.c('#f0f0f0')) for i in range(6)], FLAT
     if 'bell' in n or 'bell' in d:
         m = k.metal('silver' if 'silver' in d else 'brass')
-        return [Sphere((0, 7, 0), 5, m, cut=((0, 1, 0), 4)), Capsule((0, 3, 0), (0, 7, 0), 5.6, 5, mat=m), Torus((0, 2.6, 0), 5.6, 0.8, m),
-                Torus((0, 12.4, 0), 1.6, 0.5, m, R=rot_x(math.pi / 2)), Sphere((0, 1.8, 0), 1.4, k.metal('iron'))], None
+        prof = lambda y: 2.5 + 4.3 * (max(0.0, 8.6 - y) / 7.4) ** 2.4     # waist narrow, mouth flared wide
+        out = [Disc((0, y, 0), (0, 1, 0), prof(y), 0.42, m) for y in np.arange(1.4, 8.7, 0.6)]
+        out += [Sphere((0, 8.6, 0), 2.5, m, cut=((0, 1, 0), 8.5)), Torus((0, 1.3, 0), prof(1.3), 0.65, m),
+                Torus((0, 11.4, 0), 1.6, 0.6, m, R=rot_x(math.pi / 2)), Sphere((0, 0.2, 0), 1.2, k.metal('iron'))]
+        return out, FLAT
     if 'bugle' in n:
         b = k.metal('brass')
         return [Capsule((-8, 3, 0), (6, 3, 0), 0.8, mat=b), Capsule((-8, 3, 0), (-4, 8, 0), 0.8, mat=b), Capsule((-4, 8, 0), (8, 8, 0), 0.8, mat=b),
@@ -938,6 +1081,58 @@ def tool(k, name, d):
     return [Box((0, 4, 0), (5, 4, 4), wood, round_=1)], None
 
 
+# ------------------------------------------------------------------ class glyphs
+def question(k):
+    """Strange object: a chunky glowing question mark."""
+    m = k.c('#f0c838', step=0.1)
+    hook = [(-4.2, 7.4, 0), (-3.6, 10.2, 0), (-1.4, 12.0, 0), (1.6, 12.0, 0), (3.8, 10.2, 0), (3.8, 7.6, 0), (1.8, 5.6, 0), (0, 4.4, 0), (0, 1.6, 0)]
+    return chain(hook, 1.5, 1.5, m) + [Sphere((0, -2.4, 0), 1.75, m)], FLAT
+
+
+def rolled_scroll(k):
+    """A rolled-up scroll tied with a red ribbon and seal."""
+    pm, end = k.c('#e8d8a8', step=0.07), k.c('#c8b080', step=0.07)
+    rib = k.c('#c02a2a')
+    out = [Capsule(P(-8), P(8), 2.6, mat=pm), Disc(P(8.3), U, 2.3, 0.35, end), Disc(P(-8.3), U, 2.3, 0.35, end),
+           Disc(P(8.6), U, 0.9, 0.3, k.c('#8a6a3a')),
+           Box(P(4, -2.2, 0.4), (4.4, 1.1, 0.2), pm, R=D45, round_=0.15),                # loose end of the sheet
+           Torus(P(0), 2.75, 0.55, rib, R=rot_z(-math.pi / 4)),
+           Disc(P(0, 0, 2.9), (0, 0, 1), 1.3, 0.45, k.c('#a01a1a'))]
+    return out + [Capsule(P(0, -2.6, 1.6), P(-2.2, -5.4, 1.6), 0.5, mat=rib), Capsule(P(0, -2.6, 1.6), P(1.4, -5.8, 1.6), 0.5, mat=rib)], FLAT
+
+
+def generic(k, c):
+    """'generic <class>' glyphs (objects known only by class): a plain representative of the class."""
+    if c == 'weapon':
+        return sword(k, 'long sword', ''), FLAT
+    if c == 'armor':     # a plain cuirass
+        st = k.metal('steel')
+        return [Ellipsoid((0, 0, 0), (6.0, 7.6, 3.6), st, cut=((0, -1, 0), -6.0)), Ellipsoid((0, 6.2, 0), (2.6, 1.4, 2.2), k.c('#120c10')),
+                Capsule((-5.4, -5.4, 2.0), (5.4, -5.4, 2.0), 0.8, mat=k.metal('gold')), Capsule((0, 4.5, 3.4), (0, -4.6, 3.4), 0.45, mat=k.c('#c8d0e0', metal=True)),
+                Sphere((-5.8, 4.8, 0), 2.2, k.metal('iron'), cut=((0, 1, 0), 3.6)), Sphere((5.8, 4.8, 0), 2.2, k.metal('iron'), cut=((0, 1, 0), 3.6))], FLAT
+    if c == 'ring':
+        return ring(k, '', 'ruby')
+    if c == 'amulet':
+        return amulet(k, '', 'circular')
+    if c == 'tool':
+        return tool(k, 'sack', 'bag')
+    if c == 'food':
+        return food(k, 'apple', '')
+    if c == 'potion':
+        return potion(k, 'potion', 'swirly')
+    if c == 'scroll':
+        return rolled_scroll(k)
+    if c == 'spellbook':
+        return spellbook(k, 'spellbook', 'generic')
+    if c == 'wand':
+        return wand(k, 'wand', 'oak')
+    if c == 'coin':
+        return coins(k, '', '')
+    if c == 'gem':
+        return gem(k, '', 'white')
+    return heavy(k, {'rock': 'boulder', 'ball': 'heavy iron ball', 'chain': 'iron chain', 'venom': 'splash of venom'}.get(c, c), '')
+
+
 # ------------------------------------------------------------------ dispatch
 CLS = {1: 'strange', 2: 'weapon', 3: 'armor', 4: 'ring', 5: 'amulet', 6: 'tool', 7: 'food', 8: 'potion', 9: 'scroll',
        10: 'spellbook', 11: 'wand', 12: 'coin', 13: 'gem', 14: 'rock', 15: 'ball', 16: 'chain', 17: 'venom'}
@@ -947,8 +1142,10 @@ def model(o):
     k = Kit()
     name, d, cls = o['name'] or '', (o['descr'] or '').strip(), o['cls']
     c = CLS.get(cls, 'strange')
-    if name.startswith('generic ') or c == 'strange':
-        prims, R = [Sphere((0, 5, 0), 4, k.c('#8a8a90')), Sphere((0, 5, 4), 1.2, k.c('#f0d020', glow=True))], None
+    if c == 'strange':
+        prims, R = question(k)
+    elif name.startswith('generic '):
+        prims, R = generic(k, c)
     elif c == 'weapon':
         prims, R = weapon(k, name, d)
     elif c == 'armor':

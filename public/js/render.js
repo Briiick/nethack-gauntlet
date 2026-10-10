@@ -3,6 +3,13 @@
 // 4-direction animated sprite sheets that tween between cells; light is a
 // per-cell lightmap plus point lights; combat is inferred from game messages.
 import { COLNO, ROWNO, MG } from './game.js';
+import TERRAIN_PROPS from './props/terrain.js';
+import FURNITURE_PROPS from './props/furniture.js';
+import TRAP_PROPS from './props/traps.js';
+import FX_ART from './props/fx.js';
+
+// hand-drawn art for features, traps and terrain details, by NetHack glyph name (see props/README.md)
+const PROPS = { ...TERRAIN_PROPS, ...FURNITURE_PROPS, ...TRAP_PROPS };
 
 export const T = 24;
 const W = COLNO * T, H = ROWNO * T;
@@ -123,6 +130,7 @@ export class Renderer {
     this.actors = new Map(); this.nextActor = 1;
     this.heroCell = { x: -1, y: -1 };
     this.objMem = new Int32Array(COLNO * ROWNO).fill(-1);
+    this.liveProps = new Map();   // cell -> { x, y, prop }: props drawn every frame (tall or animated)
     this.particles = []; this.arcs = []; this.flashes = []; this.ghosts = []; this.pillars = [];
     this.pendingKills = []; this.levelTheme = 'main'; this.torches = []; this.lightSources = [];
     this.cam = { x: 0, y: 0, init: false }; this.shake = 0; this.hitstop = 0;
@@ -184,7 +192,7 @@ export class Renderer {
     this.anyDirty = true;
   }
   clearMap() {
-    this.glyph.fill(-1); this.bk.fill(-1); this.gflags.fill(0); this.dirty.fill(1); this.terrMem.fill(-1); this.objMem.fill(-1); this.anyDirty = true;
+    this.glyph.fill(-1); this.bk.fill(-1); this.gflags.fill(0); this.dirty.fill(1); this.terrMem.fill(-1); this.objMem.fill(-1); this.liveProps.clear(); this.anyDirty = true;
   }
   newLevel() {
     this.dctx.clearRect(0, 0, W, H);
@@ -268,7 +276,18 @@ export class Renderer {
     const tcls = this.terrainClassAt(x, y);
     ctx.clearRect(ox, oy, T, T);
     const wallTheme = g >= 0 && this.cls[g] === 'wall' ? (THEMES[this.theme[g]] || th) : th;
-    switch (tcls) {
+    const i = this.idx(x, y);
+    this.liveProps.delete(i);
+    // a hand-drawn prop for what's here, or for the remembered terrain under a monster/object
+    const propG = g >= 0 && this.propOf(g) ? g : (this.terrMem[i] >= 0 && this.propOf(this.terrMem[i]) ? this.terrMem[i] : -1);
+    const prop = propG >= 0 ? this.propOf(propG) : null;
+    if (prop) {
+      this.drawTerrainBase(x, y, th, tcls);   // floor (or the pool a prop stands in), then the prop
+      const o = this.propCtx(x, y, th, 0);
+      if (prop.kind === 'tall' || prop.animated) this.liveProps.set(i, { x, y, prop, o });
+      else prop.draw(ctx, ox, oy, o);
+      if (propG === g) return;   // the prop is the glyph itself; otherwise an object/monster sits on it
+    } else switch (tcls) {
       case 'void': case 'stone': break;
       case 'wall': this.drawWall(x, y, wallTheme); break;
       case 'corr': case 'litcorr': this.drawCorridor(x, y, th, tcls === 'litcorr'); break;
@@ -279,6 +298,25 @@ export class Renderer {
       case 'doorway': case 'opendoor': this.drawFloor(x, y, th); this.drawDoor(x, y, th, true, tcls === 'doorway'); break;
       default: this.drawFloor(x, y, th);
     }
+    this.drawGlyphOn(x, y, g);
+  }
+
+  // what used to be drawCell's base terrain switch, for props standing on liquids/clouds
+  drawTerrainBase(x, y, th, tcls) {
+    if (tcls === 'water') this.drawLiquid(x, y, [24, 58, 120], [60, 120, 200]);
+    else if (tcls === 'lava') this.drawLiquid(x, y, [150, 36, 10], [255, 150, 40]);
+    else if (tcls === 'ice') this.drawLiquid(x, y, [150, 190, 220], [220, 240, 255], true);
+    else this.drawFloor(x, y, th);
+  }
+
+  propOf(g) { return g >= 0 ? PROPS[this.tiles.gname[g].replace(/^cmap A /, '')] || null : null; }
+  propCtx(x, y, th, t) {
+    return { t, seed: (x * 73856093 ^ y * 19349663) >>> 0, theme: th,
+      n: { N: this.terrainClassAt(x, y - 1), S: this.terrainClassAt(x, y + 1), E: this.terrainClassAt(x + 1, y), W: this.terrainClassAt(x - 1, y) } };
+  }
+
+  drawGlyphOn(x, y, g) {
+    const ctx = this.tctx, ox = x * T, oy = y * T;
     if (g < 0) return;
     const c = this.cls[g], nm = this.tiles.gname[g];
     if (c === 'feature' && /staircase|ladder/.test(nm)) this.drawStairs(x, y, /down/.test(nm), /ladder/.test(nm));
@@ -760,7 +798,13 @@ export class Renderer {
     sctx.drawImage(this.decals, 0, 0);
 
     const list = [...this.actors.values()].map((a) => ({ a, x: Math.round(this.offsetX(a, t)), y: Math.round(this.offsetY(a, t)) })).sort((p, q) => p.y - q.y);
-    for (const { a, x, y } of list) this.drawActor(a, x, y, t);
+    // standing props (trees, altars, doors...) and animated ones, back to front with the monsters
+    const props = [...this.liveProps.values()].sort((p, q) => p.y - q.y);
+    let pi = 0;
+    const propsUpTo = (py) => { while (pi < props.length && props[pi].y * T <= py) { const p = props[pi++]; p.o.t = t; p.prop.draw(sctx, p.x * T, p.y * T, p.o); } };
+    for (const { a, x, y } of list) { propsUpTo(y); this.drawActor(a, x, y, t); }
+    propsUpTo(Infinity);
+    sctx.globalAlpha = 1; sctx.globalCompositeOperation = 'source-over';
     for (const gh of this.ghosts) {
       const k = (t - gh.t0) / 160;
       if (k < 1) { sctx.globalAlpha = 1 - k; this.drawActor(gh.a, gh.x * T, gh.y * T, t, 'white'); sctx.globalAlpha = 1; }
@@ -962,6 +1006,11 @@ export class Renderer {
       const g = this.glyph[this.idx(x, y)];
       if (g < 0 || !FX_CLASSES.has(this.cls[g])) continue;
       if (this.cls[g] === 'swallow') { engulfer = this.tiles.gname[g].replace(/^swallow \w+ \w+ /, ''); continue; }
+      if (FX_ART.draw && this.cls[g] !== 'cursor') {
+        FX_ART.draw(sctx, x * T, y * T, this.tiles.gname[g], { t, seed: (x * 73856093 ^ y * 19349663) >>> 0 });
+        sctx.globalCompositeOperation = 'source-over'; sctx.globalAlpha = 1;
+        continue;
+      }
       const tile = this.tiles.g2t[g], sx = (tile % cols) * cell, sy = Math.floor(tile / cols) * cell;
       sctx.globalCompositeOperation = 'lighter';
       sctx.globalAlpha = 0.35 + 0.15 * Math.sin(t / 60);
