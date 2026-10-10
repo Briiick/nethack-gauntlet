@@ -101,6 +101,7 @@ export function openSettings(ui, startTab = 'display') {
       ${chk('set-gore', 'Blood', s.gore, 'Blood splashes and stains')}
       ${chk('set-markers', 'Hero & pet rings', s.markers, 'Coloured rings under you and your pets')}
       ${chk('set-exits', 'Show unexplored exits', s.exitMarkers !== false, 'A glow and an arrow at doorways you haven\'t been through')}
+      ${chk('set-herogear', 'Show worn armour and weapons', s.heroGear !== false, 'Your character is drawn in what they actually wear and wield')}
       ${chk('set-reduce', 'Reduce motion', s.reduceMotion, 'Fewer particles, no screen shake')}
     </div>`,
     gameplay: () => `<p class="note">These start at NetHack's own defaults. Changes apply when you start or resume a game;
@@ -131,7 +132,11 @@ export function openSettings(ui, startTab = 'display') {
           <label class="${modern ? '' : 'on'}"><input type="radio" name="scheme" value="classic" ${modern ? '' : 'checked'}>
             <b>Classic NetHack</b><small>NetHack's own keys: hjklyubn to move, a letter for every command</small></label>
         </div>
-        ${modern ? `<div class="grid compact">${chk('set-actionbar', 'Show the action bar', s.actionBar !== false, 'Clickable buttons along the bottom')}</div>` : ''}
+        <div class="grid compact">${modern ? chk('set-actionbar', 'Show the action bar', s.actionBar !== false, 'Clickable buttons down the right edge') : ''}
+          ${modern ? chk('set-holdwalk', 'Hold to walk', s.holdWalk !== false, 'Holding a direction walks at a steady pace; stops when something happens') : ''}
+          ${chk('set-autopicker', 'Pick items by clicking', s.autoPicker !== false, '"What do you want to eat?" opens the item picker instead of asking for a letter')}
+          ${chk('set-quickbar', 'Quickbar', s.quickbar !== false, 'Slots 1–9 along the bottom for items and spells')}
+          ${chk('set-spellcards', 'Spell cards', s.spellCards !== false, 'Show your spells as cards instead of a table')}</div>
         <div class="controls">
         <section class="move"><h3>${modern ? 'Modern controls' : 'Moving and fighting'}</h3>
           ${modern ? '' : `<div class="pad" aria-hidden="true">${['y', 'k', 'u', 'h', '.', 'l', 'b', 'j', 'n'].map((k) => `<kbd>${k}</kbd>`).join('')}</div>`}
@@ -196,6 +201,7 @@ export function openSettings(ui, startTab = 'display') {
     const scheme = el.querySelector('input[name=scheme]:checked');
     if (scheme) s.controls = scheme.value;
     if (v('set-actionbar')) s.actionBar = v('set-actionbar').checked;
+    for (const [id, key] of [['set-holdwalk', 'holdWalk'], ['set-autopicker', 'autoPicker'], ['set-quickbar', 'quickbar'], ['set-spellcards', 'spellCards'], ['set-herogear', 'heroGear']]) if (v(id)) s[key] = v(id).checked;
     if (v('set-pickup')) {
       Object.assign(s.game, { autopickup: v('set-pickup').value, safePet: v('set-safepet').checked, confirm: v('set-confirm').checked,
         autoopen: v('set-autoopen').checked, autoquiver: v('set-autoquiver').checked, pushweapon: v('set-pushweapon').checked,

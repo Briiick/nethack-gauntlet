@@ -115,7 +115,16 @@ export class UI {
     if (!text) return;
     this.historyLog.push(text); if (this.historyLog.length > 300) this.historyLog.shift();
     if (history) return;
+    // the same line again ("You hit the jackal!" x3): count it instead of repeating it
+    const last = this.feed.lastElementChild;
+    if (last && last.dataset.text === text) {
+      const n = (+last.dataset.n || 1) + 1;
+      last.dataset.n = n;
+      last.innerHTML = this.decorate(text) + ` <span class="times">×${n}</span>`;
+      return;
+    }
     const div = document.createElement('div');
+    div.dataset.text = text;
     div.innerHTML = this.decorate(text);
     if (attr === 1 || /You die|You feel much better|Welcome to experience level/.test(text)) div.className = 'strong';
     this.feed.appendChild(div);
@@ -432,6 +441,7 @@ export class UI {
   openSettings(tab) { openSettings(this, tab); }
   applySettings() {
     this.renderer.resize(); this.renderer.rebuildLight(); this.trimFeed(); mountActionBar(this);
+    if (this.quickbar) this.quickbar.show(!!(this.game && this.game.started && !this.game.over));
   }
 
 

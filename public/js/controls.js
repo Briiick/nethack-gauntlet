@@ -15,6 +15,8 @@ const DIAG = { 'N+E': 'NE', 'E+N': 'NE', 'N+W': 'NW', 'W+N': 'NW', 'S+E': 'SE', 
 const VI_OF = { '0,-1': 'k', '0,1': 'j', '-1,0': 'h', '1,0': 'l', '-1,-1': 'y', '1,-1': 'u', '-1,1': 'b', '1,1': 'n' };
 const perpendicular = (a, b) => ('NS'.includes(a) && 'EW'.includes(b)) || ('EW'.includes(a) && 'NS'.includes(b));
 const CHORD_MS = 70;   // how long a direction waits for a second key to make a diagonal
+const HOLD_MS = 190;   // holding a direction: first repeat after this...
+const STEP_MS = 115;   // ...then a step this often (about 8 a second), instead of the OS key repeat
 
 // The modern actions: [id, label, key shown, what it does]
 export const ACTIONS = [
@@ -152,13 +154,37 @@ export class ModernControls {
   command(e) {
     const ui = this.ui;
     if (e.ctrlKey || e.altKey || e.metaKey) return false;
-    if (this.direction(e, (k) => ui.pushKey(k.charCodeAt(0)))) return true;
+    const walkKey = DIR_KEYS[e.key] || DIR_KEYS[e.key.toLowerCase()];
+    const holdWalk = walkKey && !e.shiftKey && ui.settings.holdWalk !== false;
+    if (holdWalk && e.repeat) return true;   // our own steady pace walks while the key is held
+    if (this.direction(e, (k) => ui.pushKey(k.charCodeAt(0)))) { if (holdWalk) this.startWalk(); return true; }
     if (/^[1-9]$/.test(e.key) && ui.quickbar && ui.quickbar.on) { ui.quickbar.use(+e.key); return true; }   // quickbar slots
     const k = e.key.length === 1 ? e.key.toLowerCase() : e.key;
     const act = KEY_ACTION[k];
     if (!act || (e.key.length === 1 && e.key !== e.key.toLowerCase() && act !== 'commands')) return false;   // Shift+letter: NetHack's own command
     this.act(act);
     return true;
+  }
+
+  // Holding a direction walks at a steady pace (straight or diagonal from the keys held) and,
+  // like NetHack's own running, stops when something is said or a new monster comes into view;
+  // press the key again to carry on.
+  startWalk() {
+    clearTimeout(this.walkTimer);
+    const ui = this.ui, r = ui.renderer;
+    const foes = () => { let n = 0; for (const a of r.actors.values()) if (!a.hero && !(a.f & 0x10)) n++; return n; };
+    const start = { msgs: ui.historyLog.length, foes: foes() };
+    const tick = () => {
+      if (!this.held.size || ui.modal || ui.isTargeting || (ui.game && ui.game.over)) return;
+      if (!ui.waiter || ui.keyQueue.length) { this.walkTimer = setTimeout(tick, 25); return; }   // last step still under way
+      // something happened: stop (trading places with your pet doesn't count)
+      if (ui.historyLog.slice(start.msgs).some((m) => !/^You (swap places with|stop\.  Your) /.test(m)) || foes() > start.foes) return;
+      const ds = [...this.held.keys()];
+      const dir = ds.length > 1 && perpendicular(ds[ds.length - 2], ds[ds.length - 1]) ? DIAG[`${ds[ds.length - 2]}+${ds[ds.length - 1]}`] : ds[ds.length - 1];
+      ui.pushKey(VI[dir].charCodeAt(0));
+      this.walkTimer = setTimeout(tick, STEP_MS);
+    };
+    this.walkTimer = setTimeout(tick, HOLD_MS);
   }
 
   // Keys while picking a spot on the map: WASD moves the cursor, E/Space/Enter picks.

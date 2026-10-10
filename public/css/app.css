@@ -418,3 +418,4 @@ kbd { font-family: var(--ui); font-weight: 700; color: var(--bone); border: 1px 
 #quickbar .q { position: absolute; right: 3px; bottom: 1px; font: 700 12px var(--ui); color: #fff; text-shadow: 1px 1px 0 #000; }
 #quickbar .sp { width: 32px; height: 32px; display: grid; place-items: center; border-radius: 50%; border: 2px solid var(--sc); color: var(--sc); font: 800 13px var(--ui); box-shadow: 0 0 10px color-mix(in srgb, var(--sc) 45%, transparent); }
 .has-quickbar #feed { bottom: calc(env(safe-area-inset-bottom, 0px) + 78px); }
+#feed .times { color: var(--gilt); font-weight: 700; }
