@@ -307,7 +307,8 @@ export class Renderer {
       else prop.draw(ctx, ox, oy, o);
       if (propG === g) return;   // the prop is the glyph itself; otherwise an object/monster sits on it
     } else switch (tcls) {
-      case 'void': case 'stone': break;
+      case 'void': break;
+      case 'stone': this.drawRock(x, y, th); break;   // rock you've seen (NetHack tells it apart from unexplored)
       case 'wall': this.drawWall(x, y, wallTheme); break;
       case 'corr': case 'litcorr': this.drawCorridor(x, y, th, tcls === 'litcorr'); break;
       case 'water': this.drawLiquid(x, y, [24, 58, 120], [60, 120, 200]); break;
@@ -399,21 +400,50 @@ export class Renderer {
     }
   }
 
+  // A tunnel floor of packed earth and worn flagstones, darkening toward the rock at its sides,
+  // so the path (and where it turns or stops) reads at a glance.
   drawCorridor(x, y, th, lit) {
     const ctx = this.tctx, ox = x * T, oy = y * T;
     const img = ctx.createImageData(T, T); const d = img.data;
-    const base = hexrgb(th.corr);
-    const open = (dx, dy) => OPEN_GROUND.has(this.terrainClassAt(x + dx, y + dy));
+    const base = shade(hexrgb(th.corr), 1.18);
+    const open = (dx, dy) => OPEN_GROUND.has(this.terrainClassAt(x + dx, y + dy)) || this.terrainClassAt(x + dx, y + dy) === 'closeddoor';
     const n = open(0, -1), s = open(0, 1), w = open(-1, 0), e = open(1, 0);
     for (let py = 0; py < T; py++) for (let px = 0; px < T; px++) {
       const ax = ox + px, ay = oy + py;
-      let c = hash(ax, ay) < 0.15 ? shade(base, 0.86) : base;
-      if (hash(ax >> 1, ay >> 1, 5) < 0.04) c = shade(base, 1.3);
+      // big soft clumps, a few pebbles, faint stepping stones down the middle
+      let c = shade(base, 0.92 + hash(ax >> 2, ay >> 2, 11) * 0.16);
+      if (hash(ax, ay, 4) < 0.025) c = shade(base, 1.35);
+      if (hash(ax >> 3, ay >> 3, 13) < 0.22 && (ax & 7) && (ay & 7)) c = shade(c, 1.07);
+      // edges against rock: a soft shadow 5px deep
       let edge = 99;
       if (!n) edge = Math.min(edge, py); if (!s) edge = Math.min(edge, T - 1 - py);
       if (!w) edge = Math.min(edge, px); if (!e) edge = Math.min(edge, T - 1 - px);
-      if (edge < 4 && hash(ax, ay, 8) < 0.9 - edge * 0.22) c = [20, 18, 16];
-      if (lit) c = shade(c, 1.08);
+      if (edge < 5) c = shade(c, 0.55 + edge * 0.09);
+      if (edge === 0) c = [18, 16, 14];
+      if (lit) c = shade(c, 1.1);
+      const k = (py * T + px) * 4; d[k] = c[0]; d[k + 1] = c[1]; d[k + 2] = c[2]; d[k + 3] = 255;
+    }
+    ctx.putImageData(img, ox, oy);
+  }
+
+  // Solid rock you've seen: rough dark stone with cracks, its edge catching the light where it
+  // meets a tunnel or room, so passages read as cut through rock.
+  drawRock(x, y, th) {
+    const ctx = this.tctx, ox = x * T, oy = y * T;
+    const img = ctx.createImageData(T, T); const d = img.data;
+    const base = shade(hexrgb(th.cap), 0.9);
+    const openAt = (dx, dy) => { const c = this.terrainClassAt(x + dx, y + dy); return c !== 'stone' && c !== 'void' && c !== 'wall'; };
+    const n = openAt(0, -1), s = openAt(0, 1), w = openAt(-1, 0), e = openAt(1, 0);
+    for (let py = 0; py < T; py++) for (let px = 0; px < T; px++) {
+      const ax = ox + px, ay = oy + py;
+      let c = shade(base, 0.8 + hash(ax >> 2, ay >> 2, 21) * 0.35);           // lumpy rock
+      if (hash(ax >> 1, ay >> 1, 22) < 0.05) c = shade(c, 0.6);                 // pits
+      if ((hash(ax >> 3, ay, 23) < 0.06 && (ax & 7) < 2) || (hash(ax, ay >> 3, 24) < 0.06 && (ay & 7) < 2)) c = shade(c, 0.55);   // cracks
+      // the rock face beside open ground: a lit rim, then a dark lip
+      const rim = Math.min(s ? T - 1 - py : 99, n ? py : 99, e ? T - 1 - px : 99, w ? px : 99);
+      if (rim === 0) c = shade(base, 1.9);
+      else if (rim === 1) c = shade(base, 1.4);
+      else if (rim < 4) c = shade(c, 1.15);
       const k = (py * T + px) * 4; d[k] = c[0]; d[k + 1] = c[1]; d[k + 2] = c[2]; d[k + 3] = 255;
     }
     ctx.putImageData(img, ox, oy);
@@ -521,7 +551,7 @@ export class Renderer {
       switch (c) {
         case 'floor': case 'feature': case 'trap': case 'water': case 'ice': case 'cloud': case 'air': case 'lava': return 1.0;
         case 'litcorr': return 0.85;
-        case 'corr': return 0.5;
+        case 'corr': return 0.62;
         case 'darkfloor': return 0.3;
         case 'doorway': case 'opendoor': return 0.8;
         default: return -1;
@@ -553,12 +583,29 @@ export class Renderer {
       if (c !== 'doorway' && c !== 'opendoor' && c !== 'closeddoor') continue;
       for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
         const n = this.terrainClassAt(x + dx, y + dy);
-        if (n === 'stone' || n === 'void') {
+        if (n === 'void') {   // unexplored beyond (seen rock is drawn as rock)
           this.exits.push({ x, y, dx, dy });
           this.lightSources.push({ x, y, r: 46, rgb: '255,196,110', k: 0.42 });
           break;
         }
       }
+    }
+    // corridor ends: one that runs into unexplored darkness continues (an arrow points on); one
+    // boxed in by rock you've seen is a dead end (a cap, and a hint that searching may find more)
+    this.corrEnds = [];
+    const walkable = (c) => OPEN_GROUND.has(c) || c === 'closeddoor';
+    for (let y = 0; y < ROWNO; y++) for (let x = 0; x < COLNO; x++) {
+      const c = this.terrainClassAt(x, y);
+      if (c !== 'corr' && c !== 'litcorr') continue;
+      let ways = 0, ux = 0, uy = 0, unknown = 0;
+      for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
+        if (!dx && !dy) continue;
+        const nc = this.terrainClassAt(x + dx, y + dy);
+        if (nc === 'void') { unknown++; ux += dx; uy += dy; } else if (walkable(nc)) ways++;
+      }
+      if (ways > 1) continue;   // a stretch of tunnel, not an end
+      if (unknown) this.corrEnds.push({ x, y, kind: 'open', dx: Math.sign(ux), dy: Math.sign(uy) });
+      else this.corrEnds.push({ x, y, kind: 'dead' });
     }
     for (let y = 0; y < ROWNO; y++) for (let x = 0; x < COLNO; x++) {
       const g = this.glyph[this.idx(x, y)];
@@ -1080,7 +1127,38 @@ export class Renderer {
   }
 
   // a small pulsing chevron just outside each unexplored exit, pointing the way out
+  // Corridor ends: a soft arrow on into the unexplored, or a dead-end mark with a faint
+  // magnifier (NetHack hides passages; searching here may find one).
+  drawCorridorEnds(t) {
+    const { sctx } = this, h = this.heroCell;
+    for (const e of this.corrEnds || []) {
+      const cx = e.x * T + T / 2, cy = e.y * T + T / 2;
+      if (e.kind === 'open') {
+        if (!e.dx && !e.dy) continue;
+        const len = Math.hypot(e.dx, e.dy), ux = e.dx / len, uy = e.dy / len;
+        const k = 0.5 + 0.5 * Math.sin(t / 300 + e.x);
+        for (let j = 0; j < 2; j++) {   // two chevrons drifting outward into the dark
+          const off = 8 + j * 6 + ((t / 90) % 6);
+          for (let pass = 0; pass < 2; pass++) for (let i = -4; i <= 4; i++) {
+            const along = off - Math.abs(i) * 0.95, px = Math.round(cx + ux * along - uy * i), py = Math.round(cy + uy * along + ux * i);
+            if (pass) { sctx.fillStyle = `rgba(165,225,255,${(0.5 + 0.45 * k) * (j ? 0.55 : 1)})`; sctx.fillRect(px - 1, py - 1, 3, 3); }
+            else { sctx.fillStyle = `rgba(4,10,20,${0.6 * (j ? 0.55 : 1)})`; sctx.fillRect(px - 1, py, 3, 3); }
+          }
+        }
+      } else if (e.x !== h.x || e.y !== h.y) {
+        sctx.globalAlpha = 0.55 + 0.15 * Math.sin(t / 700 + e.y);
+        for (const [col, w, o] of [['rgba(10,8,6,0.8)', 3, 1], ['#e2d2a8', 1.5, 0]]) {   // shadow, then the glass
+          sctx.strokeStyle = col; sctx.lineWidth = w;
+          sctx.beginPath(); sctx.arc(cx - 1.5 + o, cy - 1.5 + o, 4.5, 0, Math.PI * 2); sctx.stroke();
+          sctx.beginPath(); sctx.moveTo(cx + 2 + o, cy + 2 + o); sctx.lineTo(cx + 6 + o, cy + 6 + o); sctx.stroke();
+        }
+        sctx.globalAlpha = 1;
+      }
+    }
+  }
+
   drawExits(t) {
+    this.drawCorridorEnds(t);
     const { sctx } = this, k = 0.55 + 0.45 * Math.sin(t / 320);
     for (const e of this.exits || []) {
       const cx = e.x * T + T / 2 + e.dx * 17, cy = e.y * T + T / 2 + e.dy * 17 - (e.dy === 0 ? 2 : 0);

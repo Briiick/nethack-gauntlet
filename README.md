@@ -104,6 +104,11 @@ exits from a room are easy to spot (Settings → Display → *Exit markers*). Ma
 you haven't found yet: NetHack hides some doors and corridors, and searching (`Space` or `.`)
 next to a wall reveals them.
 
+**Corridors.** Rock you have seen is drawn as solid stone with a lit edge, so a corridor's walls
+are visible and you can tell a turn from a dead end. Where a corridor runs on into the unexplored,
+blue chevrons point the way. A corridor that ends in rock you've already seen gets a small
+magnifier: it's a dead end, but NetHack often hides the rest of the passage there, so search.
+
 **The tutorial.** NetHack's tutorial level puts your own equipment away while you practise with
 the items it hands you; you get it all back when you leave through a magic portal. With modern
 controls, the tutorial's engraved instructions are reworded for these keys (NetHack writes them
