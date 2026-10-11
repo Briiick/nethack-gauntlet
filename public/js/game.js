@@ -165,9 +165,12 @@ export class Game {
       }
       return;
     }
-    if ((w.type === NHW.TEXT || w.type === NHW.MENU) && w.lines.length) {
+    if ((w.type === NHW.TEXT || w.type === NHW.MENU) && w.lines.length && win !== this.invWin()) {
+      // Like NetHack's own tty port, a text or menu window always waits to be dismissed: 'blocking'
+      // only matters for the message window. (Looking an item up shows its encyclopedia entry in a
+      // menu window displayed non-blocking, then destroys it at once.)
       this.renderer.commit();
-      await this.ui.textWindow(w.lines, { blocking: !!blocking || w.type === NHW.TEXT });
+      await this.ui.textWindow(w.lines, { blocking: true });
       w.lines = [];
     }
   }
