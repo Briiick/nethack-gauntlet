@@ -31,6 +31,9 @@ for (const f of (await walk(out)).sort()) {
 }
 const version = hash.digest('hex').slice(0, 12);
 await writeFile(join(out, 'm/precache.json'), JSON.stringify({ version, files }, null, 0));
+// the worker carries its build's version, so every build installs as a new worker (and cache)
+const sw = join(out, 'm/sw.js');
+await writeFile(sw, (await readFile(sw, 'utf8')).replace("'__VERSION__'", `'${version}'`));
 await writeFile(join(out, '.nojekyll'), '');
 let bytes = 0; for (const f of await walk(out)) bytes += (await stat(f)).size;
 console.log(`built ${relative(root, out)}: ${files.length} files, ${(bytes / 1e6).toFixed(1)} MB, version ${version}`);

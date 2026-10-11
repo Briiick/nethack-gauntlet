@@ -42,7 +42,7 @@ body.m .chip { font-size: 11px; background: rgba(6,6,10,.8); }
 
 /* ---- messages */
 body.m #feed { position: absolute; left: calc(var(--safe-l) + 10px); right: calc(var(--safe-r) + 10px); top: calc(var(--safe-t) + 84px); bottom: auto; max-width: none;
-  text-align: left; font-size: 14px; line-height: 1.28; pointer-events: auto; z-index: 3; }
+  text-align: left; font-size: 14px; line-height: 1.28; pointer-events: none; z-index: 3; }   /* taps go to the map (history: Actions → Messages) */
 body.m #more { left: 50%; right: auto; bottom: calc(var(--bar-h) + 12px); transform: translateX(-50%); z-index: 8; padding: 10px 18px; border: 1px solid var(--gold);
   background: var(--plate); border-radius: 22px; font-size: 13px; cursor: pointer; }
 body.m.at-more #ctx { display: none; }
@@ -184,6 +184,8 @@ body.m #gameover { padding: calc(var(--safe-t) + 16px) 16px calc(var(--safe-b) +
   :root { --bar-h: calc(var(--safe-b) + 62px); }
   body.m #feed { font-size: 13px; right: auto; width: min(560px, 60%); }
   body.m #compass { bottom: auto; top: 50%; left: auto; right: calc(var(--safe-r) + 12px); transform: translateY(-50%); }
+  body.m #prompt.dir { right: calc(var(--safe-r) + 236px); }   /* beside the arrow pad, not over it */
+  body.m #compass { z-index: 8; gap: 4px; } body.m #compass button { height: 44px; }
 }
 /* display rules above must not beat [hidden] */
 body.m #target-hint[hidden], body.m .sub[hidden], body.m .stats[hidden], body.m #prompt[hidden], body.m #compass[hidden], body.m #more[hidden] { display: none; }

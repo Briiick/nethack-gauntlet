@@ -110,12 +110,12 @@ export class Game {
 
   // Save the game in progress and stop, exactly as NetHack's S command does. The desktop app
   // calls this when its window closes, so closing never loses a game.
-  async saveAndQuit(timeout = 8000) {
+  async saveAndQuit(timeout = 8000, stop = () => false) {
     if (!this.started || this.over) return;
     const ui = this.ui, end = Date.now() + timeout;
     this.autoSaving = true;
     let sentAt = 0;
-    while (!this.over && Date.now() < end) {
+    while (!this.over && Date.now() < end && !stop()) {
       if (!document.getElementById('more').hidden) {
         ui.pushKey(13);
       } else if (ui.modal || ui.isTargeting || ui.dirFinish) {
@@ -199,7 +199,6 @@ export class Game {
 
   // One message for the feed; false if it's left out.
   say(str, attr) {
-    if (this.retry && /^Never mind/.test(str)) return false;   // the command is about to be re-issued
     if (this.ui.controls.on && /^Count: \d+$/.test(str)) return false;   // the modern R key types "20s"; don't echo it
     if (str === 'Entering the tutorial.') this.ui.tutorialNote();
     this.ui.message(this.ui.controls.explain(str), attr);
@@ -282,8 +281,9 @@ export class Game {
     }
     if (this.autoPicking) {   // the picker opened for "What do you want to X?"
       const q = this.autoPicking; this.autoPicking = null;
-      if (!result || !result.length) this.pickerClosed(q);
-      else {
+      if (!result || !result.length) {
+        if (this.pickerClosed(q)) { this.mod.setValue(listPtr, 0, '*'); return 0; }   // "nothing yet": NetHack asks again
+      } else {
         const it = w.menu.items.find((x) => x.ident === result[0].ident);
         try { if (it) this.renderer.onAnswer?.(q, it.ch); } catch (e) { console.warn(e); }   // same visual hooks as a typed letter
       }
@@ -299,7 +299,7 @@ export class Game {
       const ch = charArg(let_), inv = (this.inventory || []).find((it) => it.ch === ch);
       const sel = await this.ui.menu({ prompt: '', context: q, items: [{ ident: ch, ch, gch: 0, text: inv ? inv.text : mesg.replace(/^. - /, ''), glyph: inv ? inv.glyph : -1, selected: false }] }, PICK.ONE);
       this.autoPicking = null;
-      if (!sel || !sel.length) { this.pickerClosed(q); return 27; }
+      if (!sel || !sel.length) return this.pickerClosed(q) ? 0 : 27;
       try { this.renderer.onAnswer?.(q, ch); } catch (e) { console.warn(e); }
       return ch;
     }
@@ -328,13 +328,21 @@ export class Game {
     return k;
   }
 
-  // The picker closed without a choice: cancel, or (a letter typed / "Any item…") ask again with it.
+  // The picker closed without a choice. A letter typed there (an item it didn't suggest) or
+  // "Any item…": answer "nothing yet", so NetHack's getobj asks the same question again, and
+  // answer that with the letter (true). Otherwise it was a cancel (false).
   pickerClosed(query) {
     const l = this.ui.pendingLetter; this.ui.pendingLetter = null;
-    if (l && this.lastCmdKey) this.retry = { key: this.lastCmdKey, letter: l };
+    if (!l) return false;
+    this.typedAnswer = { query, letter: l };
+    return true;
   }
 
   autoPick(query) {
+    if (this.typedAnswer) {   // the same question again, after the picker was left with a letter
+      const t = this.typedAnswer; this.typedAnswer = null;
+      if (t.query === query) return t.letter.charCodeAt(0);
+    }
     if (this.ui.settings.autoPicker === false || (this.ui.answers && this.ui.answers.length)) return null;   // pre-answered (drag, quickbar)
     const m = query.match(/^(What|Which) .*\[(.*)\]\s*$/);
     if (!m || !/(^|\s)\?\*$|^\*$/.test(m[2].trim())) return null;
@@ -372,11 +380,7 @@ export class Game {
     this.lastQuery = '';   // back at the command prompt
     this.autoPicking = null; this.pickCancelled = null;   // back at the command prompt: no picker pending
     this.loot.reset();
-    if (this.retry) {   // the picker was left for another item: the same command again, answered with it
-      const { key, letter } = this.retry; this.retry = null;
-      this.ui.answerNext([{ re: /^(What|Which) /, key: letter }]);
-      this.ui.pushKey(key);
-    }
+    this.typedAnswer = null;
     if (!this.ui.keyQueue.length) {
       this.ui.answers = [];   // pre-answered questions belong to the command just typed
       if (this.ui.reopenInventory) { this.ui.reopenInventory = false; this.ui.pushKey(105); }   // 'i'
@@ -389,6 +393,7 @@ export class Game {
     }
     const ev = await this.ui.waitInput({ allowClick: true });
     this.messagesSinceInput = 0;
+    if (ev.key !== 35) this.ui.pendingExt = null;   // only the '#' sent with it may use it
     this.renderer.onCommand?.(ev.click ? 0 : ev.key);
     if (!ev.click) this.lastCmdKey = ev.key;   // so a picker can re-issue its command with another item
     if (ev.click) {

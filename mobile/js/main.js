@@ -18,12 +18,14 @@ function loadSettings() {
   if ((s.version || 1) < SETTINGS_VERSION) { delete s.game; s.version = SETTINGS_VERSION; }
   const out = { ...DEFAULTS, ...PHONE, ...s, game: { ...DEFAULTS.game, tutorial: false, ...(s.game || {}) } };
   out.controls = 'classic';   // the touch interface sends NetHack's own keys
-  if (matchMedia('(prefers-reduced-motion: reduce)').matches) { out.reduceMotion = true; out.shake = 'off'; }
+  if (s.reduceMotion === undefined && matchMedia('(prefers-reduced-motion: reduce)').matches) { out.reduceMotion = true; out.shake = 'off'; }   // first run only
   return out;
 }
 const settings = loadSettings();
 const saveSettings = () => { try { localStorage.setItem(KEY, JSON.stringify(settings)); } catch (e) { /* ignore */ } };
 
+// NetHack reads "Name-Role" as options, and save files are "<digits><name>": no dashes, no leading digits
+export const cleanName = (s) => String(s).trim().replace(/[^A-Za-z0-9 _]/g, '').replace(/^[\d\s_]+/, '').slice(0, 30).trim() || 'Adventurer';
 const NAMES = ['Brunhilde', 'Sigrid', 'Astrid', 'Freydis', 'Gudrun', 'Ingrid', 'Thyra', 'Ragna', 'Hervor', 'Eir'];
 const RESUME = 'nhg-m-resume';   // set when the game saved itself because you left the app
 
@@ -59,7 +61,8 @@ async function boot() {
   const saves = listSaves(mod).map((f) => ({ file: f, name: f.replace(/^\d+/, '') }));
   const savesEl = document.getElementById('saves');
   if (saves.length) {
-    savesEl.innerHTML = '<h2>Continue</h2>' + saves.map((s) => `<div class="save"><button type="button" class="resume" data-name="${s.name}">${s.name}</button><button type="button" class="del" data-file="${s.file}" aria-label="Delete the save for ${s.name}">Delete</button></div>`).join('');
+    const esc = (t) => String(t).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+    savesEl.innerHTML = '<h2>Continue</h2>' + saves.map((s) => `<div class="save"><button type="button" class="resume" data-name="${esc(s.name)}">${esc(s.name)}</button><button type="button" class="del" data-file="${esc(s.file)}" aria-label="Delete the save for ${esc(s.name)}">Delete</button></div>`).join('');
     savesEl.addEventListener('click', async (e) => {
       const r = e.target.closest('.resume'), d = e.target.closest('.del');
       if (r) { nameInput.value = r.dataset.name; start(); }
@@ -85,7 +88,7 @@ async function boot() {
   if (resume && saves.some((s) => s.name === resume)) { nameInput.value = resume; start(); }
 
   function start() {
-    const name = nameInput.value.trim().replace(/[^A-Za-z0-9 _-]/g, '').slice(0, 30) || 'Adventurer';
+    const name = cleanName(nameInput.value);
     try { localStorage.setItem('nhg-last-name', name); } catch (e) { /* ignore */ }
     const role = document.getElementById('start-role').value;
     settings.game.autopickup = pk.value;
@@ -119,8 +122,11 @@ async function boot() {
     leaving = true;
     try { sessionStorage.setItem(RESUME, ui.playerName); } catch (e) { /* ignore */ }
     ui.autoSaved = true;
-    await game.saveAndQuit(4000);
-    if (!game.over) { ui.autoSaved = false; leaving = false; try { sessionStorage.removeItem(RESUME); } catch (e) { /* ignore */ } }
+    // (a hidden page runs slowly or not at all: if you're back before the save is done, carry on playing)
+    await game.saveAndQuit(4000, () => document.visibilityState === 'visible');
+    if (game.over) { await game.persisted; if (document.visibilityState === 'visible') location.reload(); return; }
+    ui.autoSaved = false; leaving = false;
+    try { sessionStorage.removeItem(RESUME); } catch (e) { /* ignore */ }
   };
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'hidden') leave();
@@ -141,7 +147,12 @@ function installHint() {
 
 // (the dev server has no precache.json, so there the worker never installs and nothing is cached)
 if ('serviceWorker' in navigator && window.isSecureContext) {
-  navigator.serviceWorker.register('m/sw.js', { scope: './m/' }).catch((e) => console.warn('offline cache unavailable', e));
+  navigator.serviceWorker.register('m/sw.js', { scope: './m/' }).then((reg) => {
+    // a new version is ready: switch now if no game is running (else on the next visit)
+    const offer = () => { if (reg.waiting && !window.__nhg?.game?.started) reg.waiting.postMessage('take-over'); };
+    offer(); reg.addEventListener('updatefound', () => reg.installing?.addEventListener('statechange', offer));
+    navigator.serviceWorker.addEventListener('controllerchange', () => { if (!window.__nhg?.game?.started) location.reload(); });
+  }).catch((e) => console.warn('offline cache unavailable', e));
 }
 
 boot().catch((err) => {

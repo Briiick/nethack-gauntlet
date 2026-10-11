@@ -19,8 +19,9 @@ export function verbFor(item) {
     case 'ring': case 'amulet': return worn ? { key: 'R', label: 'Remove' } : { key: 'P', label: 'Put on' };
     case 'armor': return worn ? { key: 'T', label: 'Take off' } : { key: 'W', label: 'Wear' };
     case 'weapon':
-      if (/\(in quiver/.test(t)) return { key: 'f', label: 'Fire' };
-      if (/weapon in hands?|wielded\)|weapon in (right|left) hand/.test(t)) return null;   // already in hand
+      if (/\((in quiver|at the ready)/.test(t)) return { key: 'f', label: 'Fire' };   // (quivered non-ammo is "at the ready")
+      if (/\((weapon in |wielded in |tethered to |wielded\))/.test(t)) return null;   // already in hand
+      if (/\(alternate weapon/.test(t)) return { key: 'x', label: 'Swap to' };
       return { key: 'w', label: 'Wield' };
     case 'tool':
       if (/blindfold|towel|lenses/.test(t)) return worn ? { key: 'R', label: 'Remove' } : { key: 'P', label: 'Put on' };

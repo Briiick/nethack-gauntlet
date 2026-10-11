@@ -21,7 +21,11 @@ protocol.registerSchemesAsPrivileged([
 if (process.env.NHG_USER_DATA) app.setPath('userData', process.env.NHG_USER_DATA);   // tests use a scratch profile
 
 const savesDir = () => path.join(app.getPath('userData'), 'saves');
-const safeName = (n) => path.basename(String(n)).replace(/[^\w.\- ]/g, '_');
+const safeName = (n) => {
+  const s = path.basename(String(n)).replace(/[^\w.\- ]/g, '_');
+  if (!s || /^\.+$/.test(s)) throw new Error('bad save name');
+  return s;
+};
 
 // ---- saved games on disk
 ipcMain.handle('saves:dir', () => { fs.mkdirSync(savesDir(), { recursive: true }); return savesDir(); });
@@ -88,7 +92,13 @@ function buildMenu() {
   ]));
 }
 
+// one copy at a time: two would each write the same saves folder
+const gotLock = app.requestSingleInstanceLock();
+if (!gotLock) app.quit();
+app.on('second-instance', () => { const w = BrowserWindow.getAllWindows()[0]; if (w) { if (w.isMinimized()) w.restore(); w.focus(); } });
+
 app.whenReady().then(() => {
+  if (!gotLock) return;
   protocol.handle('nethack', async (req) => {
     let p = decodeURIComponent(new URL(req.url).pathname);
     if (p === '/' || p === '') p = '/index.html';

@@ -43,6 +43,7 @@ export class Looting {
     if (how === PICK_ONE && find(/^Look inside /)) {
       this.container = (p.match(/^Do what with (.+?)\?$/) || p.match(/^(.+?) is empty\./) || [])[1] || 'the container';
       this.plan = null;
+      if (this.abort) { const no = find(/^(do nothing|done)$/); if (no) return Promise.resolve([ALL(no)]); }   // cancelled: leave the rest
       const pick = find(/^(both; )?take out, then put in$/) || find(/^take .* out$/) || find(/^put .* in$/);
       return pick ? Promise.resolve([ALL(pick)]) : undefined;
     }

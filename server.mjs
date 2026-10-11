@@ -4,7 +4,7 @@
 // on your network, so a phone on the same Wi-Fi can play.
 import { createServer } from 'node:http';
 import { readFile, stat } from 'node:fs/promises';
-import { extname, join, normalize } from 'node:path';
+import { extname, join, normalize, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { exec } from 'node:child_process';
 import { networkInterfaces } from 'node:os';
@@ -25,12 +25,13 @@ createServer(async (req, res) => {
     if (path.endsWith('/')) path += 'index.html';
     const [base, rel] = path.startsWith('/m/') ? [mobile, path.slice(2)] : [root, path];
     const file = normalize(join(base, rel));
-    if (!file.startsWith(base)) { res.writeHead(403).end(); return; }
-    await stat(file);
+    if (file !== base && !file.startsWith(base + sep)) { res.writeHead(403).end(); return; }
+    if (!(await stat(file)).isFile()) throw new Error('not a file');
+    const body = await readFile(file);
     res.writeHead(200, { 'Content-Type': types[extname(file)] || 'application/octet-stream', 'Cache-Control': 'no-cache' });
-    res.end(await readFile(file));
+    res.end(body);
   } catch {
-    res.writeHead(404, { 'Content-Type': 'text/plain' }).end('Not found');
+    if (!res.headersSent) res.writeHead(404, { 'Content-Type': 'text/plain' }).end('Not found');
   }
 }).listen(port, lan ? '0.0.0.0' : '127.0.0.1', () => {
   const url = `http://localhost:${port}/`;

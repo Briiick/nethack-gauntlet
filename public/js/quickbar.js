@@ -6,6 +6,7 @@ import { verbFor, useItem, castSpell } from './actions.js';
 
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const baseName = (t) => String(t || '').replace(/^(a|an|the|\d+)\s+/i, '').replace(/\b(uncursed|blessed|cursed)\s+/i, '').replace(/^[+-]\d+\s+/, '').replace(/\s*\(.*\)\s*$/, '').trim();
+const buc = (t) => ((String(t).match(/\b(uncursed|blessed|cursed)\b/) || [])[1] || '');
 const SPELL_COL = { attack: '#e0503c', healing: '#58c060', divination: '#58a0f0', enchantment: '#e070c0', clerical: '#e0b040', escape: '#c8e4f0', matter: '#b08050' };
 
 export class Quickbar {
@@ -55,7 +56,9 @@ export class Quickbar {
     for (const s of this.slots) {
       if (!s || s.kind !== 'item') continue;
       const name = baseName(s.text);
-      const hit = inv.find((it) => it.ch === s.ch && baseName(it.text) === name) || inv.find((it) => baseName(it.text) === name);
+      // the same thing, never quietly a cursed one standing in for an uncursed one (or the other way round)
+      const same = (it) => baseName(it.text) === name && (!buc(s.text) || !buc(it.text) || buc(it.text) === buc(s.text));
+      const hit = inv.find((it) => it.ch === s.ch && same(it)) || inv.find(same);
       if (hit) Object.assign(s, { ch: hit.ch, text: hit.text, glyph: hit.glyph, cat: hit.cat, gone: false });
       else s.gone = true;
     }
@@ -64,7 +67,8 @@ export class Quickbar {
 
   use(n) {
     const s = this.slots[n], ui = this.ui;
-    if (!s || !ui.waiter || ui.modal || (ui.game && ui.game.over)) return false;
+    // only at the command prompt (not a --More-- pause, a prompt, or while picking a spot)
+    if (!s || !ui.waiter || !ui.waiter.allowClick || ui.modal || ui.isTargeting || !document.getElementById('more').hidden || (ui.game && ui.game.over)) return false;
     if (s.kind === 'spell') { castSpell(ui, s.letter); return true; }
     if (s.gone) { ui.message(`You don't have ${s.name || baseName(s.text)} any more.`); return true; }
     const verb = verbFor(s);

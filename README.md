@@ -266,6 +266,9 @@ CHROME=/path/to/chrome npm test
   touch only: tap to step, travel and rest, long press, direction and pick-a-spot taps, word buttons,
   the backpack and quick slots, the action sheet, drag and pinch, and saving on leaving the app and
   resuming on return.
+- `test/mobile-fuzz.mjs <url> [steps] [Role] [seed]` plays the phone version with random touches
+  (taps, holds, pans, toolbar, action sheets, prompts, menus, backpack, loot) and fails on page errors
+  or on any moment the game waits with nothing on screen to answer.
 - `test/loot.mjs` opens a chest with `E` on the desktop and from the context button on a phone,
   puts in and takes out in one press, reopens it, cancels, takes everything, forces a locked box, and
   picks up several kinds of things without the "what type" menu.

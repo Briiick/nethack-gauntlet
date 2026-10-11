@@ -50,6 +50,7 @@ export function spellCards(ui, menu, how) {
     el.addEventListener('click', (e) => { const b = e.target.closest('.card'); if (b) choose(spells[+b.dataset.i]); });
     let hovered = null;
     el.addEventListener('mouseover', (e) => { const b = e.target.closest('.card'); if (b) hovered = spells[+b.dataset.i]; });
+    el.addEventListener('mouseout', (e) => { if (!e.relatedTarget || !e.relatedTarget.closest || !e.relatedTarget.closest('.card')) hovered = null; });
     ui.openModal(el, (e) => {
       if (e.key === 'Escape') return finish(how === 0 ? [] : null);
       if (/^[1-9]$/.test(e.key) && hovered && ui.quickbar) {   // put the spell under the mouse on the quickbar

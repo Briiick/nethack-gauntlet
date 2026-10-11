@@ -11,7 +11,7 @@ function loadSettings() {
   // settings saved before version 2 carried this interface's own gameplay defaults: reset those to NetHack's
   if ((s.version || 1) < SETTINGS_VERSION) { delete s.game; s.version = SETTINGS_VERSION; }
   const out = { ...DEFAULTS, ...s, game: { ...DEFAULTS.game, ...(s.game || {}) } };
-  if (matchMedia('(prefers-reduced-motion: reduce)').matches) { out.reduceMotion = true; out.shake = 'off'; }
+  if (s.reduceMotion === undefined && matchMedia('(prefers-reduced-motion: reduce)').matches) { out.reduceMotion = true; out.shake = 'off'; }   // first run only
   return out;
 }
 const settings = loadSettings();
@@ -51,7 +51,8 @@ async function boot() {
   const saves = listSaves(mod).map((f) => ({ file: f, name: f.replace(/^\d+/, '') }));
   const savesEl = document.getElementById('saves');
   if (saves.length) {
-    savesEl.innerHTML = '<h2>Continue</h2>' + saves.map((s) => `<div class="save"><button type="button" class="resume" data-name="${s.name}">${s.name}</button><button type="button" class="del" data-file="${s.file}" aria-label="Delete the save for ${s.name}">Delete</button></div>`).join('');
+    const esc = (t) => String(t).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+    savesEl.innerHTML = '<h2>Continue</h2>' + saves.map((s) => `<div class="save"><button type="button" class="resume" data-name="${esc(s.name)}">${esc(s.name)}</button><button type="button" class="del" data-file="${esc(s.file)}" aria-label="Delete the save for ${esc(s.name)}">Delete</button></div>`).join('');
     savesEl.addEventListener('click', async (e) => {
       const r = e.target.closest('.resume'), d = e.target.closest('.del');
       if (r) { nameInput.value = r.dataset.name; start(); }
@@ -77,7 +78,8 @@ async function boot() {
   setTimeout(() => nameInput.focus(), 50);
 
   function start() {
-    const name = nameInput.value.trim().replace(/[^A-Za-z0-9 _-]/g, '').slice(0, 30) || 'Adventurer';
+    // NetHack reads "Name-Role" as options, and save files are "<digits><name>": no dashes, no leading digits
+    const name = nameInput.value.trim().replace(/[^A-Za-z0-9 _]/g, '').replace(/^[\d\s_]+/, '').slice(0, 30).trim() || 'Adventurer';
     try { localStorage.setItem('nhg-last-name', name); } catch (e) { /* ignore */ }
     const role = document.getElementById('start-role').value;
     settings.game.autopickup = document.getElementById('start-pickup').value;

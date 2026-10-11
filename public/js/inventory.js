@@ -477,6 +477,8 @@ export function inventoryMenu(ui, menu, how) {
       if (ev.target.closest('.takeall')) finish(entries.map((e) => ({ ident: e.it.ident, count: -1 })));
       if (ev.target.closest('.anyitem')) { ui.pendingLetter = '*'; finish(null); }
     });
+    // leaving the items: number keys go back to the keyboard-focused item
+    el.addEventListener('mouseout', (ev) => { if (!ev.relatedTarget || !ev.relatedTarget.closest || !ev.relatedTarget.closest('[data-i]')) hovered = null; });
     el.addEventListener('mouseover', (ev) => {
       const b = ev.target.closest('[data-i]');
       if (!b) return;
@@ -533,7 +535,8 @@ export function inventoryMenu(ui, menu, how) {
       const letter = String.fromCharCode(d.e.it.ch);
       if (d.fromSlot) {   // take it off / unwield / empty the quiver
         const keys = unequipKeys(d.fromSlot);
-        if (keys) run(keys, keys.length > 1 ? [] : [{ re: /take off|remove/i, key: letter }]);
+        // w - / Q -: "What do you want to wield?" answered with "-" (bare hands / empty quiver)
+        if (keys) run([keys[0]], keys.length > 1 ? [{ re: /wield|ready|quiver/i, key: keys[1] }] : [{ re: /take off|remove/i, key: letter }]);
         return;
       }
       if (z.dataset.slot === 'quiver') { run(['Q'], [{ re: /ready|quiver/i, key: letter }]); return; }

@@ -53,7 +53,7 @@ export async function loadEngine(handler) {
   if (desktop()) {
     // desktop app: saved games are real files in the app's saves folder
     try {
-      for (const f of await desktop().listSaves()) mod.FS.writeFile(SAVE_DIR + '/' + f.name, new Uint8Array(f.data));
+      for (const f of await desktop().listSaves()) { mod.FS.writeFile(SAVE_DIR + '/' + f.name, new Uint8Array(f.data)); synced.add(f.name); }
     } catch (e) { console.error('could not read the saves folder', e); }
   } else {
     try {
@@ -86,13 +86,16 @@ const HOME = '/home/web_user';
 // The desktop app's bridge (desktop/preload.cjs), or null in a browser.
 const desktop = () => globalThis.nhgDesktop || null;
 
+// the save files this session knows are on disk: only these may be deleted when they leave memory
+// (a backup copied into the folder while the app runs is left alone)
+const synced = new Set();
 export async function persistSaves(mod) {
   if (desktop()) {
     // mirror the in-memory save folder to disk: write what's there, remove what's gone
     try {
       const here = listSaves(mod);
-      for (const f of here) await desktop().writeSave(f, mod.FS.readFile(SAVE_DIR + '/' + f));
-      for (const f of await desktop().listSaves()) if (!here.includes(f.name)) await desktop().deleteSave(f.name);
+      for (const f of here) { await desktop().writeSave(f, mod.FS.readFile(SAVE_DIR + '/' + f)); synced.add(f); }
+      for (const f of [...synced]) if (!here.includes(f)) { await desktop().deleteSave(f); synced.delete(f); }
     } catch (e) { console.error('could not write the saves folder', e); }
     return;
   }

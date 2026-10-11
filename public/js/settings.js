@@ -247,8 +247,11 @@ export function openSettings(ui, startTab = 'display') {
   });
   el.addEventListener('change', async (e) => {
     if (!e.target.classList.contains('import') || !e.target.files[0]) return;
-    const file = e.target.files[0];
-    ui.mod.FS.writeFile('/save/' + file.name.replace(/[^\w.-]/g, ''), new Uint8Array(await file.arrayBuffer()));
+    const file = e.target.files[0], name = file.name.replace(/[^\w.-]/g, '').replace(/^\.+/, '');
+    e.target.value = '';
+    if (!name) { alert('That file name can\'t be used for a save.'); return; }
+    if (listSaves(ui.mod).includes(name) && !confirm(`Replace the save "${name}"?`)) return;
+    ui.mod.FS.writeFile('/save/' + name, new Uint8Array(await file.arrayBuffer()));
     await persistSaves(ui.mod); render();
   });
   render();

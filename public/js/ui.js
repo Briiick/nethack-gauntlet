@@ -40,7 +40,7 @@ export class UI {
     addEventListener('keydown', (e) => this.onKey(e));
     $('#view').addEventListener('pointerdown', (e) => this.onPointer(e));
     $('#view').addEventListener('contextmenu', (e) => e.preventDefault());
-    $('#settings-btn').addEventListener('click', () => this.openSettings());
+    $('#settings-btn').addEventListener('click', () => { if (this.canOpenSettings()) this.openSettings(); });
     $('#help-btn').addEventListener('click', () => this.pushKey('?'.charCodeAt(0)));
     this.controls = new ModernControls(this);
     mountActionBar(this);
@@ -52,9 +52,11 @@ export class UI {
     // modern controls also answer "in what direction?" with WASD
     if (this.dirFinish && this.controls.on && this.controls.directionPrompt(e, this.dirFinish)) { e.preventDefault(); return; }
     if (this.modal && this.modal.onKey) { if (this.modal.onKey(e) !== false) { e.preventDefault(); return; } }
+    // a screen is open: keys it doesn't use do their browser default (typing, Tab), never reach the game
+    if (this.modal) { if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') e.preventDefault(); return; }
     if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT')) return;
     if (['Shift', 'Control', 'Alt', 'Meta', 'CapsLock'].includes(e.key)) return;
-    if (e.key === 'F1') { e.preventDefault(); this.openSettings(); return; }
+    if (e.key === 'F1') { e.preventDefault(); if (this.canOpenSettings()) this.openSettings(); return; }
     // Ctrl+S (Cmd+S on a Mac) saves in either control scheme, like any other game
     if ((e.ctrlKey || e.metaKey) && !e.altKey && e.key.toLowerCase() === 's') {
       e.preventDefault();   // never the browser's "save page"
@@ -63,6 +65,8 @@ export class UI {
       return;
     }
     if (e.metaKey) return;
+    // --More--: one key moves on (a modern key would otherwise type its whole command into the pause)
+    if (!$('#more').hidden) { e.preventDefault(); this.pushKey(13); return; }
     if (this.controls.on && !this.modal && !(this.game && this.game.over)) {
       if (this.isTargeting ? this.controls.targeting(e) : this.controls.command(e)) { e.preventDefault(); return; }
     }
@@ -71,7 +75,10 @@ export class UI {
     e.preventDefault();
     this.pushKey(code);
   }
+  // Settings replace whatever screen is open, so only while nothing is waiting on an answer
+  canOpenSettings() { return !this.modal && !this.dirFinish && !this.isTargeting && $('#prompt').hidden && $('#more').hidden; }
   pushKey(code) {
+    if (this.game && !this.game.started) return;   // the start screen: there's no game to type into yet
     this.lastDirKey = String.fromCharCode(code);
     if (this.waiter) { const w = this.waiter; this.waiter = null; w({ key: code }); }
     else if (this.keyQueue.length < 8) this.keyQueue.push({ key: code });
@@ -79,7 +86,7 @@ export class UI {
   onPointer(e) {
     if (this.modal || (this.settings.clickTravel === false && !this.isTargeting)) return;
     const c = this.renderer.screenToCell(e.clientX, e.clientY);
-    if (e.button === 2 && this.controls.on && !this.isTargeting && this.waiter) {   // right-click: examine that spot
+    if (e.button === 2 && this.controls.on && !this.isTargeting && this.waiter && this.waiter.allowClick && $('#more').hidden) {   // right-click: examine that spot
       this.pushKey(';'.charCodeAt(0));
       this.keyQueue.push({ click: { x: c.x, y: c.y, button: 1 } });
       return;
@@ -114,6 +121,7 @@ export class UI {
   message(text, attr = 0, { history = false } = {}) {
     if (!text) return;
     this.historyLog.push(text); if (this.historyLog.length > 300) this.historyLog.shift();
+    this.msgCount = (this.msgCount || 0) + 1;   // (the log is capped; this keeps counting)
     if (history) return;
     // the same line again ("You hit the jackal!" x3): count it instead of repeating it
     const last = this.feed.lastElementChild;
@@ -364,6 +372,7 @@ export class UI {
   yn(query, resp, def) {
     const pre = this.takeAnswer(query);
     if (pre !== null) return Promise.resolve(pre);
+    this.keyQueue = this.keyQueue.filter((e) => !e.key);   // keys typed before the question appeared: dropped
     return new Promise((resolve) => {
       const isDir = /direction/i.test(query) && !resp;
       const opts = resp ? resp.split('\x1b')[0].replace(/[^ -~]/g, '') : '';

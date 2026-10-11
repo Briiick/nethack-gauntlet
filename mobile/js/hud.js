@@ -101,14 +101,17 @@ export class Hud {
   // type keys as if at the keyboard, once NetHack is waiting for a command
   run(keys) {
     const ui = this.ui;
-    if (!ui.game?.started || ui.game.over) return;
-    if (ui.modal || !ui.waiter || ui.isTargeting || ui.dirFinish) { this.flash('Finish what you are doing first'); return; }
+    if (!ui.game?.started || ui.game.over) return false;
+    if (!document.getElementById('more').hidden) { ui.pushKey(13); return false; }   // a --More-- pause: this tap only moves on
+    if (ui.modal || !ui.waiter || !ui.waiter.allowClick || ui.isTargeting || ui.dirFinish) { this.flash('Finish what you are doing first'); return false; }
     ui.renderer.pan.x = 0; ui.renderer.pan.y = 0; this.panned(false);
     for (const c of keys) ui.pushKey(c.charCodeAt(0));
+    return true;
   }
   // NetHack just refused to rest or search with a monster beside you: this time, insist
   insist() { return /waiting to get hit|another search|good idea right now/.test((this.ui.historyLog || []).slice(-1)[0] || ''); }
-  ext(name) { const ui = this.ui; if (!ui.waiter || ui.modal) return; ui.pendingExt = name; this.run('#'); }
+  // an extended command: only named once '#' is really on its way (else the name would linger for the next one)
+  ext(name) { const ui = this.ui; ui.pendingExt = name; if (!this.run('#')) ui.pendingExt = null; }
 
   flash(text, ms = 1600) {
     this.toast.textContent = text; this.toast.hidden = false;

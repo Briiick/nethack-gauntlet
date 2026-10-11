@@ -174,12 +174,13 @@ export class ModernControls {
     clearTimeout(this.walkTimer);
     const ui = this.ui, r = ui.renderer;
     const foes = () => { let n = 0; for (const a of r.actors.values()) if (!a.hero && !(a.f & 0x10)) n++; return n; };
-    const start = { msgs: ui.historyLog.length, foes: foes() };
+    const start = { msgs: ui.msgCount || 0, foes: foes() };
     const tick = () => {
       if (!this.held.size || ui.modal || ui.isTargeting || (ui.game && ui.game.over)) return;
       if (!ui.waiter || ui.keyQueue.length) { this.walkTimer = setTimeout(tick, 25); return; }   // last step still under way
       // something happened: stop (trading places with your pet doesn't count)
-      if (ui.historyLog.slice(start.msgs).some((m) => !/^You (swap places with|stop\.  Your) /.test(m)) || foes() > start.foes) return;
+      const fresh = Math.min(ui.historyLog.length, (ui.msgCount || 0) - start.msgs);   // messages since the walk began
+      if ((fresh > 0 && ui.historyLog.slice(-fresh).some((m) => !/^You (swap places with|stop\.  Your) /.test(m))) || foes() > start.foes) return;
       const ds = [...this.held.keys()];
       const dir = ds.length > 1 && perpendicular(ds[ds.length - 2], ds[ds.length - 1]) ? DIAG[`${ds[ds.length - 2]}+${ds[ds.length - 1]}`] : ds[ds.length - 1];
       ui.pushKey(VI[dir].charCodeAt(0));
