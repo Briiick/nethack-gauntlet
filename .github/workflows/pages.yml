@@ -1,0 +1,54 @@
+# Publishes the game as a website on GitHub Pages: the desktop page at the root and the phone
+# version at /m/ (installable, plays offline). Turn it on once in the repository's
+# Settings -> Pages -> Source: "GitHub Actions"; until then this workflow skips publishing.
+name: Website
+
+on:
+  push:
+    branches: [main]
+    paths: ['public/**', 'mobile/**', 'tools/build-web.mjs', '.github/workflows/pages.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - name: Is GitHub Pages turned on?
+        id: pages
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh api "repos/${{ github.repository }}/pages" --silent 2>/dev/null; then
+            echo "on=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "on=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::GitHub Pages is off, so the website was not published. Turn it on in Settings -> Pages -> Source: GitHub Actions, then re-run this workflow."
+          fi
+      - uses: actions/checkout@v4
+        if: steps.pages.outputs.on == 'true'
+      - uses: actions/setup-node@v4
+        if: steps.pages.outputs.on == 'true'
+        with:
+          node-version: 20
+      - name: Build the site
+        if: steps.pages.outputs.on == 'true'
+        run: node tools/build-web.mjs _site
+      - uses: actions/upload-pages-artifact@v3
+        if: steps.pages.outputs.on == 'true'
+        with:
+          path: _site
+      - id: deploy
+        if: steps.pages.outputs.on == 'true'
+        uses: actions/deploy-pages@v4

@@ -1,0 +1,36 @@
+#!/usr/bin/env node
+// Assemble the static website: the desktop page (public/) at the root and the phone version
+// (mobile/) at m/, plus m/precache.json (every file and a version hash) for offline play.
+// Usage: node tools/build-web.mjs [outDir=_site]
+import { cp, rm, readdir, readFile, writeFile, stat } from 'node:fs/promises';
+import { createHash } from 'node:crypto';
+import { join, relative, resolve, sep } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const root = fileURLToPath(new URL('..', import.meta.url));
+const out = resolve(root, process.argv[2] || '_site');
+await rm(out, { recursive: true, force: true });
+await cp(join(root, 'public'), out, { recursive: true });
+await cp(join(root, 'mobile'), join(out, 'm'), { recursive: true });
+
+async function walk(dir) {
+  const all = [];
+  for (const d of await readdir(dir, { withFileTypes: true })) {
+    const p = join(dir, d.name);
+    if (d.isDirectory()) all.push(...await walk(p)); else all.push(p);
+  }
+  return all;
+}
+const hash = createHash('sha256');
+const files = [];
+for (const f of (await walk(out)).sort()) {
+  const rel = relative(out, f).split(sep).join('/');
+  if (rel === 'm/sw.js' || rel === 'm/precache.json' || /(^|\/)\./.test(rel) || /\.md$/.test(rel)) continue;
+  hash.update(rel); hash.update(await readFile(f));
+  files.push(rel === 'index.html' ? './' : rel === 'm/index.html' ? 'm/' : rel);
+}
+const version = hash.digest('hex').slice(0, 12);
+await writeFile(join(out, 'm/precache.json'), JSON.stringify({ version, files }, null, 0));
+await writeFile(join(out, '.nojekyll'), '');
+let bytes = 0; for (const f of await walk(out)) bytes += (await stat(f)).size;
+console.log(`built ${relative(root, out)}: ${files.length} files, ${(bytes / 1e6).toFixed(1)} MB, version ${version}`);

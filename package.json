@@ -10,14 +10,17 @@
   "desktopName": "nethack-gauntlet.desktop",
   "scripts": {
     "start": "node server.mjs",
+    "mobile": "node server.mjs 8080 --lan",
     "build:engine": "bash engine/build-engine.sh",
     "build:art": "bash tools/build-art.sh",
     "test": "node test/epitaph.test.mjs && node test/hotkeys.test.mjs && node test/smoke.mjs",
     "test:commands": "node test/commands.mjs http://127.0.0.1:8080/ test/out",
     "test:playtest": "node test/playtest.mjs http://127.0.0.1:8080/ test/out Valkyrie 450",
+    "test:mobile": "node test/mobile.mjs http://127.0.0.1:8080/",
     "app": "electron .",
     "dist": "electron-builder",
-    "test:desktop": "node test/desktop.mjs"
+    "test:desktop": "node test/desktop.mjs",
+    "build:web": "node tools/build-web.mjs"
   },
   "devDependencies": {
     "electron": "43.7.0",

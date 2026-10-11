@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<!-- every shared file (engine, art, renderer, game) lives one level up, in the desktop build -->
+<base href="../">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#06060a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="NetHack">
+<title>NetHack Gauntlet</title>
+<link rel="manifest" href="m/manifest.webmanifest">
+<link rel="apple-touch-icon" href="m/icons/apple-touch-icon.png">
+<link rel="icon" href="m/icons/icon-192.png">
+<link rel="stylesheet" href="fonts/fonts.css">
+<link rel="stylesheet" href="css/app.css">
+<link rel="stylesheet" href="m/css/mobile.css">
+</head>
+<body class="m">
+<div id="stage">
+  <canvas id="view" aria-label="Dungeon map: tap to move, travel or attack; hold for actions"></canvas>
+  <div class="vig" aria-hidden="true"></div>
+
+  <header id="top">
+    <section id="plate" aria-label="Character status">
+      <button type="button" class="port" id="port-btn" aria-label="Your character"><canvas id="portrait" width="28" height="28"></canvas></button>
+      <div class="info">
+        <div class="name"><span id="hero-name">…</span> <span id="hero-title"></span></div>
+        <div class="bar hp"><i id="hpbar"></i><em id="hptext"></em></div>
+        <div class="bar pw"><i id="pwbar"></i><em id="pwtext"></em></div>
+        <div class="counts"><span class="g" id="gold"></span><span id="ac"></span><span id="turn"></span><span class="lvl"><span id="branch"></span> <small id="level"></small></span></div>
+        <div class="sub" hidden><span id="xl"></span><span id="align"></span></div>
+        <div class="stats" id="stats" hidden></div>
+      </div>
+    </section>
+    <div class="tools">
+      <button type="button" id="help-btn" hidden aria-label="Help">?</button>
+      <button type="button" id="settings-btn" aria-label="Menu">
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+      </button>
+    </div>
+    <div class="chips" id="chips"></div>
+  </header>
+
+  <div id="feed" aria-live="polite"></div>
+  <div id="more" hidden>▼ <span>tap to continue</span></div>
+  <div id="prompt" hidden></div>
+  <div id="compass" hidden>
+    <button type="button" data-k="y" aria-label="north-west">↖</button><button type="button" data-k="k" aria-label="north">↑</button><button type="button" data-k="u" aria-label="north-east">↗</button>
+    <button type="button" data-k="h" aria-label="west">←</button><button type="button" data-k="." aria-label="here">·</button><button type="button" data-k="l" aria-label="east">→</button>
+    <button type="button" data-k="b" aria-label="south-west">↙</button><button type="button" data-k="j" aria-label="south">↓</button><button type="button" data-k="n" aria-label="south-east">↘</button>
+    <button type="button" data-k="<" aria-label="up">up &lt;</button><button type="button" data-k="&gt;" aria-label="down">&gt; down</button>
+  </div>
+
+  <button type="button" id="ctx" hidden></button>
+  <nav id="toolbar" aria-label="Actions"></nav>
+
+  <div id="modal" hidden></div>
+
+  <div id="gameover" hidden>
+    <h1>Farewell</h1>
+    <p></p>
+    <button type="button" class="primary" onclick="location.reload()">Return to the entrance</button>
+  </div>
+
+  <div id="start">
+    <form class="panel start" id="start-form">
+      <h1>NetHack <span>Gauntlet</span></h1>
+      <p class="lede">NetHack 5.0, the real game, in your hand.</p>
+      <div id="saves"></div>
+      <div class="grid">
+        <label for="start-name">Name</label>
+        <input id="start-name" maxlength="30" autocomplete="off" autocapitalize="words" spellcheck="false" required>
+        <label for="start-role">Role</label>
+        <select id="start-role">
+          <option value="Valkyrie" selected>Valkyrie</option><option value="Archeologist">Archeologist</option>
+          <option value="Barbarian">Barbarian</option><option value="Caveman">Caveman</option><option value="Healer">Healer</option>
+          <option value="Knight">Knight</option><option value="Monk">Monk</option><option value="Priest">Priest</option>
+          <option value="Ranger">Ranger</option><option value="Rogue">Rogue</option><option value="Samurai">Samurai</option>
+          <option value="Tourist">Tourist</option><option value="Wizard">Wizard</option><option value="random">Random</option>
+          <option value="ask">Let NetHack ask (role, race, gender, alignment)</option>
+        </select>
+        <label for="start-pickup">Pick up</label>
+        <select id="start-pickup"><option value="all">Everything (NetHack default)</option><option value="$">Gold only</option><option value="$?!/=&quot;+">Gold, scrolls, potions, wands, rings, amulets, books</option><option value="off">Off</option></select>
+        <span></span><label class="check"><input type="checkbox" id="start-tutorial"> NetHack's tutorial (made for keyboards)</label>
+      </div>
+      <select id="start-controls" hidden><option value="classic" selected>classic</option></select>
+      <button type="submit" class="primary" id="start-go" disabled>Loading the dungeon…</button>
+      <button type="button" class="linkbtn" id="start-settings">Settings</button>
+      <p class="fine" id="start-fine">Tap to walk, travel or fight · tap yourself to use stairs, pick up or rest · hold anywhere for every action there · drag to look around · pinch to zoom.</p>
+      <p class="fine" id="start-install" hidden></p>
+    </form>
+  </div>
+</div>
+<script type="module" src="m/js/main.js"></script>
+</body>
+</html>

@@ -4,6 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>NetHack Gauntlet</title>
+<script>/* a phone or tablet without a mouse gets the touch version (add ?desktop to stay here) */
+if (matchMedia('(pointer: coarse)').matches && !matchMedia('(any-pointer: fine)').matches && !/[?&]desktop\b/.test(location.search) && !globalThis.nhgDesktop) location.replace('m/' + location.hash);</script>
 <link rel="stylesheet" href="fonts/fonts.css">
 <link rel="stylesheet" href="css/app.css">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' fill='%2306060a'/%3E%3Cpath d='M5 3h6v2H5zM4 5h8v5H4zM6 10h4v3H6z' fill='%23c8a050'/%3E%3C/svg%3E">

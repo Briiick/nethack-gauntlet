@@ -139,7 +139,7 @@ export class Renderer {
     this.liveProps = new Map();   // cell -> { x, y, prop }: props drawn every frame (tall or animated)
     this.particles = []; this.arcs = []; this.flashes = []; this.ghosts = []; this.pillars = [];
     this.pendingKills = []; this.levelTheme = 'main'; this.torches = []; this.lightSources = [];
-    this.cam = { x: 0, y: 0, init: false }; this.shake = 0;
+    this.cam = { x: 0, y: 0, init: false }; this.pan = { x: 0, y: 0 }; this.shake = 0;
     // hit-stop freezes the animation clock: clock() is performance.now() minus the time spent frozen
     this.stopped = 0; this.stopFrom = 0; this.stopUntil = 0;
     this.initActions();
@@ -864,7 +864,8 @@ export class Renderer {
     // while picking a map position, the camera follows the cursor instead
     const cur = this.cursor;
     const fx = cur ? cur.x * T + T / 2 : hx, fy = cur ? cur.y * T + T / 2 : hy;
-    let tx = fx - vw / 2, ty = fy - vh / 2;
+    // (pan: the phone version lets you drag the view away from the hero for a look around)
+    let tx = fx - vw / 2 + (cur ? 0 : this.pan.x), ty = fy - vh / 2 + (cur ? 0 : this.pan.y);
     // keep the hero centred even at the map's edges, so they never end up under the HUD
     if (vw >= W * 1.6) tx = (W - vw) / 2;
     if (vh >= H * 1.6) ty = (H - vh) / 2 - T;

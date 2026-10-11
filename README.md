@@ -66,6 +66,40 @@ controls) before closing the tab.
 
 No internet connection is needed at any point, including the first launch.
 
+### On your phone
+
+`mobile/` is the same game with a touch interface in the spirit of *Pixel Dungeon*, built for one
+thumb, portrait or landscape. It uses the same engine, art and renderer as the desktop version.
+
+- **Tap** to walk, travel or fight: tap far away to travel there, and tap next to you to step,
+  attack, open a door or kick a locked one. Tap **yourself** to take the stairs, pick up, loot,
+  drink from a fountain or rest. These are NetHack's own mouse actions.
+- **Hold** a spot to see what's there, with buttons to *Look*, *Travel*, *Fire this way* and, next to
+  you, NetHack's own "What do you want to do?" menu.
+- **Drag** to look around and **pinch** to zoom.
+- The bottom toolbar has Search (hold it to rest), Look, quick slots, the Bag and **Actions**, which
+  lists every NetHack command as a button (pray, kick, #enhance, …). It also has *Keyboard…* for
+  typing raw keys.
+- The bag is a backpack grid: tap an item to see it and use it, or put it on a quick slot. When the
+  game asks for an item, a tap answers. Questions have Yes/No buttons, and a direction is a tap on the
+  map or the arrow pad.
+- Leaving the app saves the game, exactly like `S`, and coming back resumes it. Phones close
+  background apps without asking, so this setting is on by default (Actions → *Save automatically*).
+  Saves stay on the phone.
+
+There are two ways to get it onto your phone:
+
+- **Same Wi-Fi as your computer:** run `npm run mobile` and open the address it prints
+  (`http://<your computer>:8080/m/`) on the phone.
+- **Anywhere, installable and offline:** turn on GitHub Pages once (repository Settings → Pages →
+  Source: *GitHub Actions*). The *Website* workflow then publishes the game on every push, to
+  `https://<user>.github.io/<repo>/m/`. Open that on the phone and choose *Add to Home Screen*. It
+  runs full screen and plays with no connection, because the whole game (about 16 MB) is cached on
+  first launch.
+
+A phone or tablet without a mouse that opens the desktop page is sent to the touch version
+automatically; add `?desktop` to the address to stay on the desktop page.
+
 ### Controls
 
 There are two control schemes; pick one on the start screen or in Settings → Controls, and switch
@@ -148,7 +182,7 @@ Add `#wizard` to the URL to start in NetHack's debug mode.
 ## Layout
 
 ```
-server.mjs              zero-dependency static server
+server.mjs              zero-dependency static server (desktop page at /, phone version at /m/; --lan for phones)
 desktop/                the desktop app: Electron main process, preload bridge, icon, mac signing hook
 public/
   index.html, css/      HUD, panels, inventory screen
@@ -159,11 +193,18 @@ public/
   js/inventory.js       the inventory screen
   nethack/              the compiled engine (nethack.js + nethack.wasm)
   assets/               tile map, monster sprite sheets, item icon atlases, UI textures
+mobile/                 the phone version, served at /m/ (it loads everything else from public/)
+  js/touch.js           taps, long presses, drag and pinch, as NetHack's own mouse actions
+  js/hud.js             toolbar, context button, action sheets
+  js/bag.js             the backpack
+  js/mobileui.js        the desktop UI with phone-shaped menus, questions and targeting
+  sw.js, manifest       offline play and Add to Home Screen
 engine/                 the patch on top of NetHack 5.0.0 and the script that builds it
 tools/
   make_atlas.py         glyph → tile/monster/object tables (tiles.json) and the fallback atlas
   make_ui.py            procedural stone texture for the inventory
   make_icon.py          the app icon (desktop/resources/icon.png)
+  build-web.mjs         assembles the website (desktop page + phone version + offline file list) into _site/
   sprites3d/            the 3D-to-pixel renderer: SDF primitives, rigs, materials,
                         monster roster (batch.py) and item models (items.py)
 test/                   smoke test and screenshot scripts (Playwright)
@@ -212,6 +253,10 @@ CHROME=/path/to/chrome npm test
 - `test/desktop.mjs` (`npm run test:desktop`; on Linux without a display, `xvfb-run -a npm run test:desktop`)
   launches the desktop app, plays, closes the window with the inventory open, checks the save file
   landed on disk, then relaunches and resumes the game.
+- `test/mobile.mjs` (`npm run test:mobile`) plays the phone version on an emulated iPhone with
+  touch only: tap to step, travel and rest, long press, direction and pick-a-spot taps, word buttons,
+  the backpack and quick slots, the action sheet, drag and pinch, and saving on leaving the app and
+  resuming on return.
 - `test/settings.mjs` and `test/showcase.mjs` take screenshots of every settings tab and of a
   fully kitted-out debug-mode character.
 
