@@ -3,6 +3,7 @@
 // into NetHack's own commands, so the game itself is unchanged. Settings > Controls switches
 // between these and NetHack's classic keys.
 import { commandList, keyLabel } from './settings.js';
+import { isContainerGlyphName, containerInText } from './loot.js';
 
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const ESC = 27;
@@ -20,7 +21,7 @@ const STEP_MS = 115;   // ...then a step this often (about 8 a second), instead 
 
 // The modern actions: [id, label, key shown, what it does]
 export const ACTIONS = [
-  ['action', 'Attack / act', 'Space'], ['inventory', 'Inventory', 'I'], ['interact', 'Stairs / pick up', 'E'], ['wait', 'Wait / search', '.'],
+  ['action', 'Attack / act', 'Space'], ['inventory', 'Inventory', 'I'], ['interact', 'Stairs / pick up / open', 'E'], ['wait', 'Wait / search', '.'],
   ['rest', 'Rest 20 turns', 'R'], ['examine', 'Examine', 'X'], ['fire', 'Fire', 'F'], ['throw', 'Throw', 'T'],
   ['cast', 'Cast a spell', 'Z'], ['character', 'Character', 'C'], ['overview', 'Dungeon overview', 'M'],
   ['commands', 'All actions', 'Tab'], ['save', 'Save and quit', 'Ctrl+S'], ['help', 'Help', '?'],
@@ -209,7 +210,19 @@ export class ModernControls {
     const r = this.ui.renderer, h = this.ui.game?.hero || r.heroCell, i = h.y * 80 + h.x;
     const tg = r.terrMem[i] >= 0 ? r.terrMem[i] : r.glyph[i];
     const n = tg >= 0 ? r.tiles.gname[tg] : '';
-    return { stairs: /(staircase|ladder) down/.test(n) ? '>' : /(staircase|ladder) up/.test(n) ? '<' : '', items: r.objMem[i] >= 0 };
+    const top = r.objMem[i] >= 0 ? r.tiles.gname[r.objMem[i]] : '';
+    const note = this.ui.game?.hereNote, noted = note && note.x === h.x && note.y === h.y ? note.text : '';
+    const container = isContainerGlyphName(top) ? top.replace(/^piletop /, '').replace(/^bag \/ /, '') : containerInText(noted);
+    // "Hmmm, it turns out to be locked." just now: the next press forces it instead
+    const locked = !!container && (this.ui.historyLog || []).slice(-3).some((m) => /turns out to be locked|is locked\.$/.test(m));
+    return { stairs: /(staircase|ladder) down/.test(n) ? '>' : /(staircase|ladder) up/.test(n) ? '<' : '', items: r.objMem[i] >= 0 || !!noted, container, locked };
+  }
+  // a chest or bag on the floor here: loot it (or, found locked, force it open)
+  openHere(here) {
+    if (!here.container) return false;
+    this.ui.pendingExt = here.locked ? 'force' : 'loot';
+    this.ui.pushKey('#'.charCodeAt(0));
+    return true;
   }
 
   act(name) {
@@ -233,12 +246,14 @@ export class ModernControls {
         const t = ui.renderer.attackTarget();
         if (t) { push('F' + VI_OF[`${t.dx},${t.dy}`]); break; }   // F: fight in that direction
         const here = this.here();
+        if (this.openHere(here)) break;   // a chest on the stairs: the chest (< and > still climb)
         push(here.stairs || (here.items ? ',' : 's'));
         break;
       }
       case 'interact': {
-        // stairs if you're on them, otherwise pick up whatever is here
+        // stairs if you're on them, open a chest, otherwise pick up whatever is here
         const here = this.here();
+        if (this.openHere(here)) break;
         push(here.stairs || ',');
         break;
       }

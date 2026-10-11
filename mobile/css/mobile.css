@@ -193,3 +193,12 @@ body.m #target-hint[hidden], body.m .sub[hidden], body.m .stats[hidden], body.m 
 body.m #modal { grid-template-columns: minmax(0, 1fr); }
 body.m #modal > * { min-width: 0; }
 body.m .panel.settings select { max-width: 100%; }
+/* the loot screen on a phone: inside above, pack below */
+body.m .panel.loot { height: calc(100dvh - var(--safe-t) - 12px); max-height: none; border-radius: 16px 16px 0 0; }
+body.m .panel.loot .cols { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, auto) minmax(0, 1fr); padding: 10px 12px 4px; }
+body.m .panel.loot .side.inside { max-height: 40vh; }
+body.m .panel.loot .lgrid { grid-template-columns: repeat(auto-fill, minmax(64px, 1fr)); gap: 6px; }
+body.m .panel.loot .lcell { border-radius: 10px; }
+body.m .panel.loot .linfo { font-size: 15px; padding: 6px 14px; }
+body.m .panel.loot .sbtn { min-height: 48px; border-radius: 10px; }
+body.m .panel.loot .x { width: 44px; height: 44px; margin-right: 8px; }

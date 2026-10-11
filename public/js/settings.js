@@ -135,6 +135,7 @@ export function openSettings(ui, startTab = 'display') {
         <div class="grid compact">${modern ? chk('set-actionbar', 'Show the action bar', s.actionBar !== false, 'Clickable buttons down the right edge') : ''}
           ${modern ? chk('set-holdwalk', 'Hold to walk', s.holdWalk !== false, 'Holding a direction walks at a steady pace; stops when something happens') : ''}
           ${chk('set-autopicker', 'Pick items by clicking', s.autoPicker !== false, '"What do you want to eat?" opens the item picker instead of asking for a letter')}
+          ${chk('set-quickloot', 'Quick looting', s.quickLoot !== false, 'Chests and bags open in one screen beside your pack; off shows NetHack\'s own loot menus')}
           ${chk('set-quickbar', 'Quickbar', s.quickbar !== false, 'Slots 1–9 along the bottom for items and spells')}
           ${chk('set-spellcards', 'Spell cards', s.spellCards !== false, 'Show your spells as cards instead of a table')}</div>
         <div class="controls">
@@ -201,7 +202,7 @@ export function openSettings(ui, startTab = 'display') {
     const scheme = el.querySelector('input[name=scheme]:checked');
     if (scheme) s.controls = scheme.value;
     if (v('set-actionbar')) s.actionBar = v('set-actionbar').checked;
-    for (const [id, key] of [['set-holdwalk', 'holdWalk'], ['set-autopicker', 'autoPicker'], ['set-quickbar', 'quickbar'], ['set-spellcards', 'spellCards'], ['set-herogear', 'heroGear']]) if (v(id)) s[key] = v(id).checked;
+    for (const [id, key] of [['set-holdwalk', 'holdWalk'], ['set-autopicker', 'autoPicker'], ['set-quickloot', 'quickLoot'], ['set-quickbar', 'quickbar'], ['set-spellcards', 'spellCards'], ['set-herogear', 'heroGear']]) if (v(id)) s[key] = v(id).checked;
     if (v('set-pickup')) {
       Object.assign(s.game, { autopickup: v('set-pickup').value, safePet: v('set-safepet').checked, confirm: v('set-confirm').checked,
         autoopen: v('set-autoopen').checked, autoquiver: v('set-autoquiver').checked, pushweapon: v('set-pushweapon').checked,

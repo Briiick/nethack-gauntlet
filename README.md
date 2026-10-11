@@ -22,6 +22,13 @@ browser, and works fully offline: the engine, art and fonts are all in this fold
 - **A Baldur's Gate-style inventory.** A carved-stone page with your character in the middle (turn
   them, or point at a weapon to watch them swing it), equipment slots around them, a quick-weapons
   panel, the backpack along the bottom and your pets' portraits down the side.
+- **Chests in one screen.** Open a chest or bag (`E` or `Space` with modern controls, `#loot`, or
+  tap yourself on a phone) and its contents sit beside your pack. Mark what to take out and what to
+  put in, then press one button; *Take all* empties it. Underneath, NetHack still asks all of its
+  loot questions, and the interface answers them with what you marked. If a chest turns out to be
+  locked, pressing `E` again forces the lock (NetHack asks first). Picking up or dropping several
+  things also skips the "what type of objects?" step. Settings → Gameplay → *Quick looting* turns
+  this off and shows NetHack's own menus.
 
 ## Play
 
@@ -74,6 +81,8 @@ thumb, portrait or landscape. It uses the same engine, art and renderer as the d
 - **Tap** to walk, travel or fight: tap far away to travel there, and tap next to you to step,
   attack, open a door or kick a locked one. Tap **yourself** to take the stairs, pick up, loot,
   drink from a fountain or rest. These are NetHack's own mouse actions.
+- Standing on a chest or bag, the context button says **Open** (or **Force lock** once you've found
+  it locked), and the same two-sided loot screen opens.
 - **Hold** a spot to see what's there, with buttons to *Look*, *Travel*, *Fire this way* and, next to
   you, NetHack's own "What do you want to do?" menu.
 - **Drag** to look around and **pinch** to zoom.
@@ -257,6 +266,9 @@ CHROME=/path/to/chrome npm test
   touch only: tap to step, travel and rest, long press, direction and pick-a-spot taps, word buttons,
   the backpack and quick slots, the action sheet, drag and pinch, and saving on leaving the app and
   resuming on return.
+- `test/loot.mjs` opens a chest with `E` on the desktop and from the context button on a phone,
+  puts in and takes out in one press, reopens it, cancels, takes everything, forces a locked box, and
+  picks up several kinds of things without the "what type" menu.
 - `test/settings.mjs` and `test/showcase.mjs` take screenshots of every settings tab and of a
   fully kitted-out debug-mode character.
 

@@ -2,6 +2,7 @@
 import { epitaph } from './epitaph.js';
 import { readGlyphInfo, readExtCommands, writeMenuSelection, persistSaves } from './engine.js';
 import { equipmentOf } from './inventory.js';
+import { Looting } from './loot.js';
 
 export const COLNO = 80, ROWNO = 21;
 const NHW = { MESSAGE: 1, STATUS: 2, MAP: 3, MENU: 4, TEXT: 5 };
@@ -31,6 +32,7 @@ export class Game {
   constructor({ ui, renderer, tiles }) {
     this.recentText = [];
     this.ui = ui; this.renderer = renderer; this.tiles = tiles;
+    this.loot = new Looting(this);
     this.mod = null;
     this.windows = new Map();
     this.nextWin = 1;
@@ -166,6 +168,7 @@ export class Game {
       return;
     }
     if ((w.type === NHW.TEXT || w.type === NHW.MENU) && w.lines.length && win !== this.invWin()) {
+      if (/^Things that are here:/.test(w.lines[0].text)) this.noteHere(w.lines.map((l) => l.text).join('\n'));
       // Like NetHack's own tty port, a text or menu window always waits to be dismissed: 'blocking'
       // only matters for the message window. (Looking an item up shows its encyclopedia entry in a
       // menu window displayed non-blocking, then destroys it at once.)
@@ -201,7 +204,18 @@ export class Game {
     if (str === 'Entering the tutorial.') this.ui.tutorialNote();
     this.ui.message(this.ui.controls.explain(str), attr);
     this.recentText.push(str); if (this.recentText.length > 80) this.recentText.shift();   // for the epitaph
+    this.noteHere(str);
     return true;
+  }
+
+  // What lies under the hero. The map can't say (the hero is drawn there), so remember what NetHack
+  // last said about this square: "You see here a chest.", "You drop a chest.", "Things that are here:".
+  noteHere(text) {
+    const m = text.match(/^You (?:see|feel) here (.+?)\.?$/) || text.match(/^You drop (.+?)\.?$/) || text.match(/^(Things that are here:[\s\S]*)$/)
+      || text.match(/^(There are (?:several|many) objects here)\.?$/);
+    if (!m) return;
+    const h = this.hero, keep = this.hereNote && this.hereNote.x === h.x && this.hereNote.y === h.y && /^You drop/.test(text);
+    this.hereNote = { x: h.x, y: h.y, text: (keep ? this.hereNote.text + '; ' : '') + m[1] };
   }
 
   async shim_display_file(name) {
@@ -258,7 +272,8 @@ export class Game {
     // "What do you want to drop? [abc or ?*]" then "?" lists the items: the list belongs to that question
     if (!w.menu.prompt && /\bor \?\*?\]\s*$/.test(this.lastQuery || '')) w.menu.context = this.lastQuery;
     this.lastQuery = '';
-    const result = this.ui.takeMenuAnswer(w.menu) || await this.ui.menu(w.menu, how);
+    const looted = this.loot.menu(w.menu, how);   // chests and bags: one screen instead of four menus
+    const result = looted !== undefined ? await looted : this.ui.takeMenuAnswer(w.menu) || await this.ui.menu(w.menu, how);
     this.messagesSinceInput = 0;
     // equipping from the inventory's "Do what with ...?" menu: show the inventory again afterwards
     if (result && result.length && /^Do what with /.test(w.menu.prompt || '')) {
@@ -300,6 +315,8 @@ export class Game {
     if (this.autoSaving) return /save/i.test(query || '') ? 121 : 27;   // closing the app: "Really save?" yes, anything else no
     // "What do you want to eat? [fg or ?*]": open the item picker straight away instead of asking
     // for a letter ('?' makes NetHack list the items that fit). Cancelling the picker cancels the command.
+    const lootKey = this.loot.yn(query || '');
+    if (lootKey !== null) return lootKey;
     const pick = this.autoPick(query || '');
     if (pick !== null) return pick;
     try { this.renderer.onAsk?.(query || ''); } catch (e) { console.warn(e); }   // aiming poses while a direction is asked
@@ -354,6 +371,7 @@ export class Game {
     this.renderer.commit();
     this.lastQuery = '';   // back at the command prompt
     this.autoPicking = null; this.pickCancelled = null;   // back at the command prompt: no picker pending
+    this.loot.reset();
     if (this.retry) {   // the picker was left for another item: the same command again, answered with it
       const { key, letter } = this.retry; this.retry = null;
       this.ui.answerNext([{ re: /^(What|Which) /, key: letter }]);

@@ -118,6 +118,9 @@ export class MobileUI extends UI {
   bell() { try { navigator.vibrate?.(30); } catch (e) { /* no haptics */ } super.bell?.(); }
 
   message(text, attr, o) {
+    // NetHack won't rest or search with a monster beside you unless you insist with the m prefix,
+    // which a phone has no key for: the Search button insists when pressed again
+    text = String(text).replace(/\s*Use '[^']*' prefix to force (a no-op \(to rest\)|another search)\./, ' Tap Search again to do it anyway.');
     super.message(text, attr, o);
     if (!o || !o.history) this.onMessage?.(text);
   }

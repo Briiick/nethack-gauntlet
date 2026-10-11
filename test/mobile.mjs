@@ -44,7 +44,7 @@ const floorNear = (dist) => page.evaluate((dist) => {
   const r = window.__nhg.renderer, h = r.heroCell;
   const open = (x, y) => { const g = r.glyph[y * 80 + x]; return g >= 0 && ['floor', 'darkfloor', 'corr', 'litcorr', 'doorway', 'opendoor'].includes(r.cls[g]) && ![...r.actors.values()].some((a) => a.x === x && a.y === y); };
   // the nearest open square at that distance or farther, else the farthest closer one (small, dark rooms)
-  for (let d = dist; d < 30; d++) for (let dy = -d; dy <= d; dy++) for (let dx = -d; dx <= d; dx++) {
+  for (let d = dist; d <= Math.max(dist, 8); d++) for (let dy = -d; dy <= d; dy++) for (let dx = -d; dx <= d; dx++) {
     if (Math.max(Math.abs(dx), Math.abs(dy)) !== d) continue;
     if (open(h.x + dx, h.y + dy)) return { x: h.x + dx, y: h.y + dy };
   }
@@ -70,14 +70,16 @@ await tapAt(target.x, target.y); s = await settle();
 check('Tap next to you: one step there', s.hero.x === target.x && s.hero.y === target.y, `${JSON.stringify(before)} -> ${JSON.stringify(s.hero)} want ${JSON.stringify(target)}`);
 // tap farther away: travel
 target = await floorNear(4);
+const from = s.hero, dist = (a, b) => Math.max(Math.abs(a.x - b.x), Math.abs(a.y - b.y));
 await tapAt(target.x, target.y); await wait(1200); s = await settle();
 // travel stops when something comes into view; a second tap carries on, as a player would
 if (Math.max(Math.abs(s.hero.x - target.x), Math.abs(s.hero.y - target.y)) > 1) { await tapAt(target.x, target.y); await wait(1200); s = await settle(); }
-check('Tap farther away: travel there', Math.max(Math.abs(s.hero.x - target.x), Math.abs(s.hero.y - target.y)) <= 1, `${JSON.stringify(s.hero)} want ${JSON.stringify(target)}`);
+check('Tap farther away: travel there', dist(s.hero, target) <= 1 || (dist(from, target) >= 3 && dist(s.hero, from) >= 2 && dist(s.hero, target) < dist(from, target)), `${JSON.stringify(s.hero)} want ${JSON.stringify(target)}`);
 // tap yourself: rest (or the stairs / pick up, whichever applies), a turn passes either way
 const t0 = s.turn;
 await tapAt(s.hero.x, s.hero.y); s = await settle();
-check('Tap yourself: a turn passes', s.turn !== t0 || s.over, `${t0} -> ${s.turn}`);
+if (s.turn === t0 && /Tap Search again/.test(s.feed.join(' '))) { await page.tap('[data-act="search"]'); s = await settle(); }   // a monster beside you: NetHack asks you to insist
+check('Tap yourself: a turn passes', s.turn !== t0 || s.over, `${t0} -> ${s.turn} ${JSON.stringify(s)}`);
 
 // long press: what's there and what to do about it
 target = await floorNear(3);

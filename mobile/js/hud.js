@@ -16,6 +16,8 @@ const I = {   // 24x24 line icons
   up: 'M4 18h5v-4h5v-4h6M14 6l3-3 3 3M17 12V3',
   pick: 'M12 3v11M7 9l5 5 5-5M5 21h14',
   centre: 'M12 2v4M12 18v4M2 12h4M18 12h4M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8z',
+  chest: 'M3 10h18v10H3zM3 10c0-4 2-6 9-6s9 2 9 6M11 12h2v3h-2z',
+  force: 'M4 20l8-8M14 4l6 6-3 3-6-6zM11 13l-2-2',
 };
 const svg = (d, s = 24) => `<svg viewBox="0 0 24 24" width="${s}" height="${s}" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${d}"/></svg>`;
 
@@ -62,7 +64,7 @@ export class Hud {
       const b = e.target.closest('[data-act]');
       if (!b) return;
       if (b.dataset.act === 'search' && this.restHeld) { this.restHeld = false; return; }
-      ({ search: () => this.run('s'), look: () => this.run(';'), bag: () => this.run('i'), more: () => this.sheet('Actions', ACTIONS) })[b.dataset.act]();
+      ({ search: () => this.run(this.insist() ? 'ms' : 's'), look: () => this.run(';'), bag: () => this.run('i'), more: () => this.sheet('Actions', ACTIONS) })[b.dataset.act]();
     });
     // the shared quickbar, moved into the toolbar
     const qb = ui.quickbar.el;
@@ -104,6 +106,8 @@ export class Hud {
     ui.renderer.pan.x = 0; ui.renderer.pan.y = 0; this.panned(false);
     for (const c of keys) ui.pushKey(c.charCodeAt(0));
   }
+  // NetHack just refused to rest or search with a monster beside you: this time, insist
+  insist() { return /waiting to get hit|another search|good idea right now/.test((this.ui.historyLog || []).slice(-1)[0] || ''); }
   ext(name) { const ui = this.ui; if (!ui.waiter || ui.modal) return; ui.pendingExt = name; this.run('#'); }
 
   flash(text, ms = 1600) {
@@ -125,6 +129,9 @@ export class Hud {
         const name = r.monsterName(t.a);
         act = () => this.run('F' + VI[`${t.dx},${t.dy}`]);
         label = `Attack<small>${esc(name)}</small>`;
+      } else if (here.container) {
+        label = here.locked ? `Force lock<small>${esc(here.container)}</small>` : `Open<small>${esc(here.container)}</small>`; icon = here.locked ? I.force : I.chest;
+        act = () => this.ext(here.locked ? 'force' : 'loot');
       } else if (here.stairs) {
         label = here.stairs === '>' ? 'Go down' : 'Go up'; icon = here.stairs === '>' ? I.down : I.up;
         act = () => this.run(here.stairs);
