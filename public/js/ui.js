@@ -304,7 +304,8 @@ export class UI {
         if (pickAny) { it.selected = !it.selected; render(); }
         else finish([{ ident: it.ident, count: -1 }]);
       };
-      list.addEventListener('click', (e) => { const b = e.target.closest('.item'); if (b) choose(items[+b.dataset.i]); });
+      // (the row, not the item icon inside it, which also has the class "item")
+      list.addEventListener('click', (e) => { const b = e.target.closest('button.item[data-i]'); if (b && items[+b.dataset.i]) choose(items[+b.dataset.i]); });
       render();
       this.openModal(el, (e) => {
         if (how === 0) { finish([]); return; }

@@ -1,6 +1,7 @@
 // The window port: turns NetHack's window calls into map/status state and UI requests.
 import { epitaph } from './epitaph.js';
-import { readGlyphInfo, readExtCommands, writeMenuSelection, persistSaves } from './engine.js';
+import { readGlyphInfo, readExtCommands, writeMenuSelection, persistSaves, listSaves } from './engine.js';
+import { recordGameEnd, recordSave } from './records.js';
 import { equipmentOf } from './inventory.js';
 import { Looting } from './loot.js';
 
@@ -101,6 +102,14 @@ export class Game {
     const where = this.status[BL.LEVELDESC]?.val?.replace(/^Dlvl:/, 'dungeon level ') || '';
     const turn = (this.status[BL.TIME]?.val.match(/\d+/) || [])[0];
     const when = [where && `on ${where}`, turn && `on turn ${turn}`].filter(Boolean).join(', ');
+    // saved (NetHack's save file is there) or finished (NetHack wrote its xlogfile line): remember which
+    const norm = (n) => String(n || '').replace(/[^A-Za-z0-9]/g, '_');
+    let saveFile = null;
+    try { saveFile = listSaves(this.mod).find((f) => norm(f.replace(/^\d+/, '')) === norm(this.ui.playerName)) || null; } catch (e) { /* none */ }
+    try {
+      if (saveFile && !death) recordSave(this, saveFile);
+      else this.recorded = recordGameEnd(this, death ? `${death}${when ? ` (${when})` : ''}` : '');   // (NetHack writes its line just after closing its windows)
+    } catch (e) { console.warn('could not record the game', e); }
     if (death) this.ui.gameOver(`${death}${when ? ` (${when})` : ''}`);
     else if (log.some((m) => /saving|be seeing you/i.test(m)) || /be seeing you/i.test(str || '')) this.ui.gameOver('Your game has been saved.');
     else this.ui.gameOver(str || `Your adventure has ended${when ? ` ${when}` : ''}.`);

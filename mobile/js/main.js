@@ -5,6 +5,7 @@ import { loadEngine, runGame, listSaves, deleteSave } from '../../js/engine.js';
 import { Game } from '../../js/game.js';
 import { Renderer } from '../../js/render.js';
 import { DEFAULTS, SETTINGS_VERSION, gameOptions } from '../../js/settings.js';
+import { mountSaves, openHallOfFame } from '../../js/records.js';
 import { MobileUI } from './mobileui.js';
 import { Touch } from './touch.js';
 import { Hud } from './hud.js';
@@ -59,26 +60,20 @@ async function boot() {
   nameInput.value = last || NAMES[Math.floor(Math.random() * NAMES.length)];
 
   const saves = listSaves(mod).map((f) => ({ file: f, name: f.replace(/^\d+/, '') }));
-  const savesEl = document.getElementById('saves');
-  if (saves.length) {
-    const esc = (t) => String(t).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
-    savesEl.innerHTML = '<h2>Continue</h2>' + saves.map((s) => `<div class="save"><button type="button" class="resume" data-name="${esc(s.name)}">${esc(s.name)}</button><button type="button" class="del" data-file="${esc(s.file)}" aria-label="Delete the save for ${esc(s.name)}">Delete</button></div>`).join('');
-    savesEl.addEventListener('click', async (e) => {
-      const r = e.target.closest('.resume'), d = e.target.closest('.del');
-      if (r) { nameInput.value = r.dataset.name; start(); }
-      if (d) {
-        if (d.dataset.confirm) { await deleteSave(mod, d.dataset.file); d.closest('.save').remove(); }
-        else { d.dataset.confirm = '1'; d.textContent = 'Really delete?'; }
-      }
-    });
-  }
+  // saved games as cards: who, where, when; Resume carries straight on (no retyping the name)
+  mountSaves(document.getElementById('saves'), saves, {
+    onResume: (name) => { nameInput.value = name; start(); },
+    onDelete: (file) => deleteSave(mod, file),
+  });
+  document.getElementById('start-fame')?.addEventListener('click', () => openHallOfFame(ui));
+  document.getElementById('gameover-fame')?.addEventListener('click', () => openHallOfFame(ui));
 
   const pk = document.getElementById('start-pickup');
   if ([...pk.options].some((o) => o.value === settings.game.autopickup)) pk.value = settings.game.autopickup;
   document.getElementById('start-tutorial').checked = !!settings.game.tutorial;
   document.getElementById('start-settings')?.addEventListener('click', () => ui.openSettings());
   const go = document.getElementById('start-go');
-  go.disabled = false; go.textContent = 'Enter the dungeon';
+  go.disabled = false; go.textContent = saves.length ? 'New game' : 'Enter the dungeon';
   document.getElementById('start-form').addEventListener('submit', (e) => { e.preventDefault(); start(); });
   installHint();
 

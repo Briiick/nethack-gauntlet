@@ -204,3 +204,11 @@ body.m .panel.loot .lcell { border-radius: 10px; }
 body.m .panel.loot .linfo { font-size: 15px; padding: 6px 14px; }
 body.m .panel.loot .sbtn { min-height: 48px; border-radius: 10px; }
 body.m .panel.loot .x { width: 44px; height: 44px; margin-right: 8px; }
+/* saved-game cards and the Hall of Fame on a phone */
+body.m #saves .savecard { margin: 0 12px 8px; padding: 10px; }
+body.m #saves .resume.primary { min-height: 46px; }
+body.m #saves .del { min-height: 36px; }
+body.m .panel.fame { height: calc(100dvh - var(--safe-t) - 12px); max-height: none; border-radius: 16px 16px 0 0; padding-bottom: var(--safe-b); }
+body.m .panel.fame .x { width: 44px; height: 44px; margin-right: 8px; }
+body.m .panel.fame .tabs button { min-height: 40px; }
+body.m .panel.fame .stats { font-size: 14px; }

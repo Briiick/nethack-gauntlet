@@ -2,6 +2,7 @@
 // command table), Saves (export / import / delete) and About.
 import { listSaves, deleteSave, persistSaves, readExtCommands } from './engine.js';
 import { MODERN_HELP } from './controls.js';
+import { openHallOfFame } from './records.js';
 
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
@@ -160,7 +161,7 @@ export function openSettings(ui, startTab = 'display') {
         <ul class="saves">${saves.length ? saves.map((f) => `<li><span>${esc(f.replace(/^\d+/, '').replace(/\.gz$|\.Z$/, ''))}</span><small>${esc(f)}</small>
           <button type="button" class="ghostbtn" data-export="${esc(f)}">Export</button>
           <button type="button" class="ghostbtn danger" data-delete="${esc(f)}">Delete</button></li>`).join('') : '<li class="none">No saved games yet.</li>'}</ul>
-        <div class="row-actions"><label class="ghostbtn file">Import a save…<input type="file" class="import" hidden></label></div>`;
+        <div class="row-actions"><label class="ghostbtn file">Import a save…<input type="file" class="import" hidden></label><button type="button" class="ghostbtn" data-fame>Past games: Hall of Fame…</button></div>`;
     },
     about: () => `<div class="about"><p><b>NetHack Gauntlet</b>: NetHack 5.0.0, the real game, unchanged, compiled to WebAssembly
       and running entirely on this computer. This is only an interface: what happens in the game is NetHack's. No internet connection is needed or used.</p>
@@ -239,6 +240,7 @@ export function openSettings(ui, startTab = 'display') {
       setTimeout(() => URL.revokeObjectURL(a.href), 1000);
       return;
     }
+    if (e.target.closest('[data-fame]')) { close(); openHallOfFame(ui); return; }
     const d = e.target.closest('[data-delete]');
     if (d) {
       if (!d.dataset.sure) { d.dataset.sure = '1'; d.textContent = 'Really delete?'; return; }

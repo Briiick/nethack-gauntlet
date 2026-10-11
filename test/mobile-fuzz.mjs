@@ -15,7 +15,7 @@ const browser = await chromium.launch({ executablePath: CHROME });
 const ctx = await browser.newContext({ ...devices['iPhone 13'] });
 const page = await ctx.newPage();
 const cdp = await ctx.newCDPSession(page);
-const errs = []; page.on('pageerror', (e) => errs.push(e.message)); page.on('console', (m) => { if (m.type() === 'error' && !/Failed to load resource/.test(m.text())) errs.push(m.text()); });
+const errs = []; page.on('pageerror', (e) => errs.push(e.message + ' @ ' + String(e.stack || '').split('\n').slice(1, 3).join(' <- '))); page.on('console', (m) => { if (m.type() === 'error' && !/Failed to load resource/.test(m.text())) errs.push(m.text() + ' @ ' + JSON.stringify(m.location())); });
 const wait = (ms) => page.waitForTimeout(ms);
 const problems = [];
 

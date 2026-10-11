@@ -53,11 +53,19 @@ will say it can't verify the developer: **right-click the app → Open → Open*
 Each push to `main` also builds the installers for all three systems on GitHub Actions; download
 them from the run's *Artifacts* section (pushing a `v*` tag attaches them to a release).
 
-**Saving.** Closing the window saves your game, exactly as NetHack's own save command does, and
-the next time you start with the same name it carries on where you left off (the start screen
-lists your saved games under *Continue*). Saves are ordinary files in the app's data folder:
-Settings → Saves shows where, with a button to open it. NetHack is a roguelike, so each
-character has one save, replaced every time you save, and dying ends that character for good.
+**Saving.** Closing the window saves your game, exactly as NetHack's own save command does. The
+start screen shows each saved game as a card under *Continue*, with the hero's portrait, role,
+level, depth, turn and when it was saved; **Resume** carries straight on, with no name to retype.
+Saves are ordinary files in the app's data folder: Settings → Saves shows where, with a button to
+open it. NetHack is a roguelike, so each character has one save, replaced every time you save,
+and dying ends that character for good.
+
+**Hall of Fame.** Every game that ends (died, quit, escaped, ascended) is kept: the start screen,
+the game-over screen and Settings → Saves open the Hall of Fame, with your best scores and most
+recent games. Each row shows the score, how and where the game ended, role, level and turns; tap
+or click one for more (deepest level, achievements, conducts kept). The scores are NetHack's own,
+copied from the line it writes to its `xlogfile` when a game ends. The desktop app, a browser and a
+phone each keep their own list.
 
 ### In a browser
 
@@ -92,7 +100,9 @@ thumb, portrait or landscape. It uses the same engine, art and renderer as the d
 - The bag is a backpack grid: tap an item to see it and use it, or put it on a quick slot. When the
   game asks for an item, a tap answers. Questions have Yes/No buttons, and a direction is a tap on the
   map or the arrow pad.
-- Leaving the app saves the game, exactly like `S`, and coming back resumes it. Phones close
+- Leaving the app saves the game, exactly like `S`, and coming back resumes it. Saved games show as
+  cards on the start screen (tap **Resume**), and finished ones go to the **Hall of Fame** (also in
+  the ☰ menu). Phones close
   background apps without asking, so this setting is on by default (Actions → *Save automatically*).
   Saves stay on the phone.
 
@@ -269,6 +279,8 @@ CHROME=/path/to/chrome npm test
 - `test/mobile-fuzz.mjs <url> [steps] [Role] [seed]` plays the phone version with random touches
   (taps, holds, pans, toolbar, action sheets, prompts, menus, backpack, loot) and fails on page errors
   or on any moment the game waits with nothing on screen to answer.
+- `test/records.mjs` (desktop and phone) ends a game and finds it in the Hall of Fame, saves one and
+  finds its card on the start screen, resumes it with one press and deletes it.
 - `test/loot.mjs` opens a chest with `E` on the desktop and from the context button on a phone,
   puts in and takes out in one press, reopens it, cancels, takes everything, forces a locked box, and
   picks up several kinds of things without the "what type" menu.

@@ -1,6 +1,8 @@
 // The phone HUD: a toolbar along the bottom (search, look, quick slots, backpack, every other
 // action), a context button for what you'd most likely do next (attack what's beside you, take
 // the stairs, pick up), and sheets listing every NetHack command as a button.
+import { openHallOfFame } from '../../js/records.js';
+
 const $ = (sel) => document.querySelector(sel);
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const VI = { '-1,-1': 'y', '0,-1': 'k', '1,-1': 'u', '-1,0': 'h', '1,0': 'l', '-1,1': 'b', '0,1': 'j', '1,1': 'n' };
@@ -40,7 +42,7 @@ const ACTIONS = [
     ['Conduct', { x: 'conduct' }], ['Vanquished', { x: 'vanquished' }], ['Messages', { f: 'history' }], ['What is…', { k: '/' }], ['Again', { k: '\x01' }], ['Any command…', { k: '#' }],
   ]],
   ['Game', [
-    ['Save & quit', { k: 'S' }], ['Settings', { f: 'settings' }], ['Help', { k: '?' }], ['Zoom in', { f: 'zoomin' }], ['Zoom out', { f: 'zoomout' }], ['Keyboard…', { f: 'keys' }],
+    ['Save & quit', { k: 'S' }], ['Hall of Fame', { f: 'fame' }], ['Settings', { f: 'settings' }], ['Help', { k: '?' }], ['Zoom in', { f: 'zoomin' }], ['Zoom out', { f: 'zoomout' }], ['Keyboard…', { f: 'keys' }],
   ]],
 ];
 
@@ -170,6 +172,7 @@ export class Hud {
       else if (a.x) this.ext(a.x);
       else if (a.f === 'history') ui.history();
       else if (a.f === 'settings') ui.openSettings();
+      else if (a.f === 'fame') openHallOfFame(ui);
       else if (a.f === 'zoomin') this.touch?.zoomStep(1);
       else if (a.f === 'zoomout') this.touch?.zoomStep(-1);
       else if (a.f === 'keys') this.keyboard();

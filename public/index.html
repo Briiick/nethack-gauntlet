@@ -53,6 +53,7 @@ if (matchMedia('(pointer: coarse)').matches && !matchMedia('(any-pointer: fine)'
     <h1>Farewell</h1>
     <p></p>
     <button type="button" class="primary" onclick="location.reload()">Return to the entrance</button>
+    <button type="button" class="linkbtn" id="gameover-fame">Hall of Fame: your past games</button>
   </div>
 
   <div id="start">
@@ -80,7 +81,8 @@ if (matchMedia('(pointer: coarse)').matches && !matchMedia('(any-pointer: fine)'
       </div>
       <button type="submit" class="primary" id="start-go" disabled>Loading the dungeon…</button>
       <button type="button" class="linkbtn" id="start-settings">Settings &amp; controls</button>
-      <p class="fine" id="start-fine">Saves stay in this browser. Save with <kbd>Ctrl</kbd>+<kbd>S</kbd>; a saved game resumes when you start again with the same name.</p>
+      <button type="button" class="linkbtn" id="start-fame">Hall of Fame</button>
+      <p class="fine" id="start-fine">Saves stay in this browser. Save with <kbd>Ctrl</kbd>+<kbd>S</kbd>; saved games wait under <b>Continue</b>.</p>
     </form>
   </div>
 </div>
