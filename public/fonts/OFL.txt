@@ -1,9 +1,7 @@
 Fonts in this folder are licensed under the SIL Open Font License 1.1. Copyright notices:
 
-Copyright 2020 The Cinzel Project Authors (https://github.com/NDISCOVER/Cinzel)
-Copyright 2017 The Barlow Project Authors (https://github.com/jpt/barlow)
-Copyright 2017 The EB Garamond Project Authors (https://github.com/octaviopardo/EBGaramond12)
-Copyright (c) 2012, Rodrigo Fuenzalida, Nicolas Massi (www.taip.com.ar / abc.taip.com.ar), with Reserved Font Name 'Pirata'
+Copyright (c) 2010, Igino Marini (mail@iginomarini.com), IM Fell English and IM Fell English SC
+Copyright 2013 The Alegreya Sans Project Authors (https://github.com/huertatipografica/Alegreya-Sans)
 Copyright © 2017 IBM Corp. with Reserved Font Name "Plex"
 
 Full license text (identical for each font):

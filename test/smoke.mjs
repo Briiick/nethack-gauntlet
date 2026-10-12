@@ -39,7 +39,7 @@ try {
   if (!state.hero || state.actors < 1) fail('no hero on the map: ' + JSON.stringify(state));
   if (errs.length) fail('console errors:\n' + errs.join('\n'));
   if (external.length) fail('tried to reach the network:\n' + external.join('\n'));
-  const fonts = await page.evaluate(async () => { await document.fonts.ready; const want = ['700 16px Cinzel', '600 16px "Barlow Condensed"', '500 16px "EB Garamond"', '16px "Pirata One"']; await Promise.all(want.map((f) => document.fonts.load(f))); return want.filter((f) => !document.fonts.check(f)); });
+  const fonts = await page.evaluate(async () => { await document.fonts.ready; const want = ['16px "IM Fell English SC"', '16px "IM Fell English"', 'italic 16px "IM Fell English"', '700 16px "Alegreya Sans"']; await Promise.all(want.map((f) => document.fonts.load(f))); return want.filter((f) => !document.fonts.check(f)); });
   if (fonts.length) fail('fonts not loaded: ' + fonts.join(', '));
   console.log(`ok: ${items} items in the starting inventory, ${state.actors} actors on the map`);
 } finally {

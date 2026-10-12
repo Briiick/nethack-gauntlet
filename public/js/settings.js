@@ -166,7 +166,7 @@ export function openSettings(ui, startTab = 'display') {
     about: () => `<div class="about"><p><b>NetHack Gauntlet</b>: NetHack 5.0.0, the real game, unchanged, compiled to WebAssembly
       and running entirely on this computer. This is only an interface: what happens in the game is NetHack's. No internet connection is needed or used.</p>
       <p>NetHack is © Stichting Mathematisch Centrum and M. Stephenson and the NetHack DevTeam, distributed under the
-      NetHack General Public License. Fonts: Cinzel, Barlow Condensed, EB Garamond, IBM Plex Mono and Pirata One
+      NetHack General Public License. Fonts: IM Fell English, Alegreya Sans and IBM Plex Mono
       (SIL Open Font License).</p><p>In-game help: <kbd>?</kbd>. Command list: the Controls tab.</p></div>`,
   };
 

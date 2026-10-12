@@ -1,0 +1,17 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "side-tab",
+        "value": "*",
+        "files": [
+          "mobile/css/mobile.css"
+        ],
+        "createdAt": "2026-10-12T16:29:11.916Z",
+        "reason": "Claude's judgment: L241 is a 2px near-black (#070504) seam where the full-height landscape toolbar column meets the map, not a coloured accent border on a card"
+      }
+    ]
+  }
+}

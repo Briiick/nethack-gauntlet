@@ -1,6 +1,6 @@
-// The phone HUD: a toolbar along the bottom (search, look, quick slots, backpack, every other
-// action), a context button for what you'd most likely do next (attack what's beside you, take
-// the stairs, pick up), and sheets listing every NetHack command as a button.
+// The phone HUD: quick slots under the left thumb and a cluster under the right (search, look,
+// backpack, every other action), a context button for what you'd most likely do next (attack
+// what's beside you, take the stairs, pick up), and sheets listing every NetHack command as a button.
 import { openHallOfFame } from '../../js/records.js';
 
 const $ = (sel) => document.querySelector(sel);
@@ -20,29 +20,54 @@ const I = {   // 24x24 line icons
   centre: 'M12 2v4M12 18v4M2 12h4M18 12h4M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8z',
   chest: 'M3 10h18v10H3zM3 10c0-4 2-6 9-6s9 2 9 6M11 12h2v3h-2z',
   force: 'M4 20l8-8M14 4l6 6-3 3-6-6zM11 13l-2-2',
+  // the actions sheet
+  eat: 'M7 3v7a2 2 0 0 0 4 0V3M9 3v18M17 3c-2 0-3 3-3 6s1 4 3 4v8', drink: 'M10 3h4M10 3v5L6 16a3 3 0 0 0 3 5h6a3 3 0 0 0 3-5l-4-8V3',
+  read: 'M4 19V5a2 2 0 0 1 2-2h12v16H6a2 2 0 0 0-2 2zM8 7h6M8 11h6', zap: 'M4 20L15 9M17 3v4M15 5h4M20 10v2M19 11h2',
+  apply: 'M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 0 0 5.4-5.4l-2.5 2.5-2.5-2.5z', cast: 'M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z',
+  swap: 'M7 4L3 8l4 4M3 8h14M17 20l4-4-4-4M21 16H7', wear: 'M8 3l4 2 4-2 5 4-3 3-2-1v12H8V9l-2 1-3-3z', takeoff: 'M12 15V5M8 9l4-4 4 4M5 20h14',
+  puton: 'M12 9a5.5 5.5 0 1 0 0 11 5.5 5.5 0 0 0 0-11zM9.5 3h5L12 7z', remove: 'M12 9a5.5 5.5 0 1 0 0 11 5.5 5.5 0 0 0 0-11zM4 4l16 16',
+  fire: 'M5 19L19 5M14 5h5v5M5 14v5h5', throw: 'M4 20l7-7M13 4l7 7-6 2-3-3z', quiver: 'M7 21V8M12 21V6M17 21V8M5 8l2-4 2 4M10 6l2-3 2 3M15 8l2-4 2 4',
+  drop: 'M12 3v12M8 11l4 4 4-4M5 21h14', dropmany: 'M9 3v10M5 9l4 4 4-4M17 3v10M13 9l4 4 4-4M4 21h16',
+  dip: 'M6 3h12M8 3v6l-3 8a3 3 0 0 0 3 4h8a3 3 0 0 0 3-4l-3-8V3M7 14h10', rub: 'M4 16c4-1 6-5 8-5s3 3 8 1M4 20h16',
+  invoke: 'M12 3v4M12 17v4M3 12h4M17 12h4M12 9a3 3 0 1 0 0 6 3 3 0 0 0 0-6z', tip: 'M4 7h12l-2 13H6zM16 10l4-2M10 3v2',
+  adjust: 'M4 7h10M4 12h16M4 17h7M17 5v4M14 7h6', name: 'M4 20h4L19 9l-4-4L4 16zM13 7l4 4', moon: 'M20 14.5A8 8 0 0 1 9.5 4 8 8 0 1 0 20 14.5z',
+  kick: 'M7 3v10l-3 4v3h15a2 2 0 0 0-1-3l-6-2V3z', open: 'M6 21V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v17M4 21h16M14 12h.01', close: 'M6 21V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v17M4 21h16M9 3v18',
+  travel: 'M12 4a8 8 0 1 0 0 16 8 8 0 0 0 0-16zM12 9a3 3 0 1 0 0 6 3 3 0 0 0 0-6z', untrap: 'M4 18h16M7 18l2-8M17 18l-2-8M9 10h6M12 4v6',
+  engrave: 'M4 20h16M6 16L16 6l2 2L8 18H6z', sit: 'M6 4v16M6 12h12v8M18 12V8', chat: 'M4 5h16v11H9l-5 4z', pay: 'M12 4a8 8 0 1 0 0 16 8 8 0 0 0 0-16zM12 8v8',
+  pray: 'M12 3c-1 3-4 5-4 9a4 4 0 0 0 8 0c0-4-3-6-4-9z', offer: 'M4 14h16l-2 6H6zM12 3v8M9 8l3 3 3-3', jump: 'M4 20c2-8 6-12 8-12s6 4 8 12M12 3v3',
+  ride: 'M4 15c2-4 6-6 10-6l4-4 2 2-2 4v6M6 15v5M16 15v5', wipe: 'M5 12a7 7 0 0 0 14 0M9 9h.01M15 9h.01', monster: 'M5 20V9a7 7 0 0 1 14 0v11l-3-2-2 2-2-2-2 2-2-2z',
+  turn: 'M12 3v18M7 8h10', person: 'M12 4a4 4 0 1 0 0 8 4 4 0 0 0 0-8zM4 21c1-4 4-6 8-6s7 2 8 6', skills: 'M5 20V12M10 20V6M15 20v-9M20 20V3',
+  spells: 'M4 19V5a2 2 0 0 1 2-2h12v16H6a2 2 0 0 0-2 2zM12 6l1 2.5 2.5 1-2.5 1L12 13l-1-2.5-2.5-1 2.5-1z', equip: 'M12 3l7 3v5c0 5-3.5 8-7 10-3.5-2-7-5-7-10V6z',
+  discover: 'M9 18h6M10 21h4M12 3a6 6 0 0 0-4 10.5c.6.6 1 1.4 1 2.5h6c0-1.1.4-1.9 1-2.5A6 6 0 0 0 12 3z', map: 'M3 6l6-2 6 2 6-2v14l-6 2-6-2-6 2zM9 4v14M15 6v14',
+  conduct: 'M6 3h12v18l-6-4-6 4z', skull: 'M12 3a8 8 0 0 0-5 14v3h10v-3a8 8 0 0 0-5-14zM9 12h.01M15 12h.01', log: 'M5 6h14M5 12h14M5 18h9',
+  what: 'M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .9-1 1.7v.5M12 17h.01', again: 'M4 12a8 8 0 1 0 3-6.2M4 4v5h5',
+  any: 'M5 8l4 4-4 4M11 16h8', save: 'M5 4h11l3 3v13H5zM8 4v5h7V4M8 20v-6h8v6', fame: 'M8 4h8v5a4 4 0 0 1-8 0zM8 6H5a3 3 0 0 0 3 4M16 6h3a3 3 0 0 1-3 4M12 13v4M8 21h8',
+  gear: 'M12 9a3 3 0 1 0 0 6 3 3 0 0 0 0-6zM12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1',
+  zoomin: 'M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14zM20 20l-4-4M8 11h6M11 8v6', zoomout: 'M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14zM20 20l-4-4M8 11h6',
+  keys: 'M3 6h18v12H3zM7 10h.01M11 10h.01M15 10h.01M7 14h10',
 };
 const svg = (d, s = 24) => `<svg viewBox="0 0 24 24" width="${s}" height="${s}" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${d}"/></svg>`;
 
-// Every command, by what you'd want to do. k: keys typed; x: extended command; f: this interface.
+// Every command, by what you'd want to do. k: keys typed; x: extended command; f: this interface; i: its icon.
 const ACTIONS = [
   ['Items', [
-    ['Eat', { k: 'e' }], ['Drink', { k: 'q' }], ['Read', { k: 'r' }], ['Zap wand', { k: 'z' }], ['Apply / use', { k: 'a' }], ['Cast spell', { k: 'Z' }],
-    ['Wield', { k: 'w' }], ['Swap weapons', { k: 'x' }], ['Wear', { k: 'W' }], ['Take off', { k: 'T' }], ['Put on', { k: 'P' }], ['Remove', { k: 'R' }],
-    ['Fire quiver', { k: 'f' }], ['Throw', { k: 't' }], ['Ready quiver', { k: 'Q' }], ['Pick up', { k: ',' }], ['Drop', { k: 'd' }], ['Drop many', { k: 'D' }],
-    ['Dip', { x: 'dip' }], ['Rub', { x: 'rub' }], ['Invoke', { x: 'invoke' }], ['Tip container', { x: 'tip' }], ['Adjust letters', { x: 'adjust' }], ['Name / call', { x: 'name' }],
+    ['Eat', { k: 'e', i: 'eat' }], ['Drink', { k: 'q', i: 'drink' }], ['Read', { k: 'r', i: 'read' }], ['Zap wand', { k: 'z', i: 'zap' }], ['Apply / use', { k: 'a', i: 'apply' }], ['Cast spell', { k: 'Z', i: 'cast' }],
+    ['Wield', { k: 'w', i: 'sword' }], ['Swap weapons', { k: 'x', i: 'swap' }], ['Wear', { k: 'W', i: 'wear' }], ['Take off', { k: 'T', i: 'takeoff' }], ['Put on', { k: 'P', i: 'puton' }], ['Remove', { k: 'R', i: 'remove' }],
+    ['Fire quiver', { k: 'f', i: 'fire' }], ['Throw', { k: 't', i: 'throw' }], ['Ready quiver', { k: 'Q', i: 'quiver' }], ['Pick up', { k: ',', i: 'pick' }], ['Drop', { k: 'd', i: 'drop' }], ['Drop many', { k: 'D', i: 'dropmany' }],
+    ['Dip', { x: 'dip', i: 'dip' }], ['Rub', { x: 'rub', i: 'rub' }], ['Invoke', { x: 'invoke', i: 'invoke' }], ['Tip container', { x: 'tip', i: 'tip' }], ['Adjust letters', { x: 'adjust', i: 'adjust' }], ['Name / call', { x: 'name', i: 'name' }],
   ]],
   ['Around you', [
-    ['Search', { k: 's' }], ['Rest 20 turns', { k: '20s' }], ['Kick', { k: '\x04' }], ['Open door', { k: 'o' }], ['Close door', { k: 'c' }], ['Travel to…', { k: '_' }],
-    ['Go up <', { k: '<' }], ['Go down >', { k: '>' }], ['Look here', { k: ':' }], ['Look at…', { k: ';' }], ['Loot', { x: 'loot' }], ['Force lock', { x: 'force' }],
-    ['Untrap', { x: 'untrap' }], ['Engrave', { k: 'E' }], ['Sit', { x: 'sit' }], ['Chat', { x: 'chat' }], ['Pay', { k: 'p' }], ['Pray', { x: 'pray' }],
-    ['Offer', { x: 'offer' }], ['Jump', { x: 'jump' }], ['Ride', { x: 'ride' }], ['Wipe face', { x: 'wipe' }], ['Monster ability', { x: 'monster' }], ['Turn undead', { x: 'turn' }],
+    ['Search', { k: 's', i: 'search' }], ['Rest 20 turns', { k: '20s', i: 'moon' }], ['Kick', { k: '\x04', i: 'kick' }], ['Open door', { k: 'o', i: 'open' }], ['Close door', { k: 'c', i: 'close' }], ['Travel to…', { k: '_', i: 'travel' }],
+    ['Go up <', { k: '<', i: 'up' }], ['Go down >', { k: '>', i: 'down' }], ['Look here', { k: ':', i: 'look' }], ['Look at…', { k: ';', i: 'look' }], ['Loot', { x: 'loot', i: 'chest' }], ['Force lock', { x: 'force', i: 'force' }],
+    ['Untrap', { x: 'untrap', i: 'untrap' }], ['Engrave', { k: 'E', i: 'engrave' }], ['Sit', { x: 'sit', i: 'sit' }], ['Chat', { x: 'chat', i: 'chat' }], ['Pay', { k: 'p', i: 'pay' }], ['Pray', { x: 'pray', i: 'pray' }],
+    ['Offer', { x: 'offer', i: 'offer' }], ['Jump', { x: 'jump', i: 'jump' }], ['Ride', { x: 'ride', i: 'ride' }], ['Wipe face', { x: 'wipe', i: 'wipe' }], ['Monster ability', { x: 'monster', i: 'monster' }], ['Turn undead', { x: 'turn', i: 'turn' }],
   ]],
   ['You', [
-    ['Character', { k: '\x18' }], ['Skills', { x: 'enhance' }], ['Spells', { k: '+' }], ['Equipment', { k: '*' }], ['Discoveries', { k: '\\' }], ['Dungeon overview', { k: '\x0f' }],
-    ['Conduct', { x: 'conduct' }], ['Vanquished', { x: 'vanquished' }], ['Messages', { f: 'history' }], ['What is…', { k: '/' }], ['Again', { k: '\x01' }], ['Any command…', { k: '#' }],
+    ['Character', { k: '\x18', i: 'person' }], ['Skills', { x: 'enhance', i: 'skills' }], ['Spells', { k: '+', i: 'spells' }], ['Equipment', { k: '*', i: 'equip' }], ['Discoveries', { k: '\\', i: 'discover' }], ['Dungeon overview', { k: '\x0f', i: 'map' }],
+    ['Conduct', { x: 'conduct', i: 'conduct' }], ['Vanquished', { x: 'vanquished', i: 'skull' }], ['Messages', { f: 'history', i: 'log' }], ['What is…', { k: '/', i: 'what' }], ['Again', { k: '\x01', i: 'again' }], ['Any command…', { k: '#', i: 'any' }],
   ]],
   ['Game', [
-    ['Save & quit', { k: 'S' }], ['Hall of Fame', { f: 'fame' }], ['Settings', { f: 'settings' }], ['Help', { k: '?' }], ['Zoom in', { f: 'zoomin' }], ['Zoom out', { f: 'zoomout' }], ['Keyboard…', { f: 'keys' }],
+    ['Save & quit', { k: 'S', i: 'save' }], ['Hall of Fame', { f: 'fame', i: 'fame' }], ['Settings', { f: 'settings', i: 'gear' }], ['Help', { k: '?', i: 'what' }], ['Zoom in', { f: 'zoomin', i: 'zoomin' }], ['Zoom out', { f: 'zoomout', i: 'zoomout' }], ['Keyboard…', { f: 'keys', i: 'keys' }],
   ]],
 ];
 
@@ -51,11 +76,13 @@ export class Hud {
     this.ui = ui; ui.hud = this;
     this.bar = $('#toolbar'); this.ctx = $('#ctx');
     this.bar.innerHTML = `
-      <button type="button" class="tb" data-act="search" aria-label="Search (hold: rest)">${svg(I.search)}<span>Search</span></button>
-      <button type="button" class="tb" data-act="look" aria-label="Look at…">${svg(I.look)}<span>Look</span></button>
       <div class="qslot"></div>
-      <button type="button" class="tb" data-act="bag" aria-label="Backpack">${svg(I.bag)}<span>Bag</span></button>
-      <button type="button" class="tb" data-act="more" aria-label="All actions">${svg(I.more, 26)}<span>Actions</span></button>`;
+      <div class="cluster">
+        <button type="button" class="tb" data-act="search" aria-label="Search (hold: rest)">${svg(I.search, 30)}<span>Search</span></button>
+        <button type="button" class="tb" data-act="look" aria-label="Look at…">${svg(I.look)}<span>Look</span></button>
+        <button type="button" class="tb" data-act="more" aria-label="All actions">${svg(I.read)}<span>Actions</span></button>
+        <button type="button" class="tb" data-act="bag" aria-label="Backpack">${svg(I.bag)}<span>Bag</span></button>
+      </div>`;
     this.bar.addEventListener('pointerdown', (e) => {
       const b = e.target.closest('[data-act="search"]');
       clearTimeout(this.restT);
@@ -157,8 +184,13 @@ export class Hud {
     const el = document.createElement('div');
     el.className = 'panel actsheet sheet';
     el.innerHTML = `<header><h2>${esc(title)}</h2><button type="button" class="x" aria-label="Close">✕</button></header>
-      <div class="groups">${groups.map(([g, list]) => `<h3>${esc(g)}</h3><div class="acts">${list.map(([label, a], i) => `<button type="button" data-g="${esc(g)}" data-i="${i}">${esc(label)}</button>`).join('')}</div>`).join('')}
+      ${groups.length > 1 ? `<nav class="jump" aria-label="Kinds of action">${groups.map(([g], n) => `<button type="button" data-to="${n}">${esc(g)}</button>`).join('')}</nav>` : ''}
+      <div class="groups">${groups.map(([g, list]) => `<h3>${esc(g)}</h3><div class="acts">${list.map(([label, a], i) => `<button type="button" data-g="${esc(g)}" data-i="${i}">${a.i ? svg(I[a.i], 26) : ''}${esc(label)}</button>`).join('')}</div>`).join('')}
       <label class="auto"><input type="checkbox" ${ui.settings.autoSave ? 'checked' : ''}> Save automatically when I leave the app</label></div>`;
+    el.querySelector('.jump')?.addEventListener('click', (e) => {
+      const b = e.target.closest('[data-to]');
+      if (b) el.querySelectorAll('.groups h3')[+b.dataset.to].scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
     const close = () => ui.closeModal();
     el.querySelector('.x').addEventListener('click', close);
     el.querySelector('.auto input').addEventListener('change', (e) => { ui.settings.autoSave = e.target.checked; ui.saveSettings(); });
