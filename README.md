@@ -289,6 +289,8 @@ CHROME=/path/to/chrome npm test
   or on any moment the game waits with nothing on screen to answer.
 - `test/records.mjs` (desktop and phone) ends a game and finds it in the Hall of Fame, saves one and
   finds its card on the start screen, resumes it with one press and deletes it.
+- `test/ios-routing.mjs` builds the iPhone app's bundle and serves it the way Capacitor does (paths
+  without a file extension get the front page), checking the game loads without a reload loop.
 - `test/ios-bridge.mjs` runs the phone version against a stand-in for the iPhone app's native side:
   saves as files in Documents, saving when the app is paused and resuming after, the save cards, the
   records backup and haptics.

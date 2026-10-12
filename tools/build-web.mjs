@@ -17,7 +17,9 @@ await cp(join(root, 'public'), out, { recursive: true });
 await cp(join(root, 'mobile'), join(out, 'm'), { recursive: true });
 if (app) {
   await writeFile(join(out, 'index.html'), '<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">'
-    + '<title>NetHack Gauntlet</title><style>html,body{margin:0;height:100%;background:#06060a}</style><script>location.replace("m/" + location.hash)</script>');
+    + '<title>NetHack Gauntlet</title><style>html,body{margin:0;height:100%;background:#06060a}</style><script>location.replace("m/index.html" + location.hash)</script>');
+  // (m/index.html, not m/: inside the app, Capacitor answers any path without a file extension with
+  // the root index.html, which would send it back here forever)
 }
 
 async function walk(dir) {
