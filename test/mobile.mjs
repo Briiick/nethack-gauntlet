@@ -17,6 +17,7 @@ const results = [];
 const check = (label, ok, info = '') => { results.push([label, ok ? 'ok' : `FAIL ${info}`]); if (process.env.VERBOSE) console.log(ok ? 'ok  ' : 'FAIL', label, ok ? '' : info); };
 
 const state = () => page.evaluate(() => {
+  if (!window.__nhg) return { waiting: null, booting: true, feed: [], hero: {} };   // (just reloaded)
   const { game: g, ui, renderer: r } = window.__nhg, $ = (s) => document.querySelector(s);
   return { waiting: g.waiting, over: !!g.over, modal: ui.modal ? ui.modal.el.className : null, prompt: $('#prompt').hidden ? null : $('#prompt').innerText.trim(),
     more: !$('#more').hidden, targeting: !!ui.isTargeting, hero: { ...r.heroCell }, turn: g.status[16]?.val || '', feed: [...document.querySelectorAll('#feed div')].map((d) => d.dataset.text) };
@@ -148,6 +149,19 @@ for (let i = 1; i <= 8; i++) { await touch('touchMove', [{ x: mid.x - 30 - i * 1
 await touch('touchEnd', []); await wait(200);
 const z1 = await page.evaluate(() => window.__nhg.ui.settings.zoom);
 check('Pinch zooms in', z1 > z0, `${z0} -> ${z1}`);
+
+// turned sideways: the toolbar is a column on the right, the map fills the rest, nothing hidden shows
+const portrait = page.viewportSize();
+await page.setViewportSize({ width: 750, height: 342 }); await wait(400);
+const land = await page.evaluate(() => {
+  const b = (q) => document.querySelector(q).getBoundingClientRect();
+  const tb = b('#toolbar'), view = b('#view'), plate = b('#plate'), feed = b('#feed');
+  const shown = ['#target-hint', '#prompt', '#compass', '#more'].filter((q) => document.querySelector(q).hidden && getComputedStyle(document.querySelector(q)).display !== 'none');
+  return { column: tb.left > 600 && tb.height > 250, view: view.right <= tb.left + 1 && view.height > 300, feedBelow: feed.top >= plate.bottom - 1, shown };
+});
+check('Landscape: toolbar column, map beside it, feed below the status', land.column && land.view && land.feedBelow, JSON.stringify(land));
+check('Landscape: hidden panels stay hidden', !land.shown.length, land.shown.join(' '));
+await page.setViewportSize(portrait); await wait(400);
 
 // leaving the app saves; coming back resumes
 s = await settle();

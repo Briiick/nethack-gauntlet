@@ -180,13 +180,6 @@ body.m .panel.settings .tabs { overflow-x: auto; flex-wrap: nowrap; }
 body.m .panel.spells { width: 100%; max-height: calc(100dvh - var(--safe-t) - 12px); border-radius: 16px 16px 0 0; padding: 14px 12px calc(var(--safe-b) + 12px); align-self: end; }
 body.m .panel.spells .cards { grid-template-columns: repeat(auto-fill, minmax(132px, 1fr)); max-height: none; }
 body.m #gameover { padding: calc(var(--safe-t) + 16px) 16px calc(var(--safe-b) + 16px); }
-@media (orientation: landscape) and (max-height: 500px) {
-  :root { --bar-h: calc(var(--safe-b) + 62px); }
-  body.m #feed { font-size: 13px; right: auto; width: min(560px, 60%); }
-  body.m #compass { bottom: auto; top: 50%; left: auto; right: calc(var(--safe-r) + 12px); transform: translateY(-50%); }
-  body.m #prompt.dir { right: calc(var(--safe-r) + 236px); }   /* beside the arrow pad, not over it */
-  body.m #compass { z-index: 8; gap: 4px; } body.m #compass button { height: 44px; }
-}
 /* display rules above must not beat [hidden] */
 body.m #target-hint[hidden], body.m .sub[hidden], body.m .stats[hidden], body.m #prompt[hidden], body.m #compass[hidden], body.m #more[hidden] { display: none; }
 .actsheet.spot .groups { padding-top: 12px; }
@@ -212,3 +205,48 @@ body.m .panel.fame { height: calc(100dvh - var(--safe-t) - 12px); max-height: no
 body.m .panel.fame .x { width: 44px; height: 44px; margin-right: 8px; }
 body.m .panel.fame .tabs button { min-height: 40px; }
 body.m .panel.fame .stats { font-size: 14px; }
+
+/* ---- a phone on its side: the toolbar becomes a column on the right, the status a compact plate
+   top-left, and the map gets the whole height, centred in the space left of the toolbar */
+@media (orientation: landscape) and (max-height: 500px) {
+  :root { --bar-w: calc(var(--safe-r) + 66px); --bar-h: 0px; }
+  body.m.playing #view { width: calc(100% - var(--bar-w)); }
+  #toolbar { left: auto; top: 0; bottom: 0; right: 0; width: var(--bar-w); height: auto; flex-direction: column; justify-content: center; gap: 4px;
+    padding: calc(var(--safe-t) + 6px) calc(var(--safe-r) + 6px) calc(var(--safe-b) + 6px) 6px; background: linear-gradient(90deg, rgba(6,6,10,0), rgba(6,6,10,.94) 30%); }
+  #toolbar .tb { width: 54px; height: 44px; font-size: 10px; gap: 0; }
+  #toolbar .tb svg { width: 20px; height: 20px; }
+  #toolbar .qslot { flex: none; flex-direction: column; }
+  body.m #quickbar { flex-direction: column; }
+  body.m #quickbar button { width: 54px; height: 40px; }
+  body.m #quickbar button:nth-child(n+4) { display: none !important; }
+  #top { right: var(--bar-w); padding: calc(var(--safe-t) + 4px) 8px 10px calc(var(--safe-l) + 6px); background: none; }
+  body.m #plate { max-width: 360px; }
+  body.m #plate .port { width: 44px; height: 44px; }
+  body.m #plate .info { padding: 3px 8px 4px 18px; background: rgba(10,16,40,.86); }
+  body.m .name { font-size: 13px; }
+  body.m .bar { height: 9px; margin-top: 2px; }
+  body.m .bar.pw { height: 6px; }
+  body.m .counts { font-size: 12px; margin-top: 2px; }
+  body.m .tools { margin-left: 0; }
+  body.m .tools button { width: 40px; height: 40px; }
+  body.m #chips { left: calc(var(--safe-l) + 58px); }
+  body.m #feed { top: calc(var(--safe-t) + 72px); left: calc(var(--safe-l) + 8px); right: auto; width: min(460px, 52%); font-size: 13px; }
+  #ctx { right: calc(var(--bar-w) + 10px); bottom: calc(var(--safe-b) + 10px); min-height: 54px; }
+  #recentre, body.m #more { bottom: calc(var(--safe-b) + 12px); left: calc((100% - var(--bar-w)) / 2); }
+  #toast { left: calc((100% - var(--bar-w)) / 2); }
+  body.m #prompt { left: calc(var(--safe-l) + 8px); right: auto; bottom: calc(var(--safe-b) + 8px); width: min(520px, calc(100% - var(--bar-w) - 230px)); padding: 10px; gap: 8px; }
+  body.m #prompt .q { font-size: 15px; }
+  body.m #prompt button { min-height: 42px; font-size: 15px; }
+  body.m #compass { top: 50%; bottom: auto; left: auto; right: calc(var(--bar-w) + 8px); transform: translateY(-50%); z-index: 8; grid-template-columns: repeat(3, 58px); gap: 4px; }
+  body.m #compass button { height: 44px; }
+  body.m #target-hint { top: calc(var(--safe-t) + 8px); left: calc((100% - var(--bar-w)) / 2); }
+  body.m #modal { padding-top: calc(var(--safe-t) + 6px); }
+  body.m .panel.sheet, body.m .panel.bag, body.m .panel.loot, body.m .panel.fame { max-width: 760px; max-height: calc(100dvh - var(--safe-t) - 6px); height: calc(100dvh - var(--safe-t) - 6px); }
+  body.m .panel.menu.sheet, body.m .panel.text.sheet, body.m .getline.sheet, body.m .actsheet.spot { height: auto; }
+  body.m .panel.loot .cols { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); }
+  body.m .panel.loot .side.inside { max-height: none; }
+  body.m .bag .detail { padding: 8px 12px; }
+  body.m .bag .do { margin-top: 6px; }
+  body.m .bag .grid, body.m .panel.loot .lgrid { grid-template-columns: repeat(auto-fill, minmax(56px, 1fr)); }
+  body.m #start .panel.start { max-width: 640px; }
+}

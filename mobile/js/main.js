@@ -13,7 +13,8 @@ import { setupNative, isNative, backupRecords } from './native.js';
 
 // Phone settings are kept apart from the desktop page's (same site, different screen)
 const KEY = 'nhg-m-settings';
-const PHONE = { zoom: 1.5, controls: 'classic', clickTravel: false, feedLines: 4, holdWalk: false, autoSave: true };
+// walkStepMs: travelling shows the hero walking, one square per this many ms (with runmode:walk below)
+const PHONE = { zoom: 1.5, controls: 'classic', clickTravel: false, feedLines: 4, holdWalk: false, autoSave: true, walkStepMs: 95 };
 function loadSettings() {
   let s = {};
   try { s = JSON.parse(localStorage.getItem(KEY) || '{}'); } catch (e) { /* private mode */ }
@@ -93,7 +94,7 @@ async function boot() {
     settings.game.autopickup = pk.value;
     settings.game.tutorial = document.getElementById('start-tutorial').checked;
     saveSettings();
-    const opts = [`name:${name}`, 'number_pad:0', 'color', 'hilite_pet', 'lit_corridor', 'dark_room', 'pile_limit:3', 'perm_invent', '!tips', ...gameOptions(settings.game)];   // (NetHack's tips explain keyboard keys)
+    const opts = [`name:${name}`, 'number_pad:0', 'color', 'hilite_pet', 'lit_corridor', 'dark_room', 'pile_limit:3', 'perm_invent', '!tips', 'runmode:walk', ...gameOptions(settings.game)];   // (tips explain keyboard keys; runmode: see walkStepMs)
     if (!opts.some((o) => /^!?tutorial$/.test(o))) opts.push(settings.game.tutorial ? 'tutorial' : '!tutorial');
     if (role === 'random') opts.push('role:random', 'race:random', 'gender:random', 'align:random');
     else if (role !== 'ask') opts.push(`role:${role}`);

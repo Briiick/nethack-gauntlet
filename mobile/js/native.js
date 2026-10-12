@@ -35,6 +35,8 @@ export async function setupNative() {
       writeSave: (name, bytes) => FS.writeFile({ path: `${SAVES}/${safe(name)}`, data: b64(bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes)), directory: DIR, recursive: true }),
       deleteSave: (name) => FS.deleteFile({ path: `${SAVES}/${safe(name)}`, directory: DIR }).catch(() => {}),
     };
+    // the saves folder, made up front (so the first launch doesn't log a "does not exist" error)
+    try { const top = (await FS.readdir({ path: '', directory: DIR })).files || []; if (!top.some((f) => (f.name || f) === SAVES)) await FS.mkdir({ path: SAVES, directory: DIR, recursive: true }); } catch (e) { /* listSaves copes */ }
     await restoreRecords(FS);
   }
 

@@ -139,10 +139,15 @@ export class Game {
   }
 
   async shim_delay_output() {
-    // NetHack paces thrown objects, zaps and explosions with this
-    this.renderer.onDelay?.();   // one step of a flying object: the renderer tweens a projectile instead
+    // NetHack paces thrown objects, zaps and explosions with this, and (with runmode:walk, as the
+    // phone version sets) each step of travelling or running: those get a walking pace, so the hero
+    // is seen walking there rather than dashing
+    const h = this.hero, stepped = this.lastDelayAt && (this.lastDelayAt.x !== h.x || this.lastDelayAt.y !== h.y);
+    this.lastDelayAt = { x: h.x, y: h.y };
+    if (!stepped) this.renderer.onDelay?.();   // one step of a flying object: the renderer tweens a projectile instead
     this.renderer.commit();
-    await new Promise((r) => setTimeout(r, this.ui.settings.fastMissiles ? 18 : 40));
+    const walk = +this.ui.settings.walkStepMs || 0;
+    await new Promise((r) => setTimeout(r, stepped && walk ? walk : this.ui.settings.fastMissiles ? 18 : 40));
   }
 
   // ---------------------------------------------------------------- windows
@@ -178,6 +183,7 @@ export class Game {
     }
     if ((w.type === NHW.TEXT || w.type === NHW.MENU) && w.lines.length && win !== this.invWin()) {
       if (/^Things that are here:/.test(w.lines[0].text)) this.noteHere(w.lines.map((l) => l.text).join('\n'));
+      if (this.probing) { this.probeOut.push(...w.lines.map((l) => l.text)); w.lines = []; return; }   // our own look-here: not shown
       // Like NetHack's own tty port, a text or menu window always waits to be dismissed: 'blocking'
       // only matters for the message window. (Looking an item up shows its encyclopedia entry in a
       // menu window displayed non-blocking, then destroys it at once.)
@@ -208,12 +214,26 @@ export class Game {
 
   // One message for the feed; false if it's left out.
   say(str, attr) {
+    if (this.probing) { this.probeOut.push(str); this.noteHere(str); return false; }   // our own look-here: not shown
+    // something went into the pack ("f - a dagger."): what's left underfoot is checked afterwards
+    if (/^[a-zA-Z$#] - .+\.$/.test(str)) this.pickedUp = true;
     if (this.ui.controls.on && /^Count: \d+$/.test(str)) return false;   // the modern R key types "20s"; don't echo it
     if (str === 'Entering the tutorial.') this.ui.tutorialNote();
     this.ui.message(this.ui.controls.explain(str), attr);
     this.recentText.push(str); if (this.recentText.length > 80) this.recentText.shift();   // for the epitaph
     this.noteHere(str);
     return true;
+  }
+
+  // the hidden look-here is done: nothing left (no "You see here" / "Things that are here") = forget it
+  endProbe() {
+    this.probing = false;
+    const said = this.probeOut.join('\n');
+    if (!/You (see|feel) here|Things that are here|several objects|many objects/.test(said)) {
+      this.hereNote = null;
+      const h = this.hero, i = h.y * 80 + h.x;
+      if (this.renderer.objMem && h.x >= 0) this.renderer.objMem[i] = -1;
+    }
   }
 
   // What lies under the hero. The map can't say (the hero is drawn there), so remember what NetHack
@@ -394,6 +414,15 @@ export class Game {
       this.ui.answers = [];   // pre-answered questions belong to the command just typed
       if (this.ui.reopenInventory) { this.ui.reopenInventory = false; this.ui.pushKey(105); }   // 'i'
     }
+    // After something was picked up, ask NetHack what's still underfoot (":", look here: free, no
+    // game time) without showing the answer, so the "Pick up" button goes away when nothing's left.
+    if (this.probing) this.endProbe();
+    else if (this.pickedUp && !this.ui.keyQueue.length && !this.autoSaving && !this.over) {
+      this.pickedUp = false;
+      const h = this.hero, n = this.hereNote, seen = this.renderer.objMem && h.x >= 0 && this.renderer.objMem[h.y * 80 + h.x] >= 0;
+      if ((n && n.x === h.x && n.y === h.y) || seen) { this.probing = true; this.probeOut = []; return 58; }   // ':'
+    }
+    this.pickedUp = false;
     const s = this.engineState();   // picking a spot starts with the cursor on the hero: say so right away
     if (s.picking !== null) {
       if (s.picking && !this.renderer.cursor) this.renderer.cursor = { ...(this.cursorAt || { x: s.x, y: s.y }) };

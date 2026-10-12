@@ -88,12 +88,17 @@ thumb, portrait or landscape. It uses the same engine, art and renderer as the d
 
 - **Tap** to walk, travel or fight: tap far away to travel there, and tap next to you to step,
   attack, open a door or kick a locked one. Tap **yourself** to take the stairs, pick up, loot,
-  drink from a fountain or rest. These are NetHack's own mouse actions.
+  drink from a fountain or rest. These are NetHack's own mouse actions. Travel shows the hero
+  walking square by square (NetHack's `runmode:walk`) rather than jumping ahead.
+- On a single item the context button says **Pick up**; on a pile it opens a picker to choose
+  from. It goes away once nothing is left where you stand.
 - Standing on a chest or bag, the context button says **Open** (or **Force lock** once you've found
   it locked), and the same two-sided loot screen opens.
 - **Hold** a spot to see what's there, with buttons to *Look*, *Travel*, *Fire this way* and, next to
   you, NetHack's own "What do you want to do?" menu.
 - **Drag** to look around and **pinch** to zoom.
+- **Turn the phone sideways** for a wider view: the toolbar moves to a column on the right and the
+  status shrinks to the top-left corner.
 - The bottom toolbar has Search (hold it to rest), Look, quick slots, the Bag and **Actions**, which
   lists every NetHack command as a button (pray, kick, #enhance, …). It also has *Keyboard…* for
   typing raw keys.
