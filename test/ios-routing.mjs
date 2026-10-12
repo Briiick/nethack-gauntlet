@@ -19,12 +19,13 @@ let rootHits = 0;
 const server = createServer(async (req, res) => {
   let p = decodeURIComponent(new URL(req.url, 'http://x').pathname);
   if (!extname(p)) p = '/index.html';   // CapacitorRouter.route(for:)
-  if (p === '/index.html') rootHits++;
+  if (p === '/index.html') { rootHits++; if (process.env.DEBUG) console.log('front page for', req.url); }
   try { const body = await readFile(join(www, p)); res.writeHead(200, { 'Content-Type': types[extname(p)] || 'application/octet-stream' }); res.end(body); } catch { res.writeHead(404).end(); }
 }).listen(0, '127.0.0.1');
 await new Promise((r) => server.once('listening', r));
 const browser = await chromium.launch({ executablePath: CHROME });
-const page = await (await browser.newContext({ ...devices['iPhone 13'] })).newPage();
+// (no service worker: the app doesn't use one, and its precaching would fetch the front page too)
+const page = await (await browser.newContext({ ...devices['iPhone 13'], serviceWorkers: 'block' })).newPage();
 let ok = false;
 try {
   await page.goto(`http://127.0.0.1:${server.address().port}/`, { timeout: 15000 });
