@@ -1,0 +1,88 @@
+# Builds the iPhone/iPad app (ios-app/) and uploads it to TestFlight.
+# Runs when you push a tag like ios-v0.1.0, or by hand from the Actions tab.
+#
+# One-time setup (see ios-app/README.md): an Apple Developer account, the app created in
+# App Store Connect with the bundle ID com.briiick.nethackgauntlet, and these repository secrets:
+#   APPLE_TEAM_ID                 your 10-character team ID
+#   APP_STORE_CONNECT_KEY_ID      an App Store Connect API key's ID (Admin access, so Xcode can sign)
+#   APP_STORE_CONNECT_ISSUER_ID   the issuer ID shown above your keys
+#   APP_STORE_CONNECT_KEY         the key file's contents (AuthKey_XXXX.p8)
+# Until they're set, this workflow says so and skips the build.
+name: iPhone app (TestFlight)
+
+on:
+  push:
+    tags: ['ios-v*']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  testflight:
+    runs-on: macos-26
+    env:
+      TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+      KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
+      ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+      KEY: ${{ secrets.APP_STORE_CONNECT_KEY }}
+    steps:
+      - name: Are the App Store Connect secrets set?
+        id: secrets
+        run: |
+          if [ -n "$TEAM_ID" ] && [ -n "$KEY_ID" ] && [ -n "$ISSUER_ID" ] && [ -n "$KEY" ]; then
+            echo "ok=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "ok=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::The App Store Connect secrets aren't set, so nothing was built. See ios-app/README.md."
+          fi
+
+      - uses: actions/checkout@v4
+        if: steps.secrets.outputs.ok == 'true'
+      - uses: actions/setup-node@v4
+        if: steps.secrets.outputs.ok == 'true'
+        with:
+          node-version: 22
+
+      - name: Use the newest Xcode
+        if: steps.secrets.outputs.ok == 'true'
+        run: |
+          XC=$(ls -d /Applications/Xcode_*.app | sort -V | tail -1)
+          sudo xcode-select -s "$XC"
+          xcodebuild -version
+
+      - name: Build the game and copy it into the Xcode project
+        if: steps.secrets.outputs.ok == 'true'
+        working-directory: ios-app
+        run: |
+          npm ci
+          node ../tools/build-web.mjs ios-app/www --app
+          npx cap sync ios
+
+      - name: Archive (signed automatically with the API key)
+        if: steps.secrets.outputs.ok == 'true'
+        run: |
+          mkdir -p "$RUNNER_TEMP/keys"
+          printf '%s' "$KEY" > "$RUNNER_TEMP/keys/AuthKey_$KEY_ID.p8"
+          VERSION=$(node -p "require('./ios-app/package.json').version")
+          xcodebuild archive \
+            -project ios-app/ios/App/App.xcodeproj -scheme App -configuration Release \
+            -destination 'generic/platform=iOS' -archivePath "$RUNNER_TEMP/App.xcarchive" \
+            -allowProvisioningUpdates \
+            -authenticationKeyPath "$RUNNER_TEMP/keys/AuthKey_$KEY_ID.p8" -authenticationKeyID "$KEY_ID" -authenticationKeyIssuerID "$ISSUER_ID" \
+            DEVELOPMENT_TEAM="$TEAM_ID" CODE_SIGN_STYLE=Automatic \
+            MARKETING_VERSION="$VERSION" CURRENT_PROJECT_VERSION="${{ github.run_number }}"
+
+      - name: Upload to TestFlight
+        if: steps.secrets.outputs.ok == 'true'
+        run: |
+          sed "s/TEAM_ID_HERE/$TEAM_ID/" ios-app/ExportOptions.plist > "$RUNNER_TEMP/ExportOptions.plist"
+          xcodebuild -exportArchive \
+            -archivePath "$RUNNER_TEMP/App.xcarchive" -exportOptionsPlist "$RUNNER_TEMP/ExportOptions.plist" -exportPath "$RUNNER_TEMP/export" \
+            -allowProvisioningUpdates \
+            -authenticationKeyPath "$RUNNER_TEMP/keys/AuthKey_$KEY_ID.p8" -authenticationKeyID "$KEY_ID" -authenticationKeyIssuerID "$ISSUER_ID"
+          echo "::notice::Uploaded build ${{ github.run_number }}. It appears in App Store Connect > TestFlight after Apple finishes processing (usually 5-30 minutes)."
+
+      - name: Remove the key
+        if: always()
+        run: rm -rf "$RUNNER_TEMP/keys"

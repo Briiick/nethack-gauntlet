@@ -1,17 +1,24 @@
 #!/usr/bin/env node
 // Assemble the static website: the desktop page (public/) at the root and the phone version
 // (mobile/) at m/, plus m/precache.json (every file and a version hash) for offline play.
-// Usage: node tools/build-web.mjs [outDir=_site]
+// --app: the bundle for the iPhone app (ios-app/www): the same files, but the front page goes
+// straight to the phone version.
+// Usage: node tools/build-web.mjs [outDir=_site] [--app]
 import { cp, rm, readdir, readFile, writeFile, stat } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
 import { join, relative, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const root = fileURLToPath(new URL('..', import.meta.url));
-const out = resolve(root, process.argv[2] || '_site');
+const args = process.argv.slice(2), app = args.includes('--app');
+const out = resolve(root, args.find((a) => !a.startsWith('--')) || '_site');
 await rm(out, { recursive: true, force: true });
 await cp(join(root, 'public'), out, { recursive: true });
 await cp(join(root, 'mobile'), join(out, 'm'), { recursive: true });
+if (app) {
+  await writeFile(join(out, 'index.html'), '<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">'
+    + '<title>NetHack Gauntlet</title><style>html,body{margin:0;height:100%;background:#06060a}</style><script>location.replace("m/" + location.hash)</script>');
+}
 
 async function walk(dir) {
   const all = [];

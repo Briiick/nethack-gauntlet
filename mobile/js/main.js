@@ -9,6 +9,7 @@ import { mountSaves, openHallOfFame } from '../../js/records.js';
 import { MobileUI } from './mobileui.js';
 import { Touch } from './touch.js';
 import { Hud } from './hud.js';
+import { setupNative, isNative, backupRecords } from './native.js';
 
 // Phone settings are kept apart from the desktop page's (same site, different screen)
 const KEY = 'nhg-m-settings';
@@ -29,6 +30,8 @@ const saveSettings = () => { try { localStorage.setItem(KEY, JSON.stringify(sett
 export const cleanName = (s) => String(s).trim().replace(/[^A-Za-z0-9 _]/g, '').replace(/^[\d\s_]+/, '').slice(0, 30).trim() || 'Adventurer';
 const NAMES = ['Brunhilde', 'Sigrid', 'Astrid', 'Freydis', 'Gudrun', 'Ingrid', 'Thyra', 'Ragna', 'Hervor', 'Eir'];
 const RESUME = 'nhg-m-resume';   // set when the game saved itself because you left the app
+// a browser tab forgets it when closed; the iPhone app keeps it, so reopening after iOS closed the app carries on
+const resumeStore = () => (isNative() ? localStorage : sessionStorage);
 
 async function boot() {
   const img = (src) => new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = rej; i.src = src; });
@@ -49,6 +52,7 @@ async function boot() {
   ui.game = game;
   const hud = new Hud(ui);
   new Touch(ui, hud);
+  await setupNative();   // the iPhone app: saves as files, haptics, pause/resume (a browser: nothing)
   const mod = await loadEngine(game);
   renderer.objDescr = (o) => mod._nhg_obj_descr(o);
   ui.mod = mod; ui.wizard = location.hash === '#wizard';
@@ -79,7 +83,7 @@ async function boot() {
 
   // back from another app after the game saved itself: carry straight on
   let resume = null;
-  try { resume = sessionStorage.getItem(RESUME); sessionStorage.removeItem(RESUME); } catch (e) { /* ignore */ }
+  try { resume = resumeStore().getItem(RESUME); resumeStore().removeItem(RESUME); } catch (e) { /* ignore */ }
   if (resume && saves.some((s) => s.name === resume)) { nameInput.value = resume; start(); }
 
   function start() {
@@ -111,29 +115,31 @@ async function boot() {
 
   // Phones close apps without asking: leaving the app saves the game exactly as NetHack's S
   // command does, and coming back picks it up again.
-  let leaving = false;
+  // (the browser tells us through page visibility; the iPhone app also through its pause/resume)
+  let leaving = false, away = false;
   const leave = async () => {
-    if (leaving || !settings.autoSave || !game.started || game.over || document.visibilityState !== 'hidden') return;
+    away = true;
+    if (leaving || !settings.autoSave || !game.started || game.over) return;
     leaving = true;
-    try { sessionStorage.setItem(RESUME, ui.playerName); } catch (e) { /* ignore */ }
+    try { resumeStore().setItem(RESUME, ui.playerName); } catch (e) { /* ignore */ }
     ui.autoSaved = true;
     // (a hidden page runs slowly or not at all: if you're back before the save is done, carry on playing)
-    await game.saveAndQuit(4000, () => document.visibilityState === 'visible');
-    if (game.over) { await game.persisted; if (document.visibilityState === 'visible') location.reload(); return; }
+    await game.saveAndQuit(4000, () => !away);
+    if (game.over) { await game.persisted; if (isNative()) backupRecords(); if (!away) location.reload(); return; }
     ui.autoSaved = false; leaving = false;
-    try { sessionStorage.removeItem(RESUME); } catch (e) { /* ignore */ }
+    try { resumeStore().removeItem(RESUME); } catch (e) { /* ignore */ }
   };
-  document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'hidden') leave();
-    else if (ui.autoSaved && game.over) location.reload();
-  });
-  addEventListener('pagehide', leave);
+  const back = () => { away = false; if (ui.autoSaved && game.over) location.reload(); };
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') leave(); else back(); });
+  addEventListener('pagehide', () => { if (document.visibilityState === 'hidden') leave(); });   // (not a reload)
+  document.addEventListener('nhg-pause', leave);
+  document.addEventListener('nhg-resume', back);
 }
 
 // "Add to Home Screen" plays full screen and offline
 function installHint() {
   const el = document.getElementById('start-install');
-  const standalone = matchMedia('(display-mode: standalone)').matches || navigator.standalone;
+  const standalone = matchMedia('(display-mode: standalone)').matches || navigator.standalone || isNative();
   if (standalone || !el) return;
   const ios = /iPhone|iPad|iPod/.test(navigator.userAgent);
   el.innerHTML = ios ? 'For full screen and offline play: Share <b>⎙</b> → <b>Add to Home Screen</b>.' : 'For full screen and offline play: browser menu → <b>Install app</b> / <b>Add to Home screen</b>.';
@@ -141,7 +147,7 @@ function installHint() {
 }
 
 // (the dev server has no precache.json, so there the worker never installs and nothing is cached)
-if ('serviceWorker' in navigator && window.isSecureContext) {
+if ('serviceWorker' in navigator && window.isSecureContext && !isNative()) {   // (the app has every file already)
   navigator.serviceWorker.register('m/sw.js', { scope: './m/' }).then((reg) => {
     // a new version is ready: switch now if no game is running (else on the next visit)
     const offer = () => { if (reg.waiting && !window.__nhg?.game?.started) reg.waiting.postMessage('take-over'); };

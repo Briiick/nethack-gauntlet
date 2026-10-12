@@ -1,0 +1,21 @@
+{
+  "name": "nethack-gauntlet-ios",
+  "version": "0.1.0",
+  "private": true,
+  "description": "NetHack Gauntlet for iPhone and iPad: the phone version (../mobile) in a Capacitor shell.",
+  "license": "NGPL",
+  "scripts": {
+    "build": "node ../tools/build-web.mjs ios-app/www --app && npx cap sync ios",
+    "open": "npx cap open ios"
+  },
+  "dependencies": {
+    "@capacitor/app": "8.1.2",
+    "@capacitor/core": "8.5.3",
+    "@capacitor/filesystem": "8.1.4",
+    "@capacitor/haptics": "8.0.2",
+    "@capacitor/ios": "8.5.3"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "8.5.3"
+  }
+}

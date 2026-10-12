@@ -59,7 +59,7 @@ export class Hud {
     this.bar.addEventListener('pointerdown', (e) => {
       const b = e.target.closest('[data-act="search"]');
       clearTimeout(this.restT);
-      if (b) this.restT = setTimeout(() => { this.restT = null; this.restHeld = true; navigator.vibrate?.(12); this.run('20s'); }, 450);
+      if (b) this.restT = setTimeout(() => { this.restT = null; this.restHeld = true; (globalThis.nhgHaptic ? globalThis.nhgHaptic() : navigator.vibrate?.(12)); this.run('20s'); }, 450);
     });
     this.bar.addEventListener('pointerup', () => clearTimeout(this.restT));
     this.bar.addEventListener('click', (e) => {

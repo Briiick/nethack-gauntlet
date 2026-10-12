@@ -1,0 +1,11 @@
+{
+  "appId": "com.briiick.nethackgauntlet",
+  "appName": "NetHack Gauntlet",
+  "webDir": "www",
+  "backgroundColor": "#06060a",
+  "ios": {
+    "contentInset": "never",
+    "scrollEnabled": false,
+    "backgroundColor": "#06060a"
+  }
+}

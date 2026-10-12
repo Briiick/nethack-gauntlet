@@ -84,7 +84,8 @@ export async function deleteSave(mod, file) {
 const HOME = '/home/web_user';
 
 // The desktop app's bridge (desktop/preload.cjs), or null in a browser.
-const desktop = () => globalThis.nhgDesktop || null;
+// (also the iPhone app's file bridge, mobile/js/native.js: same interface, saves in Documents)
+const desktop = () => globalThis.nhgDesktop || globalThis.nhgFiles || null;
 
 // the save files this session knows are on disk: only these may be deleted when they leave memory
 // (a backup copied into the folder while the app runs is left alone)

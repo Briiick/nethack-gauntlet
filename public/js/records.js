@@ -18,7 +18,7 @@ const SHEET = { archeologist: 331, barbarian: 332, caveman: 333, cavewoman: 333,
   ranger: 338, rogue: 339, samurai: 340, tourist: 341, valkyrie: 342, wizard: 343 };
 const DUNGEONS = ['the Dungeons of Doom', 'Gehennom', 'the Gnomish Mines', 'the Quest', 'Sokoban', 'Fort Ludios', "Vlad's Tower", 'the Elemental Planes', 'the Tutorial'];
 
-const platform = () => (globalThis.nhgDesktop ? 'desktop' : document.body.classList.contains('m') ? 'phone' : 'browser');
+const platform = () => (globalThis.nhgDesktop ? 'desktop' : globalThis.nhgFiles ? 'iPhone app' : document.body.classList.contains('m') ? 'phone' : 'browser');
 
 export function pastGames() { return load(HISTORY, []); }
 

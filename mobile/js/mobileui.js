@@ -115,7 +115,7 @@ export class MobileUI extends UI {
     document.body.classList.toggle('targeting', on);
   }
 
-  bell() { try { navigator.vibrate?.(30); } catch (e) { /* no haptics */ } super.bell?.(); }
+  bell() { try { if (globalThis.nhgHaptic) globalThis.nhgHaptic('medium'); else navigator.vibrate?.(30); } catch (e) { /* no haptics */ } super.bell?.(); }
 
   message(text, attr, o) {
     // NetHack won't rest or search with a monster beside you unless you insist with the m prefix,

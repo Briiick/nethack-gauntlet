@@ -119,6 +119,13 @@ There are two ways to get it onto your phone:
 A phone or tablet without a mouse that opens the desktop page is sent to the touch version
 automatically; add `?desktop` to the address to stay on the desktop page.
 
+### As an iPhone / iPad app (TestFlight)
+
+`ios-app/` wraps the phone version in a native app with [Capacitor](https://capacitorjs.com). It
+plays offline, keeps saves as real files (visible in the Files app, backed up by iCloud), and saves
+when you leave. With an Apple Developer account and four repository secrets, pushing a tag such as
+`ios-v0.1.0` builds it on GitHub and uploads it to TestFlight. Setup steps: [ios-app/README.md](ios-app/README.md).
+
 ### Controls
 
 There are two control schemes; pick one on the start screen or in Settings → Controls, and switch
@@ -218,6 +225,7 @@ mobile/                 the phone version, served at /m/ (it loads everything el
   js/bag.js             the backpack
   js/mobileui.js        the desktop UI with phone-shaped menus, questions and targeting
   sw.js, manifest       offline play and Add to Home Screen
+ios-app/                the iPhone/iPad app: Capacitor project (ios/ is the Xcode project); see its README
 engine/                 the patch on top of NetHack 5.0.0 and the script that builds it
 tools/
   make_atlas.py         glyph → tile/monster/object tables (tiles.json) and the fallback atlas
@@ -281,6 +289,9 @@ CHROME=/path/to/chrome npm test
   or on any moment the game waits with nothing on screen to answer.
 - `test/records.mjs` (desktop and phone) ends a game and finds it in the Hall of Fame, saves one and
   finds its card on the start screen, resumes it with one press and deletes it.
+- `test/ios-bridge.mjs` runs the phone version against a stand-in for the iPhone app's native side:
+  saves as files in Documents, saving when the app is paused and resuming after, the save cards, the
+  records backup and haptics.
 - `test/loot.mjs` opens a chest with `E` on the desktop and from the context button on a phone,
   puts in and takes out in one press, reopens it, cancels, takes everything, forces a locked box, and
   picks up several kinds of things without the "what type" menu.

@@ -124,7 +124,7 @@ export class Touch {
     if (!g || g.kind !== 'tap') return;
     g.kind = 'held';
     if (ui.modal || !ui.waiter || !ui.waiter.allowClick || ui.dirFinish) return;
-    try { navigator.vibrate?.(12); } catch (e) { /* no haptics */ }
+    try { if (globalThis.nhgHaptic) globalThis.nhgHaptic(); else navigator.vibrate?.(12); } catch (e) { /* no haptics */ }
     const c = this.cell(g.x0, g.y0);
     if (ui.isTargeting) { this.click(c, 1); return; }
     this.hud.spotSheet(c);
