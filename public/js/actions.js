@@ -39,6 +39,33 @@ export function useItem(ui, item, verb = verbFor(item)) {
   return true;
 }
 
+// ---- two weapons at once, by NetHack's own rule (wield.c, can_twoweapon): a role (or form) that
+// attacks with two weapons, a one-handed melee weapon in each hand and no shield. A cursed off-hand
+// weapon would be dropped, so that's out too. NetHack still has the last word.
+const ONE_WEAPON_ROLE = /^(caveman|cavewoman|healer|monk|priest|priestess|ranger|wizard)$/;
+const TWO_HANDED = /two-handed|tsurugi|long samurai sword|battle-axe|double-headed axe|mattock|broad pick|quarterstaff|^staff\b|partisan|ranseur|spetum|glaive|halberd|bardiche|voulge|fauchard|guisarme|lucern hammer|bec de corbin|polearm|poleaxe|pole cleaver|pole sickle|pruning hook/;
+const NOT_MELEE = /\bbow\b|crossbow|\bsling\b|\byumi\b|arrow|\bya\b|\bbolts?\b|\bdarts?\b|shuriken|throwing star|boomerang/;
+const bare = (t) => t.toLowerCase().replace(/\s*\([^)]*\)\s*$/, '').replace(/^(a|an|the|\d+)\s+/, '').replace(/\b(uncursed|blessed|cursed|[+-]\d+)\s+/g, '');
+const oneHanded = (it) => !!it && CAT(it.cat || '') === 'weapon' && !TWO_HANDED.test(bare(it.text)) && !NOT_MELEE.test(bare(it.text));
+const cursed = (it) => /\bcursed\b/.test(it.text) && !/\buncursed\b/.test(it.text);
+
+// The commands that put item in the off hand and start fighting with both, or null when NetHack
+// wouldn't allow it. eq: what's in hand, { main, off, alt } -> { ch, text, cat } (from equipmentOf).
+export function offhandPlan(ui, item, eq) {
+  const hero = ui.renderer && [...ui.renderer.actors.values()].find((a) => a.hero);
+  if (hero && ONE_WEAPON_ROLE.test(ui.renderer.monsterName(hero))) return null;
+  const twoOn = !!eq.off && CAT(eq.off.cat || '') === 'weapon';
+  if (eq.off && !twoOn) return null;                                    // a shield
+  if (!oneHanded(eq.main) || cursed(eq.main) || !oneHanded(item) || cursed(item)) return null;
+  const toggle = { ext: 'twoweapon' };
+  if (eq.alt && eq.alt.text === item.text) return [toggle];             // already the swap weapon
+  if (eq.alt && cursed(eq.alt)) return null;                            // swapping would weld it to the hand
+  const wield = (ch) => ({ keys: 'w', answers: [{ re: /wield/i, key: String.fromCharCode(ch) }] });
+  // wield it, swap so it's the second weapon, wield the first one again (pushweapon does that itself)
+  return [...(twoOn ? [toggle] : []), wield(item.ch), { keys: 'x' },
+    ...(ui.settings && ui.settings.game && ui.settings.game.pushweapon ? [] : [wield(eq.main.ch)]), toggle];
+}
+
 // Cast a known spell by its letter in the spell menu.
 export function castSpell(ui, letter) {
   ui.answerNext([{ re: /spell to cast/i, key: letter, menu: true }]);

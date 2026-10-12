@@ -352,6 +352,18 @@ export class UI {
   // "What do you want to wear?" with the item). Each answers only a question that matches it;
   // anything unexpected drops the rest and asks the player as usual.
   answerNext(list) { this.answers = list.slice(); }
+  // Several commands in a row (a weapon dragged to the off hand: wield, swap, wield, #twoweapon).
+  // Each starts once the one before it is back at the command prompt; a step whose question never
+  // came (something went differently) stops the rest. steps: [{ keys, answers } | { ext }]
+  queueCommands(steps) { this.chain = steps.slice(); this.nextCommand(); }
+  nextCommand() {
+    const s = this.chain && this.chain.shift();
+    if (!s) { this.chain = null; return false; }
+    this.answerNext(s.answers || []);
+    if (s.ext) { this.pendingExt = s.ext; this.pushKey(35); }
+    else for (const k of s.keys) this.pushKey(k.charCodeAt(0));
+    return true;
+  }
   takeAnswer(query) {
     const a = this.answers && this.answers[0];
     if (!a || a.menu) return null;   // a menu answer waits for its menu

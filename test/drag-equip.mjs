@@ -82,6 +82,40 @@ const draggable = await page.$$eval('.bg-inv .grid .slot[draggable="true"]', (x)
 check('No dragging while choosing what to drop', draggable === 0, String(draggable));
 await H.key('Escape'); await H.settle();
 
+// 8. two weapons: the swap-weapon dagger onto the off hand (the shield came off in 6)
+await page.evaluate(() => { window.__nhg.ui.settings.controls = 'modern'; window.__nhg.ui.applySettings(); });
+await openInv();
+await drag('.bg-inv .eq[data-i][data-slot="alt"]', '.bg-inv .s-off');
+await reopened();
+off = await slotText('off'); main = await slotText('main');
+check('Drag swap dagger onto the off hand: two weapons', /dagger/i.test(off) && /spear/i.test(main), `${main} / ${off}`);
+// 9. ...and back to the pack: one weapon again, the dagger is the swap weapon
+await drag('.bg-inv .eq[data-i][data-slot="off"]', '.bg-inv .grid');
+await reopened();
+off = await slotText('off');
+check('Drag off-hand weapon to the pack: one weapon', off === '' && /dagger/i.test(await slotText('alt')), off);
+await H.key('Escape'); await H.settle();
+// 10. a weapon from the pack onto the off hand: wield, swap, wield again, #twoweapon
+for (const wish of ['uncursed short sword', 'uncursed bow']) { await H.key('Control+w'); await H.wait(300); await page.keyboard.type(wish); await H.key('Enter'); await H.settle(); }
+await openInv();
+// a bow isn't a melee weapon: the off hand doesn't light up for it
+const bowLit = await page.evaluate(async (sel) => {
+  const src = document.querySelector(sel), dt = new DataTransfer();
+  src.dispatchEvent(new DragEvent('dragstart', { bubbles: true, cancelable: true, dataTransfer: dt }));
+  await new Promise((r) => requestAnimationFrame(r));
+  const lit = document.querySelector('.bg-inv .s-off').classList.contains('droptarget');
+  src.dispatchEvent(new DragEvent('dragend', { bubbles: true, dataTransfer: dt }));
+  return lit;
+}, await packCell(/\bbow\b/));
+check('A bow can\'t go in the off hand', !bowLit);
+await drag(await packCell(/short sword/), '.bg-inv .s-off');
+await page.waitForFunction(() => /short sword/i.test(document.querySelector('.bg-inv .s-off')?.getAttribute('aria-label') || ''), null, { timeout: 8000 }).catch(() => {});
+await H.wait(300);
+off = await slotText('off'); main = await slotText('main');
+check('Drag short sword onto the off hand: spear + short sword', /short sword/i.test(off) && /spear/i.test(main), `${main} / ${off}`);
+await page.screenshot({ path: `${out}/drag-twoweapon.png` });
+await H.key('Escape'); await H.settle();
+
 for (const [l, r] of results) console.log(r === 'ok' ? 'ok  ' : 'FAIL', l, r === 'ok' ? '' : r);
 console.log(errs.length ? 'ERRORS ' + errs.join(' | ') : 'no page errors');
 await browser.close();

@@ -3,7 +3,7 @@
 // item ("What do you want to drop?") a tap answers; when it lets you take several (picking up,
 // dropping many) taps mark them and Confirm sends the lot.
 import { equipmentOf } from '../../js/inventory.js';
-import { verbFor, useItem } from '../../js/actions.js';
+import { verbFor, useItem, offhandPlan, itemKind } from '../../js/actions.js';
 
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const SLOTS = ['main', 'off', 'alt', 'quiver', 'body', 'cloak', 'shirt', 'head', 'hands', 'feet', 'neck', 'ringL', 'ringR', 'eyes'];
@@ -51,6 +51,9 @@ export function backpack(ui, menu, how) {
       <footer class="foot"></footer>`;
     const cells = el.querySelector('.cells'), detail = el.querySelector('.detail'), foot = el.querySelector('.foot');
 
+    const held = (k) => { const e = [...worn].find(([, s]) => s === k)?.[0]; return e && { ch: e.it.ch, text: e.it.text, cat: e.cat }; };
+    // a second weapon in the off hand: fight with both, when NetHack would allow it
+    const offPlan = (e) => offhandPlan(ui, { ch: e.it.ch, text: e.it.text, cat: e.cat }, { main: held('main'), off: held('off'), alt: held('alt') });
     const finish = (v) => { if (done) return; done = true; ui.closeModal(); resolve(v); };
     const cancel = () => finish(pickNone ? [] : null);
     const chosen = () => entries.filter((e) => e.it.selected).map((e) => ({ ident: e.it.ident, count: -1 }));
@@ -78,9 +81,11 @@ export function backpack(ui, menu, how) {
     const showDetail = () => {
       if (!sel || acting || pickAny) { detail.hidden = true; return; }
       const e = sel, slot = worn.get(e), verb = !pickNone && verbFor({ text: e.it.text, cat: e.cat });
+      const two = slot === 'off' && itemKind(e.cat) === 'weapon' ? 'One weapon' : slot !== 'main' && offPlan(e) ? 'Off hand' : '';
       detail.hidden = false;
       detail.innerHTML = `<div class="what">${ui.itemIcon(e.it.glyph, 48)}<div><b class="${e.buc}">${esc(e.it.text)}</b><small>${esc(e.cat)}${slot ? ' · ' + esc(SLOT_NAME[slot]) : ''}</small></div></div>
         ${pickNone ? '' : `<div class="do">${verb ? `<button type="button" class="sbtn primary-ish" data-f="use">${esc(verb.label)}</button>` : ''}
+          ${two ? `<button type="button" class="sbtn" data-f="two">${two}</button>` : ''}
           <button type="button" class="sbtn" data-f="actions">All actions…</button>
           <button type="button" class="sbtn" data-f="quick">Quick slot</button></div>
           <div class="qpick" hidden>${[1, 2, 3, 4, 5, 6, 7, 8, 9].map((n) => `<button type="button" class="sbtn" data-q="${n}">${n}</button>`).join('')}</div>`}`;
@@ -112,6 +117,12 @@ export function backpack(ui, menu, how) {
         finish(null);
         if (/^[WTPRw]$/.test(verb.key)) ui.reopenInventory = true;   // come back to see it on
         useItem(ui, { ch: it.it.ch, text: it.it.text, cat: it.cat }, verb);
+        return;
+      }
+      if (f === 'two' && sel) {
+        const steps = worn.get(sel) === 'off' ? [{ ext: 'twoweapon' }] : offPlan(sel);
+        finish(null);
+        if (steps) { ui.reopenInventory = true; ui.queueCommands(steps); }
         return;
       }
       if (f === 'quick') { const q = detail.querySelector('.qpick'); q.hidden = !q.hidden; return; }

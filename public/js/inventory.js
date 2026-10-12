@@ -4,7 +4,7 @@
 // Used for every NetHack menu whose entries are mostly objects (inventory, pick up,
 // drop, "what do you want to ..." pickers).
 
-import { verbFor, useItem } from './actions.js';
+import { verbFor, useItem, offhandPlan } from './actions.js';
 
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const MG_PET = 0x10;
@@ -92,9 +92,16 @@ function unequipKeys(slot) {
   return ['T'];
 }
 
+// NetHack 5.0 heroes can be left-handed: the main weapon is "(weapon in left hand)" for them, and
+// with two weapons both say "(wielded in ... hand)", so remember which hand the main one is in.
+let mainHand = 'right';
 function slotOf(it, cat) {
   const t = it.text.toLowerCase();
-  if (/\(weapon in (right |left )?hands?\)|\(wielded\)|\(weapon in hand/.test(t)) return 'main';
+  const hand = t.match(/\(weapon in (right|left) /);
+  if (hand) mainHand = hand[1];
+  const two = t.match(/\(wielded in (right|left) /);
+  if (two) return two[1] === mainHand ? 'main' : 'off';
+  if (/\((weapon in|tethered to) |\(wielded\)/.test(t)) return 'main';
   if (/wielded in other hand|\(in other hand\)/.test(t)) return 'off';
   if (/alternate weapon; not wielded/.test(t)) return 'alt';
   if (/\(in quiver/.test(t)) return 'quiver';
@@ -488,12 +495,15 @@ export function inventoryMenu(ui, menu, how) {
     });
     // ---- drag to equip: pack item onto the character or a slot; worn item back onto the pack
     const plain = !acting && !pickAny;
-    const run = (keys, answers) => {   // leave this screen, then type the command; NetHack's questions are pre-answered
+    const run = (keys, answers) => runAll([{ keys, answers }]);
+    const runAll = (steps) => {   // leave this screen, then type the commands; NetHack's questions are pre-answered
       finish(pickNone ? [] : null);
       ui.reopenInventory = true;          // ...and come back here to see the result
-      ui.answerNext(answers);
-      for (const k of keys) ui.pushKey(k.charCodeAt(0));
+      ui.queueCommands(steps);
     };
+    const held = (k) => equipped[k] && { ch: equipped[k].it.ch, text: equipped[k].it.text, cat: equipped[k].cat };
+    // a second weapon onto the off hand: fight with both, when NetHack would allow it
+    const offPlan = (e) => offhandPlan(ui, { ch: e.it.ch, text: e.it.text, cat: e.cat }, { main: held('main'), off: held('off'), alt: held('alt') });
     let drag = null;
     const targets = () => [...el.querySelectorAll('.eq, .figure, .grid')];
     const clearDrop = () => targets().forEach((t) => t.classList.remove('droptarget', 'dropover'));
@@ -503,11 +513,15 @@ export function inventoryMenu(ui, menu, how) {
       const e = entries[+b.dataset.i];
       const fromSlot = b.classList.contains('eq') ? b.dataset.slot : null;
       const act = fromSlot ? null : equipAction(e);
+      const plan = (!fromSlot || fromSlot === 'alt') && act?.key !== 'W' ? offPlan(e) : null;
       if (!fromSlot && !act && !b.closest('.grid')) { ev.preventDefault(); return; }
-      drag = { e, fromSlot, act };
+      if (fromSlot === 'alt' && !plan) { ev.preventDefault(); return; }
+      drag = { e, fromSlot, act, plan };
       ev.dataTransfer.effectAllowed = 'move';
       ev.dataTransfer.setData('text/plain', String(e.it.ch));
       requestAnimationFrame(() => {
+        if (plan) el.querySelector('.s-off').classList.add('droptarget');
+        if (fromSlot === 'alt') return;
         if (fromSlot) el.querySelector('.grid').classList.add('droptarget');
         else {
           el.querySelector('.s-quiver').classList.add('droptarget');
@@ -533,6 +547,8 @@ export function inventoryMenu(ui, menu, how) {
       if (!z || !d) return;
       ev.preventDefault();
       const letter = String.fromCharCode(d.e.it.ch);
+      if (z.dataset.slot === 'off' && d.plan) { runAll(d.plan); return; }
+      if (d.fromSlot === 'off' && d.e.cat && catKey(d.e.cat) === 'Weapons') { runAll([{ ext: 'twoweapon' }]); return; }   // back to one weapon
       if (d.fromSlot) {   // take it off / unwield / empty the quiver
         const keys = unequipKeys(d.fromSlot);
         // w - / Q -: "What do you want to wield?" answered with "-" (bare hands / empty quiver)
@@ -544,7 +560,7 @@ export function inventoryMenu(ui, menu, how) {
       run([d.act.key], [{ re: /wield|wear|put on/i, key: letter }, ...(hand ? [{ re: /ring-finger|which hand/i, key: hand }] : [])]);
     });
     if (plain) {
-      el.querySelectorAll('.eq[data-i]').forEach((b) => { if (unequipKeys(b.dataset.slot)) b.draggable = true; });
+      el.querySelectorAll('.eq[data-i]').forEach((b) => { if (unequipKeys(b.dataset.slot) || (b.dataset.slot === 'alt' && offPlan(entries[+b.dataset.i]))) b.draggable = true; });
       el.classList.add('can-drag');
     }
 

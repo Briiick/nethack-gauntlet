@@ -411,8 +411,10 @@ export class Game {
     this.loot.reset();
     this.typedAnswer = null;
     if (!this.ui.keyQueue.length) {
+      if (this.ui.answers && this.ui.answers.length) this.ui.chain = null;   // that command didn't ask what we expected
       this.ui.answers = [];   // pre-answered questions belong to the command just typed
-      if (this.ui.reopenInventory) { this.ui.reopenInventory = false; this.ui.pushKey(105); }   // 'i'
+      if (this.ui.nextCommand()) { /* the next command of a queued run */ }
+      else if (this.ui.reopenInventory) { this.ui.reopenInventory = false; this.ui.pushKey(105); }   // 'i'
     }
     // After something was picked up, ask NetHack what's still underfoot (":", look here: free, no
     // game time) without showing the answer, so the "Pick up" button goes away when nothing's left.
