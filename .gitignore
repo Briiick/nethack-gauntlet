@@ -5,3 +5,4 @@ __pycache__/
 dist/
 _site/
 ios-app/www/
+.DS_Store
